@@ -191,7 +191,7 @@ const assert_hook = type => {
 	current === null &&
 		error('hook called outside of component rendering');
 
-	type &&
+	type !== undefined &&
 	current_index < current.S.length &&
 	current.S[current_index][0] !== type &&
 		error('inconsistent hook order at index ' + current_index);
