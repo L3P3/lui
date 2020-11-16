@@ -110,13 +110,21 @@ let render_queue = new Set;
 let render_queue_next = new Set;
 
 
-/// FUNCTIONS ///
-
 DEBUG && (
 	window.onerror = () => {
 		current && log('error');
 	}
 );
+
+
+/// ALIAS ///
+
+const Array_ = Array;
+const Object_ = Object;
+const document_ = document;
+
+
+/// FUNCTIONS ///
 
 /**
 	gets the current stack
@@ -174,10 +182,10 @@ const log = (message, ...data) => {
 	@return {!Array<string>}
 */
 const object_diff = (a, b) => (
-	Array.from(
+	Array_.from(
 		new Set(
-			Object.keys(a)
-			.concat(Object.keys(b))
+			Object_.keys(a)
+			.concat(Object_.keys(b))
 		)
 	)
 	.filter(key => a[key] !== b[key])
@@ -250,7 +258,7 @@ const render = instance => {
 	const child_calls = (instance.A.F)(instance.A.P);
 
 	if (instance.D === null) {
-		instance.D = document.createElement('span');//TODO
+		instance.D = document_.createElement('span');//TODO
 	}
 
 	if (child_calls !== null) {
@@ -272,7 +280,7 @@ const render = instance => {
 			current_first
 			?	(
 					instance.C =
-						new Array(childs_index).fill(null)
+						new Array_(childs_index).fill(null)
 				)
 			:	instance.C
 		);
@@ -635,10 +643,10 @@ export const hook_delay = delay => {
 	@return {number}
 */
 export const hook_transition = (target, delay) => {
-	const state = hook_static({value: target});
+	const state = hook_static([target]);
 	const transition = hook_memo(
 		(target, delay) => ({
-			value_start: state.value,
+			value_start: state[0],
 			value_end: target,
 			time_start: render_time,
 			time_end: render_time + delay
@@ -648,13 +656,13 @@ export const hook_transition = (target, delay) => {
 
 	if (transition.time_end <= render_time) {
 		return (
-			state.value = transition.value_end
+			state[0] = transition.value_end
 		);
 	}
 
 	hook_rerender();
 	return (
-		state.value =
+		state[0] =
 		transition.time_start === render_time
 		?	transition.value_start
 		:	transition.value_start +
@@ -758,7 +766,7 @@ export const node = (component, props, childs) => {
 	DEBUG &&
 	childs !== undefined && (
 		!childs ||
-		childs.constructor !== Array
+		childs.constructor !== Array_
 	) &&
 		error('invalid childs type');
 
@@ -822,7 +830,7 @@ export const init = body => {
 	typeof body !== 'function' &&
 		error('init function requires body component');
 
-	const dom = document.body;
+	const dom = document_.body;
 	dom.innerHTML = '';
 
 	const component_body = () => {
@@ -883,7 +891,7 @@ const component_html_get = code => {
 	index_ht > index_sqb &&
 		error('selector: ID must be at tag');
 
-	const dom = document.createElement(tag);
+	const dom = document_.createElement(tag);
 
 	if (index_ht >= 1) {
 		dom.id = (
@@ -977,7 +985,7 @@ const component_html_generic = props => {
 					error('capital prop: ' + key);
 
 				dom.className = (
-					Object.entries(props.F)
+					Object_.entries(props.F)
 					.filter(([, value]) => value)
 					.map(([key]) => key)
 					.join(' ')
