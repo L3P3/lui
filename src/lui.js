@@ -182,13 +182,15 @@ const log = (message, ...data) => {
 	@return {!Array<string>}
 */
 const object_diff = (a, b) => (
-	Array_.from(
-		new Set(
-			Object_.keys(a)
-			.concat(Object_.keys(b))
+	a === b
+	?	[]
+	:	Array_.from(
+			new Set(
+				Object_.keys(a)
+				.concat(Object_.keys(b))
+			)
 		)
-	)
-	.filter(key => a[key] !== b[key])
+		.filter(key => a[key] !== b[key])
 )
 
 /**
