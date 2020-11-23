@@ -127,7 +127,7 @@ const document_ = document;
 /// FUNCTIONS ///
 
 /**
-	gets the current stack
+	gets the current stack (dev)
 	@return {string}
 */
 const stack_get = () => {
@@ -146,7 +146,7 @@ const stack_get = () => {
 };
 
 /**
-	gets the current stack
+	tries getting a component name (dev)
 	@param {TYPE_COMPONENT<*>} component
 	@return {string}
 */
@@ -157,7 +157,7 @@ const component_name_get = component => (
 );
 
 /**
-	throws a lui error
+	throws a lui error (dev)
 	@param {string} message
 	@throws {Error}
 */
@@ -168,12 +168,27 @@ const error = message => {
 }
 
 /**
-	verbose logging
+	prints message (dev)
 	@param {string} message
 */
 const log = (message, ...data) => {
 	console.log('lui ' + stack_get() + ': ' + message, ...data);
 }
+
+/**
+	gets all properties of both
+	@param {!Object} a
+	@param {!Object} b
+	@return {!Array<string>}
+*/
+const object_keys_union = (a, b) => (
+	Array_.from(
+		new Set(
+			Object_.keys(a)
+			.concat(Object_.keys(b))
+		)
+	)
+)
 
 /**
 	lists all changed properties
@@ -184,17 +199,24 @@ const log = (message, ...data) => {
 const object_diff = (a, b) => (
 	a === b
 	?	[]
-	:	Array_.from(
-			new Set(
-				Object_.keys(a)
-				.concat(Object_.keys(b))
-			)
-		)
+	:	object_keys_union(a, b)
 		.filter(key => a[key] !== b[key])
 )
 
 /**
-	ensures hook rules
+	checks for changed properties
+	@param {!Object} a
+	@param {!Object} b
+	@return {boolean}
+*/
+const object_comp = (a, b) => (
+	a === b ||
+	!object_keys_union(a, b)
+	.some(key => a[key] !== b[key])
+)
+
+/**
+	ensures hook rules (dev)
 	@param {number=} type
 */
 const assert_hook = type => {
@@ -317,8 +339,11 @@ const render = instance => {
 						child_d_last
 					);
 				}
-				else if (// TODO
-					JSON.stringify(instance_childs[childs_index].A.P) !== JSON.stringify(child_call.P)
+				else if (
+					!object_comp(
+						instance_childs[childs_index].A.P,
+						child_call.P
+					)
 				) {
 					instance_childs[childs_index].A = child_call;
 					render(instance_childs[childs_index]);
