@@ -555,7 +555,7 @@ export const hook_state = initial => {
 /**
 	get persistent constant
 	@template T
-	@param {T} value
+	@param {T=} value
 	@return {T}
 */
 export const hook_static = value => {
@@ -565,7 +565,10 @@ export const hook_static = value => {
 		current_index < current.S.length
 		?	current.S[current_index++]
 		:	(
-			current.S[current_index++] = [HOOK_STATIC, value]
+			current.S[current_index++] = [
+				HOOK_STATIC,
+				value === undefined ? {} : value
+			]
 		)
 	)[1];
 }
@@ -629,6 +632,24 @@ export const hook_prev = (value, initial) => {
 }
 
 /**
+	returns stable callback
+	@template T
+	@param {function():T} callback
+	@param {Array} deps
+	@return {function():T}
+*/
+export const hook_callback = (callback, deps) => {
+	const state = hook_static();
+	state.deps = deps;
+	if (current_first) {
+		state.callback = (...args) => (
+			callback(...state.deps, ...args)
+		);
+	}
+	return state.callback;
+}
+
+/**
 	used for the hook_delay
 	@param {number} delay
 	@param {function(boolean):void} expired_set
@@ -670,10 +691,10 @@ export const hook_delay = delay => {
 	@return {number}
 */
 export const hook_transition = (target, delay) => {
-	const state = hook_static([target]);
+	const state = hook_static({target});
 	const transition = hook_memo(
 		(target, delay) => ({
-			value_start: state[0],
+			value_start: state.target,
 			value_end: target,
 			time_start: render_time,
 			time_end: render_time + delay
@@ -683,13 +704,13 @@ export const hook_transition = (target, delay) => {
 
 	if (transition.time_end <= render_time) {
 		return (
-			state[0] = transition.value_end
+			state.target = transition.value_end
 		);
 	}
 
 	hook_rerender();
 	return (
-		state[0] =
+		state.target =
 		transition.time_start === render_time
 		?	transition.value_start
 		:	transition.value_start +

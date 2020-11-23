@@ -166,11 +166,12 @@ Using any hook in a **callback** is probably a very bad idea.
 
 I highly recommend [React's documentation about hooks](https://reactjs.org/docs/hooks-intro.html) since their concept is very similar.
 
-But while some hooks also exist in React, some do not. And on the other hand, I never used some hooks so I did not implement them. Please note that the signatures may differ.
+But while some hooks also exist in React, some do not. And on the other hand, I never used some hooks so I did not implement them. Please note that there are differences in behaviour. For example, in lui deps actually _are_ passed as arguments while in React, they are not.
 
 lui | React
 --- | ---
 `hook_async` | -
+`hook_callback` | [useCallback](https://reactjs.org/docs/hooks-reference.html#usecallback)
 `hook_delay` | -
 `hook_effect` | [useEffect](https://reactjs.org/docs/hooks-reference.html#useeffect)
 `hook_first` | -
@@ -200,6 +201,7 @@ Function | Description
 `node(Component, props: Object [, childs: ?Array<node>]):node` | This is how you add child components. If you want to add html components, pass the lowercase tagname in a string as the first argument. If, like html components do, the added component accepts content, you can pass that as the third argument as an array of nodes.
 `node_list(Component, props: Object, data: Array)` | When you want to add a component n times for each entry of an array, this is the (proper) way to go. If the array items are objects, the [keys](https://reactjs.org/docs/lists-and-keys.html) are directly taken from an `id` property.
 `hook_async(function(...deps):Promise<T>, deps: ?Array):T` | If you need to wait for some data until it is available, use this instead of `hook_memo`.
+`hook_callback(function, deps):function` | Returns a function that never changes. It passes all arguments down to the given function after the `deps`. Use this when you need to pass a callback as props that needs `deps`. If that callback is independent of the current component (has no `deps`), move the callback out of the component.
 `hook_delay(msecs: number):boolean` | Turns `true` after the specified delay.
 `hook_effect(function(...deps):destroy, deps: ?Array):void` | Run the given function once and every time an `deps` item changes. That function _may_ return another function that gets called before the effect appears again or when the component gets unmounted.
 `hook_first():boolean` | This just tells you if this is the first time the component is being rendered.
