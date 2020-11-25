@@ -4,7 +4,7 @@ When I was introduced to [React](https://github.com/facebook/react), I liked it 
 
 ## Features
 
-- Less than **2k** code size
+- Under **4k** code size (<2k compressed)
 - **Stateful components** using [hooks](https://reactjs.org/docs/hooks-intro.html)
 - Will be **compatible** with down to [Internet Explorer 5](https://en.wikipedia.org/wiki/Internet_Explorer_5)
 - Offers **development mode**
@@ -187,7 +187,11 @@ lui | React
 
 ### Callbacks
 
-If you want to pass a function as a prop (eg. for event handlers), you should specify it outside the component or wrap it in a `hook_static` if neccessary. This way, it does not get updated on each render call. This is neccessary since `new Function() !== new Function()`.
+If a function is passed as a prop (eg. for event handlers), it should be defined outside of the component, so it will not get redefined on each rendering.
+
+If the callback requires something from your component, wrap it in `hook_callback`. This way, the child component does not update on each render call since `new Function() !== new Function()`.
+
+This _may_ just have a small impact on performance and you may as well just use closures as the React guys are doing it. Modern browsers are quite efficient in frequent function definitions. But older browsers would heavily profit from externalizing function definitions.
 
 ### Early exit
 

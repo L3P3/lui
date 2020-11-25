@@ -1,4 +1,4 @@
-/*
+/**
 	@preserve lui.js web frame work
 	inspired by react and mithril
 	L3P3.de 2020
@@ -92,7 +92,7 @@ let current_first = true;
 let current_index = 0;
 
 /**
-	relative time of the last render call
+	relative time of the last rerender call
 	@type {number}
 */
 let render_time = 0;
@@ -109,10 +109,24 @@ let render_queue = new Set;
 */
 let render_queue_next = new Set;
 
+/**
+	is the render loop active?
+	@type {boolean}
+*/
+let rerender_pending = false;
+
+/**
+	is a rerender requested?
+	@type {boolean}
+*/
+let rerender_requested = false;
+
 
 DEBUG && (
 	window.onerror = () => {
 		current && log('error');
+		render_queue.clear();
+		render_queue_next.clear();
 	}
 );
 
@@ -124,10 +138,10 @@ const Object_ = Object;
 const document_ = document;
 
 
-/// FUNCTIONS ///
+/// DEBUGGING ///
 
 /**
-	gets the current stack (dev)
+	gets the current stack
 	@return {string}
 */
 const stack_get = () => {
@@ -146,7 +160,7 @@ const stack_get = () => {
 };
 
 /**
-	tries getting a component name (dev)
+	tries getting a component name
 	@param {TYPE_COMPONENT<*>} component
 	@return {string}
 */
@@ -157,7 +171,7 @@ const component_name_get = component => (
 );
 
 /**
-	throws a lui error (dev)
+	throws a lui error
 	@param {string} message
 	@throws {Error}
 */
@@ -168,7 +182,7 @@ const error = message => {
 }
 
 /**
-	prints message (dev)
+	prints message
 	@param {string} message
 */
 const log = (message, ...data) => {
@@ -176,47 +190,18 @@ const log = (message, ...data) => {
 }
 
 /**
-	gets all properties of both
+	checks for added/removed keys
 	@param {!Object} a
 	@param {!Object} b
-	@return {!Array<string>}
 */
-const object_keys_union = (a, b) => (
-	Array_.from(
-		new Set(
-			Object_.keys(a)
-			.concat(Object_.keys(b))
-		)
-	)
-)
+const assert_keys = (a, b) => {
+	a !== b &&
+	JSON.stringify(Object_.keys(a)) !== JSON.stringify(Object_.keys(b)) &&
+		error('object keys mismatch');
+}
 
 /**
-	lists all changed properties
-	@param {!Object} a
-	@param {!Object} b
-	@return {!Array<string>}
-*/
-const object_diff = (a, b) => (
-	a === b
-	?	[]
-	:	object_keys_union(a, b)
-		.filter(key => a[key] !== b[key])
-)
-
-/**
-	checks for changed properties
-	@param {!Object} a
-	@param {!Object} b
-	@return {boolean}
-*/
-const object_comp = (a, b) => (
-	a === b ||
-	!object_keys_union(a, b)
-	.some(key => a[key] !== b[key])
-)
-
-/**
-	ensures hook rules (dev)
+	ensures hook rules
 	@param {number=} type
 */
 const assert_hook = type => {
@@ -230,35 +215,72 @@ const assert_hook = type => {
 };
 
 /**
-	request rerendering for instance
-	@param {TYPE_INSTANCE<*>} instance
+	ensures that value does not change between renderings
+	@param {*} value
 */
-const dirtify = instance => {
-	VERBOSE &&
-	!render_queue.has(instance) &&
-		log('dirtify ' + component_name_get(instance.A.F));
+const assert_hook_equal = value => {
+	assert_hook();
 
-	render_queue.add(instance);
-	//TODO order
+	value !== hook_prev(value, value) &&
+		error('value changed between renderings');
 }
 
+
+/// ABSTRACT  ///
+
 /**
-	request rerendering for current instance
+	lists all changed properties
+	@param {!Object} a
+	@param {!Object} b
+	@return {!Array<string>}
 */
-export const hook_rerender = () => {
-	DEBUG && assert_hook();
-
-	render_queue_next.add(current);
-}
+const object_diff = (a, b) => (
+	DEBUG && assert_keys(a, b),
+	a === b
+	?	[]
+	:	Object_.keys(a)
+		.filter(key => a[key] !== b[key])
+)
 
 /**
-	get if this is the first render call
+	checks if objects are equal
+	@param {!Object} a
+	@param {!Object} b
 	@return {boolean}
 */
-export const hook_first = () => (
-	DEBUG && assert_hook(),
-	current_first
-);
+const object_comp = (a, b) => (
+	DEBUG && assert_keys(a, b),
+	a === b ||
+	!Object_.keys(a)
+	.some(key => a[key] !== b[key])
+)
+
+/**
+	checks if tuples are equal
+	@param {Array} a
+	@param {(Array|undefined)} b
+	@return {boolean}
+*/
+const tuple_comp = (a, b) => {
+	DEBUG && (
+		b
+		?	a.length !== b.length
+		:	a.length > 0
+	) &&
+		error('tuple length changed');
+
+	if (!b) return true;
+
+	let i = a.length;
+	while (i > 0) {
+		if (a[--i] === b[i]) continue;
+		return false;
+	}
+	return true;
+}
+
+
+/// INSTANCES ///
 
 /**
 	update an instance
@@ -345,6 +367,7 @@ const render = instance => {
 						child_call.P
 					)
 				) {
+					VERBOSE && log('props changed', object_diff(instance_childs[childs_index].A.P, child_call.P));
 					instance_childs[childs_index].A = child_call;
 					render(instance_childs[childs_index]);
 				}
@@ -402,28 +425,45 @@ const unmount = instance => {
 };
 
 /**
-	tells if deps are equal
-	@param {Array} a
-	@param {(Array|undefined)} b
+	request rerendering for instance
+	@param {TYPE_INSTANCE<*>} instance
+*/
+const dirtify = instance => {
+	VERBOSE &&
+	!render_queue.has(instance) &&
+		log('dirtify ' + component_name_get(instance.A.F));
+
+	render_queue.add(instance);
+	//TODO order
+
+	rerender_pending ||
+		rerender(null);
+}
+
+
+/// HOOKS ///
+
+/**
+	request rerendering for current instance
+*/
+export const hook_rerender = () => {
+	DEBUG && assert_hook();
+
+	VERBOSE &&
+	!render_queue_next.has(current) &&
+		log('rerender request');
+
+	render_queue_next.add(current);
+}
+
+/**
+	get if this is the first render call
 	@return {boolean}
 */
-const deps_compare = (a, b) => {
-	DEBUG && (
-		b
-		?	a.length !== b.length
-		:	a.length > 0
-	) &&
-		error('deps length changed');
-
-	if (!b) return true;
-
-	let i = a.length;
-	while (i > 0) {
-		if (a[--i] === b[i]) continue;
-		return false;
-	}
-	return true;
-}
+export const hook_first = () => (
+	DEBUG && assert_hook(),
+	current_first
+);
 
 /**
 	fire an effect on deps change
@@ -435,7 +475,7 @@ export const hook_effect = (effect, deps) => {
 
 	if (current_index < current.S.length) {
 		const slot = current.S[current_index++];
-		if (!deps_compare(slot[1], deps)) {
+		if (!tuple_comp(slot[1], deps)) {
 			VERBOSE && log('effect again', deps);
 			slot[2] !== null &&
 				(slot[2])(
@@ -491,7 +531,7 @@ export const hook_async = (getter, deps, nullify) => {
 
 	if (
 		slot[1] !== null &&
-		deps_compare(slot[1], deps)
+		tuple_comp(slot[1], deps)
 	) {
 		return slot[2];
 	}
@@ -512,12 +552,11 @@ export const hook_async = (getter, deps, nullify) => {
 	.then(value => {
 		VERBOSE && log('async end ' + component_name_get(current_.A.F));
 		if (
-			slot[1] === deps &&
-			slot[2] !== value
-		) {
-			slot[2] = value;
-			dirtify(current_);
-		}
+			slot[2] === value ||
+			slot[1] !== deps
+		) return;
+		slot[2] = value;
+		dirtify(current_);
 	});
 	return slot[2];
 }
@@ -541,10 +580,9 @@ export const hook_state = initial => {
 		initial,
 		value => {
 			VERBOSE && log('state set ' + component_name_get(current_.A.F), value);
-			if (slot[0] !== value) {
-				slot[0] = value;
-				dirtify(current_);
-			}
+			if (slot[0] === value) return;
+			slot[0] = value;
+			dirtify(current_);
 		},
 		() => slot[0]
 	];
@@ -586,7 +624,7 @@ export const hook_memo = (getter, deps) => {
 	if (current_index < current.S.length) {
 		const slot = current.S[current_index++];
 		return (
-			deps_compare(slot[1], deps)
+			tuple_comp(slot[1], deps)
 			?	slot[2]
 			:	(
 				VERBOSE && log('memo again', deps),
@@ -697,7 +735,11 @@ export const hook_transition = (target, delay) => {
 			value_start: state.target,
 			value_end: target,
 			time_start: render_time,
-			time_end: render_time + delay
+			time_end: (
+				current_first
+				?	render_time
+				:	render_time + delay
+			)
 		}),
 		[target, delay]
 	);
@@ -725,12 +767,14 @@ export const hook_transition = (target, delay) => {
 	@param {!Object} object
 	@return {!Array<string>} keys
 */
-export const hook_object_changes = object => (
-	object_diff(
-		hook_prev(object, null) || {},
-		object
-	)
-);
+export const hook_object_changes = object => {
+	const prev = hook_prev(object);
+	return (
+		current_first
+		?	Object_.keys(object)
+		:	object_diff(prev, object)
+	);
+};
 
 /**
 	get persitent state with custom reducer list
@@ -801,6 +845,9 @@ export const hook_reducer_f = (reducer, initializer) => {
 	current.S[current_index++] = [HOOK_REDUCEF, slot];
 	return slot;
 }
+
+
+/// INTERFACE ///
 
 /**
 	use a component with props and childs
@@ -883,13 +930,18 @@ export const init = body => {
 
 	const component_body = () => {
 		const [props, childs] = body();
+		DEBUG && (
+			assert_hook_equal(!props),
+			props && assert_keys(hook_prev(props, props), props),
+			props && props.C && error('body childs must be in second return value')
+		);
 		component_html_generic(props);
 		return childs;
 	};
 
 	DEBUG && (component_body['name_'] = '$body');
 
-	render({
+	dirtify({
 		A: {
 			F: component_body,
 			P: null
@@ -900,6 +952,53 @@ export const init = body => {
 		D: dom
 	});
 }
+
+/**
+	update dirty instances
+*/
+const rerender = () => {
+	render_time = performance.now();
+	rerender_pending = true;
+	let rerenders = 0;
+	do {
+		DEBUG &&
+		++rerenders > 5 &&
+			error('too many immediate rerenders');
+
+		for (const instance of render_queue) {
+			render(instance);
+		}
+	}
+	while (render_queue.size > 0);
+	rerender_pending = false;
+
+	if (
+		!rerender_requested &&
+		render_queue_next.size > 0
+	) {
+		rerender_requested = true;
+		requestAnimationFrame(rerender_next);
+	}
+}
+
+/**
+	rerender, only called by timeout/raf
+*/
+const rerender_next = () => {
+	rerender_requested = false;
+
+	//swap queues and clear the next one
+	const tmp = render_queue;
+	render_queue = render_queue_next;
+	(
+		render_queue_next = tmp
+	).clear();
+
+	rerender();
+}
+
+
+/// HTML COMPONENTS ///
 
 /**
 	@dict
@@ -1004,8 +1103,9 @@ const component_html_get = code => {
 
 	/** @type {TYPE_COMPONENT_HTML} */
 	const component = props => {
-		if (current.D === null)
+		if (current_first)
 			current.D = /** @type {HTMLElement} */ (dom.cloneNode(true));
+
 		return component_html_generic(props);
 	}
 
@@ -1033,9 +1133,8 @@ const component_html_generic = props => {
 					error('capital prop: ' + key);
 
 				dom.className = (
-					Object_.entries(props.F)
-					.filter(([, value]) => value)
-					.map(([key]) => key)
+					Object_.keys(props.F)
+					.filter(key => props.F[key])
 					.join(' ')
 				);
 
@@ -1060,48 +1159,13 @@ const component_html_generic = props => {
 		}
 	}
 
+	DEBUG && assert_hook_equal(!props.S);
 	if (props.S)
 		for (const key of hook_object_changes(props.S)) {
 			VERBOSE && log('html css ' + key + '=' + props.S[key]);
 			dom.style[key] = props.S[key];
 		}
 
+	DEBUG && assert_hook_equal(!props.C);
 	return props.C || null;
 }
-
-/**
-	update dirty instances
-	@param {number} time
-*/
-const loop = time => {
-	DEBUG &&
-	current !== null &&
-		error('rendering incomplete');
-
-	if (render_queue.size > 0) {
-		render_time = time;
-
-		let rerenders = 0;
-		do {
-			DEBUG &&
-			++rerenders > 5 &&
-				error('too many rerenders');
-
-			for (const instance of render_queue) {
-				render_queue.has(instance) &&
-					render(instance);
-			}
-		}
-		while (render_queue.size > 0);
-
-		//swap queues and clear the next one
-		const tmp = render_queue;
-		render_queue = render_queue_next;
-		(
-			render_queue_next = tmp
-		).clear();
-	}
-
-	requestAnimationFrame(loop);
-}
-loop(0);
