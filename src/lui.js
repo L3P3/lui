@@ -158,7 +158,7 @@ const stack_get = () => {
 		stack.join('>') ||
 		'-'
 	);
-};
+}
 
 /**
 	tries getting a component name
@@ -169,7 +169,7 @@ const component_name_get = component => (
 	component['name_'] ||
 	component.name ||
 	'?'
-);
+)
 
 /**
 	throws a lui error
@@ -213,7 +213,7 @@ const assert_hook = type => {
 	current_index < current.S.length &&
 	current.S[current_index][0] !== type &&
 		error('inconsistent hook order at index ' + current_index);
-};
+}
 
 /**
 	ensures that value does not change between renderings
@@ -423,7 +423,7 @@ const unmount = instance => {
 
 	render_queue.delete(instance);
 	render_queue_next.delete(instance);
-};
+}
 
 /**
 	request rerendering for instance
@@ -464,7 +464,7 @@ export const hook_rerender = () => {
 export const hook_first = () => (
 	DEBUG && assert_hook(),
 	current_first
-);
+)
 
 /**
 	fire an effect on deps change
@@ -707,7 +707,7 @@ const hook_delay_effect = (delay, expired_set) => {
 			clearTimeout(timeout);
 		}
 	);
-};
+}
 
 /**
 	wait until it turns true
@@ -721,7 +721,7 @@ export const hook_delay = delay => {
 		[delay, expired_set]
 	);
 	return expired;
-};
+}
 
 /**
 	smooth transition
@@ -761,7 +761,7 @@ export const hook_transition = (target, delay) => {
 			(render_time - transition.time_start) /
 			(transition.time_end - transition.time_start)
 	);
-};
+}
 
 /**
 	get all changed properties
@@ -775,7 +775,7 @@ export const hook_object_changes = object => {
 		?	Object_.keys(object)
 		:	object_diff(prev, object)
 	);
-};
+}
 
 /**
 	get persitent state with custom reducer list
@@ -953,6 +953,14 @@ export const init = body => {
 		D: dom
 	});
 }
+
+/**
+	get latest rerendering call time
+	@return {number}
+*/
+export const now = () => (
+	render_time
+)
 
 /**
 	update dirty instances

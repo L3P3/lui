@@ -33,6 +33,7 @@ var TYPE_PROPS_HTML;
 		hook_static,
 		hook_memo,
 		hook_prev,
+		hook_callback,
 		hook_delay,
 		hook_transition,
 		hook_object_changes,
@@ -40,6 +41,7 @@ var TYPE_PROPS_HTML;
 		hook_reducer_f,
 		node,
 		node_list,
+		now,
 		init
 	}}
 */
