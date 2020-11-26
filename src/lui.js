@@ -38,6 +38,7 @@ var TYPE_PROPS;
 	@typedef {?{
 		C: (Array<TYPE_INSTANCE_CALL<*>>|void),
 		F: (Object<string, boolean>|void),
+		R: (function(HTMLElement):void|void),
 		S: (Object<string, string>|void)
 	}}
 */
@@ -1126,12 +1127,13 @@ const component_html_generic = props => {
 	const dom = current.D;
 
 	for (const key of hook_object_changes(props)) {
+		DEBUG &&
+		key.length > 1 &&
+		key.charAt(0).toLowerCase() !== key.charAt(0) &&
+			error('capital prop: ' + key);
+
 		switch (key.charCodeAt(0)) {
 			case 70://F
-				DEBUG &&
-				key.length > 1 &&
-					error('capital prop: ' + key);
-
 				dom.className = (
 					Object_.keys(props.F)
 					.filter(key => props.F[key])
@@ -1140,13 +1142,11 @@ const component_html_generic = props => {
 
 				VERBOSE && log('html flags', dom.className.split(' '));
 
-				if (DEBUG) continue;
+				continue;
+			case 82://R
+				(props.R)(dom);
 			case 67://C
 			case 83://S
-				DEBUG &&
-				key.length > 1 &&
-					error('capital prop: ' + key);
-
 				continue;
 			default:
 				DEBUG &&

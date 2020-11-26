@@ -16,6 +16,7 @@ var TYPE_PROPS_HTML_S;
 	@typedef {?{
 		C: (Array<TYPE_INSTANCE_CALL<*>>|void),
 		F: (TYPE_PROPS_HTML_F|void),
+		R: (function(HTMLElement):void|void),
 		S: (TYPE_PROPS_HTML_S|void)
 	}}
 	@dict

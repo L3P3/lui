@@ -108,11 +108,12 @@ If you want to map an array with changing order or length to a list of component
 
 If you pass a string to the `node` function, an html component is used instead of a custom one.
 
-There are 3 props you can give to any HTML component, including body:
+There are 4 special props you can give to any HTML component, including body:
 prop | Description
 --- | ---
 `C: Array<node>` | The nodes that should come into it. Instead of as a prop, you can pass this array as the third argument to the `node` function.
 `F: Object<string, boolean>` | An object of applied css classes. Each key with a `true` value will be applied. Others not.
+`R: function(HTMLElement)` | This function is given the instance's html element after it is created.
 `S: Object<string, string>` | Pretty much the same as element.style, keys are the css properties, values their values.
 
 ### Initialization
@@ -192,6 +193,10 @@ If a function is passed as a prop (eg. for event handlers), it should be defined
 If the callback requires something from your component, wrap it in `hook_callback`. This way, the child component does not update on each render call since `new Function() !== new Function()`.
 
 This _may_ just have a small impact on performance and you may as well just use closures as the React guys are doing it. Modern browsers are quite efficient in frequent function definitions. But older browsers would heavily profit from externalizing function definitions.
+
+### Accessing the html element
+
+In React, you pass an object to [html components](#html-components) via the prop `ref`. In lui, you pass a function (eg. a setter) via the prop `R`. This way, you can get properties of the element or manipulate it in a way impossible via the props provided by html components.
 
 ### Early exit
 
