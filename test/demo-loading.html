@@ -1,0 +1,145 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset=utf-8>
+		<meta name=viewport content="width=device-width">
+		<title>lui.js-Demo</title>
+		<style>
+			body {
+				background: red;
+				font-family: sans-serif;
+			}
+			#busy_back {
+				position: fixed;
+				left: 0;
+				top: 0;
+				width: 100%;
+				height: 100%;
+				background: black;
+			}
+			#busy_dot {
+				position: fixed;
+				margin-left: -25px;
+				margin-top: -25px;
+				left: 50%;
+				top: 50%;
+				width: 50px;
+				height: 50px;
+				background: white;
+				border-radius: 50%;
+			}
+		</style>
+	</head>
+	<body>
+		<script type=module>
+			import {
+				init,
+				node,
+				node_html,
+				now,
+				hook_delay,
+				hook_effect,
+				hook_prev,
+				hook_reducer_f,
+				hook_rerender,
+				hook_static,
+				hook_transition
+			} from '../src/lui.js';
+			
+			// Bildraten-Haken
+			function hook_fps_effect_setup(state) {
+				state.frames = state.fps = 0;
+				
+				const interval = setInterval(
+					() => {
+						state.fps = state.frames;
+						state.frames = 0;
+					},
+					1e3
+				);
+				
+				return () => {
+					clearInterval(interval);
+				};
+			}
+			function hook_fps_effect_frame(state) {
+				++state.frames;
+			}
+			
+			function hook_fps() {
+				hook_rerender();
+				const state = hook_static();
+				hook_effect(hook_fps_effect_setup, [state]);
+				hook_effect(hook_fps_effect_frame, [state, now()]);
+				return state.fps;
+			}
+			
+			// Ladeanimations-Komponente
+			function Busy({
+				show
+			}) {
+				const show_factor = hook_transition(
+					+show,
+					1e3
+				);
+				show_factor && hook_rerender();
+				
+				const rot = (now() % 500) / 500 * Math.PI * 2;
+				const breath = Math.sin((now() % 5e3) / 5e3 * Math.PI * 2) * .5 + .5;
+				const dot_scale = (breath * 40 + 10) * (1/show_factor);
+				
+				return [
+					show_factor &&
+					node_html(
+						'div#busy_back',
+						{S: {
+							opacity: (
+								breath * .5 + .5
+							) * show_factor
+						}}
+					),
+					show_factor &&
+					node_html(
+						'div#busy_dot',
+						{S: {
+							opacity: show_factor,
+							transform: `translate(${
+								Math.cos(rot) * dot_scale
+							}px,${
+								Math.sin(rot) * dot_scale
+							}px)`
+						}}
+					)
+				];
+			}
+			
+			// Geladene Seite
+			function Seite() {
+				return [
+					node_html('h1[innerText=Fertig geladen?!]'),
+					node_html('p', {innerText: `Jetzt passiert nicht mehr viel, aber trotzdem haben wir noch ${hook_fps()} fps!`}),
+					node_html('p[innerText=Irgendwo klicken, um die Animation wieder anzuzeigen.]')
+				];
+			}
+			
+			// Wurzelkomponente
+			init(() => {
+				const loading = !hook_delay(5e3);
+				const [wanted, onclick] = hook_reducer_f(
+					state => !state,
+					() => false
+				);
+				const busy = loading || wanted;
+				return [
+					{
+						onclick
+					},
+					[
+						busy || node(Seite),
+						node(Busy, {show: busy})
+					]
+				];
+			});
+		</script>
+	</body>
+</html>

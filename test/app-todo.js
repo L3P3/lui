@@ -1,9 +1,11 @@
 import {
+	hook_callback,
 	hook_reducer,
 	hook_state,
 	hook_static,
 	init,
 	node,
+	node_html,
 	node_list
 } from '../src/lui.js';
 
@@ -27,14 +29,14 @@ const todos_reducer = [
 	)
 ];
 
-const c_todo_form = ({
+const TodoForm = ({
 	todo_list_empty,
 	todo_cmd
 }) => {
 	const [value, value_set] = hook_state('');
 
 	return [
-		node(
+		node_html(
 			'input',
 			{
 				value,
@@ -42,14 +44,14 @@ const c_todo_form = ({
 				onchange: value_set
 			}
 		),
-		node(
+		node_html(
 			'button',
 			{
 				disabled: !value,
 				innerText: 'add',
 
-				onclick: hook_static(
-					() => {
+				onclick: hook_callback(
+					value => {
 						todo_cmd(
 							TODO_ADD,
 							{
@@ -57,11 +59,12 @@ const c_todo_form = ({
 							}
 						);
 						value_set('');
-					}
+					},
+					[value]
 				)
 			}
 		),
-		node(
+		node_html(
 			'button',
 			{
 				disabled: todo_list_empty,
@@ -77,21 +80,21 @@ const c_todo_form = ({
 	];
 };
 
-const c_todo_list_item = ({
+const TodoListItem = ({
 	item,
 	todo_cmd
 }) => [
-	node(
+	node_html(
 		'p',
 		null,
 		[
-			node(
+			node_html(
 				'span',
 				{
 					innerText: item.text
 				}
 			),
-			node(
+			node_html(
 				'button[innerText=remove]',
 				{
 					onclick: hook_static(
@@ -114,24 +117,24 @@ init(() => {
 	return [
 		null,
 		[
-			node('h1[innerText=TODO list in lui]'),
+			node_html('h1[innerText=TODO list in lui]'),
 			node(
-				c_todo_form,
+				TodoForm,
 				{
 					todo_list_empty: todo_list.length === 0,
 					todo_cmd
 				}
 			),
-			node('hr'),
+			node_html('hr'),
 			node_list(
-				c_todo_list_item,
+				TodoListItem,
 				{
 					todo_cmd
 				},
 				todo_list
 			),
-			node('hr'),
-			node('p[innerHTML=2020, <a href=//l3p3.de target=_blank>L3P3</a>]')
+			node_html('hr'),
+			node_html('p[innerHTML=2020, <a href=//l3p3.de target=_blank>L3P3</a>]')
 		]
 	];
 });

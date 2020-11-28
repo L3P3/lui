@@ -1,2 +1,43 @@
-import * as lui from './lui.js';
-window['lui'] = lui;
+import {
+	hook_rerender,
+	hook_first,
+	hook_effect,
+	hook_async,
+	hook_state,
+	hook_static,
+	hook_memo,
+	hook_prev,
+	hook_callback,
+	hook_delay,
+	hook_transition,
+	hook_object_changes,
+	hook_reducer,
+	hook_reducer_f,
+	node,
+	node_html,
+	node_list,
+	now,
+	init
+} from './lui.js';
+
+window['lui'] = {
+	hook_rerender,
+	hook_first,
+	hook_effect,
+	hook_async,
+	hook_state,
+	hook_static,
+	hook_memo,
+	hook_prev,
+	hook_callback,
+	hook_delay,
+	hook_transition,
+	hook_object_changes,
+	hook_reducer,
+	hook_reducer_f,
+	node,
+	node_html,
+	node_list,
+	now,
+	init
+};

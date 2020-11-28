@@ -6,7 +6,8 @@ import {
 	hook_state,
 	hook_static,
 	hook_transition,
-	node
+	node,
+	node_html
 } from '../src/lui.js';
 
 //BAR
@@ -14,7 +15,7 @@ function Bar({color}) {
 	const [expanded, expanded_set] = hook_state(false);
 
 	return [
-		node(
+		node_html(
 			'div',
 			{
 				S: {
@@ -71,8 +72,8 @@ init(() => {
 			}
 		},
 		[
-			node('h1[innerText=Hallo, Welt!]'),
-			node(
+			node_html('h1[innerText=Hallo, Welt!]'),
+			node_html(
 				'p',
 				{
 					innerText: `Dies ist eine ${
@@ -80,11 +81,11 @@ init(() => {
 					}le Beispielseite!`
 				}
 			),
-			node(
+			node_html(
 				'p',
 				null,
 				[
-					node(
+					node_html(
 						'button[title=Ein Knopf zum Drücken]',
 						{
 							innerText: `${

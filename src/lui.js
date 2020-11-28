@@ -68,7 +68,7 @@ var TYPE_INSTANCE_CALL;
 */
 var TYPE_INSTANCE;
 
-/** @typedef {Set<TYPE_INSTANCE<*>>} */
+/** @typedef {!Set<TYPE_INSTANCE<*>>} */
 var TYPE_QUEUE;
 
 
@@ -853,12 +853,16 @@ export const hook_reducer_f = (reducer, initializer) => {
 /**
 	use a component with props and childs
 	@template {TYPE_PROPS} T
-	@param {(TYPE_COMPONENT<T>|string)} component
+	@param {TYPE_COMPONENT<T>} component
 	@param {T=} props
 	@param {Array<TYPE_INSTANCE_CALL<*>>=} childs
 	@return {TYPE_INSTANCE_CALL<T>}
 */
 export const node = (component, props, childs) => {
+	DEBUG &&
+	typeof component === 'string' &&
+		error('component expected, use node_html instead');
+
 	DEBUG &&
 	childs !== undefined && (
 		!childs ||
@@ -867,16 +871,7 @@ export const node = (component, props, childs) => {
 		error('invalid childs type');
 
 	return {
-		F: (
-			typeof component === 'string'
-			?	(
-				component_html_cache[component] || (
-					component_html_cache[component] =
-						component_html_get(component)
-				)
-			)
-			:	component
-		),
+		F: component,
 		P: (
 			props
 			?	(
@@ -898,7 +893,7 @@ export const node = (component, props, childs) => {
 
 /**
 	create/use a component with props and childs
-	@param {!(TYPE_COMPONENT|string)} component
+	@param {TYPE_COMPONENT} component
 	@param {TYPE_PROPS} props
 	@param {!Array} data
 	@return {?TYPE_INSTANCE_CALL}
@@ -1016,21 +1011,39 @@ const rerender_next = () => {
 const component_html_cache = {};
 
 /**
+	use a html component with props and childs
+	@param {string} descriptor
+	@param {TYPE_PROPS_HTML=} props
+	@param {Array<TYPE_INSTANCE_CALL<*>>=} childs
+	@return {TYPE_INSTANCE_CALL<TYPE_PROPS_HTML>}
+*/
+export const node_html = (descriptor, props, childs) => (
+	node(
+		component_html_cache[descriptor] || (
+			component_html_cache[descriptor] =
+				component_html_get(descriptor)
+		),
+		props,
+		childs
+	)
+)
+
+/**
 	creates a new component for descriptor
-	@param {string} code
+	@param {string} descriptor
 	@return {TYPE_COMPONENT_HTML}
 */
-const component_html_get = code => {
-	VERBOSE && log('create html ' + code);
+const component_html_get = descriptor => {
+	VERBOSE && log('create html ' + descriptor);
 
-	const index_sqb = code.indexOf('[');
-	const index_ht = code.indexOf('#');
+	const index_sqb = descriptor.indexOf('[');
+	const index_ht = descriptor.indexOf('#');
 	const tag = (
 		index_sqb >= 0 && index_ht >= 0
-		?	code.substr(0, Math.min(index_sqb, index_ht))
+		?	descriptor.substr(0, Math.min(index_sqb, index_ht))
 		:	index_sqb < 0 && index_ht < 0
-		?	code.substr(0)
-		:	code.substr(0, index_sqb < 0 ? index_ht : index_sqb)
+		?	descriptor.substr(0)
+		:	descriptor.substr(0, index_sqb < 0 ? index_ht : index_sqb)
 	);
 
 	DEBUG && (
@@ -1043,7 +1056,7 @@ const component_html_get = code => {
 	DEBUG &&
 	index_sqb > 0 &&
 	index_ht > 0 &&
-	code.lastIndexOf(']') < index_ht &&
+	descriptor.lastIndexOf(']') < index_ht &&
 	index_ht > index_sqb &&
 		error('selector: ID must be at tag');
 
@@ -1052,8 +1065,8 @@ const component_html_get = code => {
 	if (index_ht >= 1) {
 		dom.id = (
 			index_sqb < 0
-			?	code.substr(index_ht + 1)
-			:	code.substring(index_ht + 1, index_sqb)
+			?	descriptor.substr(index_ht + 1)
+			:	descriptor.substring(index_ht + 1, index_sqb)
 		);
 
 		DEBUG && (
@@ -1065,15 +1078,15 @@ const component_html_get = code => {
 
 	if (index_sqb >= 1) {
 		DEBUG &&
-		!code.endsWith(']') &&
+		!descriptor.endsWith(']') &&
 			error('selector: ] missing');
 
 		for (
 			const sqbi of
-			code
+			descriptor
 			.substring(
 				index_sqb + 1,
-				code.length - 1
+				descriptor.length - 1
 			)
 			.split('][')
 		) {
@@ -1118,7 +1131,7 @@ const component_html_get = code => {
 		return component_html_generic(props);
 	}
 
-	DEBUG && (component['name_'] = '$' + code);
+	DEBUG && (component['name_'] = '$' + descriptor);
 
 	return component;
 }

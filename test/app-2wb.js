@@ -2,7 +2,7 @@ import {
 	init,
 	hook_state,
 	hook_transition,
-	node
+	node_html
 } from '../src/lui.js';
 
 const F = {dark: true};
@@ -15,7 +15,7 @@ init(() => {
 			F
 		},
 		[
-			node(
+			node_html(
 				'h1',
 				{
 					S: {
@@ -33,11 +33,11 @@ init(() => {
 					)
 				}
 			),
-			node(
+			node_html(
 				'p',
 				null,
 				[
-					node(
+					node_html(
 						'input',
 						{
 							value: name,
@@ -46,7 +46,7 @@ init(() => {
 							}
 						}
 					),
-					node(
+					node_html(
 						'button[innerText=Leeren]',
 						{
 							onclick: () => {

@@ -40,6 +40,7 @@ var TYPE_PROPS_HTML;
 		hook_reducer,
 		hook_reducer_f,
 		node,
+		node_html,
 		node_list,
 		now,
 		init

@@ -9,7 +9,6 @@ When I was introduced to [React](https://github.com/facebook/react), I liked it 
 - Will be **compatible** with down to [Internet Explorer 5](https://en.wikipedia.org/wiki/Internet_Explorer_5)
 - Offers **development mode**
 - Can be **bundled** together with your application
-- Compatible with [**JSX**](https://reactjs.org/docs/introducing-jsx.html)
 - Conditional css classes on elements
 - Not terribly inefficient
 - 0 dependencies
@@ -59,7 +58,7 @@ If you bundle lui together with your app, you can access these functions by a si
 
 ### Components
 
-A component is a function which takes props and returns a list of its child components. Any html descriptor can be used as a component but you can also create your own components for abstraction. By recursion, you can build up a html tree in a very flexible way. I also recommend reading [React's explaination](https://reactjs.org/docs/components-and-props.html).
+A component is a function which takes props and returns a list of its child components. By recursion, you can build up a html tree in a very flexible way. I also recommend reading [React's explaination](https://reactjs.org/docs/components-and-props.html).
 
 Here is a very simple component. It takes two props (one of which is optional) and it contains just one node.
 
@@ -69,7 +68,7 @@ function ColoredText({
     text
 }) {
     return [
-        node(
+        node_html(
             'span',
             {
                 S: {color},
@@ -106,9 +105,9 @@ If you want to map an array with changing order or length to a list of component
 
 ### HTML components
 
-If you pass a string to the `node` function, an html component is used instead of a custom one.
+The leaves of your component tree are mostly made out of native html elements. To use such a component, use `node_html` instead of `node`. The signature is the same, except for the first argument being a descriptor, similar to css selectors: `tag#id[attr=value][attr]` The tag is required but `#id` or '[attr]' are optional. Having attributes in the descriptor instead of the props brings tiny performance improvements. The selector cannot be changed, so the attributes specified in it are somewhat constant which enables some optimizations.
 
-There are 4 special props you can give to any HTML component, including body:
+Props are directly mapped to html attributes, except these 4 special props:
 prop | Description
 --- | ---
 `C: Array<node>` | The nodes that should come into it. Instead of as a prop, you can pass this array as the third argument to the `node` function.
@@ -118,9 +117,11 @@ prop | Description
 
 ### Initialization
 
-The component tree's root is defined by just the one and only call to `init`. It gets a callback which then returns what the body should look like and contain.
+The component tree's root is defined by just the one and only call to `init`. It gets a callback which then returns the body props and its childs.
 
-This callback is pretty much a component but unlike them, it returns the body element's props in addition to the child nodes.
+The (virtual) body component is an html component, so the same rules as above apply to the props object returned by the root component. Except for the `C` prop since body childs must be returned separately.
+
+What we pass to init is pretty much a component without incoming props, a different return value and [early exit][#early-exit] is prohibited.
 
 ```js
 init(() => {
@@ -139,7 +140,7 @@ This approach is neccessary since there is no `body` component to use.
 
 ### JSX
 
-If you are building your application code with [JSX](https://reactjs.org/docs/introducing-jsx.html) support, you can write components like this, theoretically:
+If you are building your application code with [JSX](https://reactjs.org/docs/introducing-jsx.html) support, you _could_ theoretically write components like this:
 
 ```js
 function YellowText({
@@ -151,7 +152,7 @@ function YellowText({
 }
 ```
 
-However, you need to set up babel and the jsx plugin properly and I have not tried that yet. The plugin must use `node` instead of `React.createElement`. And nodes must always be supplied in a flat array. Personally, I am not interested in that feature.
+However, you need to set up babel and the jsx plugin properly and I have not tried that yet. The plugin must use `node` or `node_html` instead of `React.createElement`. And nodes must always be supplied in a flat array. Personally, I am not interested in that feature.
 
 ### Hooks
 
@@ -194,7 +195,7 @@ If the callback requires something from your component, wrap it in `hook_callbac
 
 This _may_ just have a small impact on performance and you may as well just use closures as the React guys are doing it. Modern browsers are quite efficient in frequent function definitions. But older browsers would heavily profit from externalizing function definitions.
 
-### Accessing the html element
+### Accessing html elements
 
 In React, you pass an object to [html components](#html-components) via the prop `ref`. In lui, you pass a function (eg. a setter) via the prop `R`. This way, you can get properties of the element or manipulate it in a way impossible via the props provided by html components.
 
@@ -207,7 +208,8 @@ If a component decides that it should not (yet) mount anything, it may `return n
 Function | Description
 --- | ---
 `init(Body):void` | This mounts the body once, you give it the so-to-say body component. But unlinke actual components, you return the props for the body element and its content. So `Body` looks like this: `function():[body_props: Object, body_content: Array<node>]`
-`node(Component, props: Object [, childs: ?Array<node>]):node` | This is how you add child components. If you want to add html components, pass the lowercase tagname in a string as the first argument. If, like html components do, the added component accepts content, you can pass that as the third argument as an array of nodes.
+`node(Component, props: ?Object=, childs: ?Array<node>=):node` | This is how you add child components. If the added component accepts childs (`C` prop), you can pass that as the third argument as an array of nodes.
+`node_html(descriptor: string, props, childs):node` | When you want to add html components, use this function. It is very similar to `node` but needs a descriptor instead.
 `node_list(Component, props: Object, data: Array)` | When you want to add a component n times for each entry of an array, this is the (proper) way to go. If the array items are objects, the [keys](https://reactjs.org/docs/lists-and-keys.html) are directly taken from an `id` property.
 `now():number` | The _relative_ point of time of the latest rerendering call. Do not use this as persistent time reference but just inside of run time. Useful for custom animations.
 `hook_async(function(...deps):Promise<T>, deps: ?Array):T` | If you need to wait for some data until it is available, use this instead of `hook_memo`.
