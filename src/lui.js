@@ -385,10 +385,11 @@ const render = instance => {
 		while (childs_index > 0);
 	}
 	else if (instance.C !== null) {
-		for (const child of instance.C) {
-			instance.D.removeChild(child.D);
-			unmount(child);
-		}
+		for (const child of instance.C)
+			if (child !== null) {
+				instance.D.removeChild(child.D);
+				unmount(child);
+			}
 		instance.C = null;
 	}
 

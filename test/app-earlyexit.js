@@ -11,6 +11,7 @@ function inner({
 	if (!on) return null;
 
 	return [
+		null,
 		node_html('p[innerText=Test]')
 	];
 }
