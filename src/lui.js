@@ -318,18 +318,17 @@ const render = instance => {
 			error('returned childs list empty');
 
 		DEBUG &&
-		!current_first &&
+		instance.C &&
 		childs_index !== instance.C.length &&
 			error('returned childs count changed');
 
 		/** @type {Array<TYPE_INSTANCE<*>>} */
 		const instance_childs = (
-			current_first
-			?	(
-					instance.C =
-						new Array_(childs_index).fill(null)
-				)
-			:	instance.C
+			instance.C ||
+			(
+				instance.C =
+					new Array_(childs_index).fill(null)
+			)
 		);
 
 		do {
@@ -385,10 +384,12 @@ const render = instance => {
 		}
 		while (childs_index > 0);
 	}
-	else {
-		DEBUG &&
-		instance.C !== null &&
-			error('no child list returned anymore');
+	else if (instance.C !== null) {
+		for (const child of instance.C) {
+			instance.D.removeChild(child.D);
+			unmount(child);
+		}
+		instance.C = null;
 	}
 
 	current = parent;

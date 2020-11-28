@@ -1,6 +1,6 @@
 {
 	"name": "lui",
-	"version": "0.4.0",
+	"version": "0.4.1",
 	"description": "web framework",
 	"homepage": "https://l3p3.de/dok/lui.html",
 	"main": "src/lui.js",
