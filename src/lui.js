@@ -4,8 +4,7 @@
 	L3P3.de 2020
 */
 
-const DEBUG = true;
-const VERBOSE = false;
+import {DEBUG, VERBOSE} from './flags.js';
 
 const HOOK_EFFECT = DEBUG ? 0 : 1;
 const HOOK_ASYNC = DEBUG ? 1 : 2;
