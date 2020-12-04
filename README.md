@@ -105,7 +105,7 @@ If you want to map an array with changing order or length to a list of component
 
 ### HTML components
 
-The leaves of your component tree are mostly made out of native html elements. To use such a component, use `node_html` instead of `node`. The signature is the same, except for the first argument being a descriptor, similar to css selectors: `tag#id[attr=value][attr]` The tag is required but `#id` or '[attr]' are optional. Having attributes in the descriptor instead of the props brings tiny performance improvements. The selector cannot be changed, so the attributes specified in it are somewhat constant which enables some optimizations.
+The leaves of your component tree are mostly made out of native html elements. To use such a component, use `node_html` instead of `node`. The signature is the same, except for the first argument being a descriptor, similar to css selectors: `tag#id[attr=value][attr]` The tag is required but `#id` or `[attr]` are optional. Having attributes in the descriptor instead of the props brings tiny performance improvements. The selector cannot be changed, so the attributes specified in it are somewhat constant which enables some optimizations.
 
 Props are directly mapped to html attributes, except these 4 special props:
 prop | Description
@@ -121,7 +121,7 @@ The component tree's root is defined by just the one and only call to `init`. It
 
 The (virtual) body component is an html component, so the same rules as above apply to the props object returned by the root component. Except for the `C` prop since body childs must be returned separately.
 
-What we pass to init is pretty much a component without incoming props, a different return value and [early exit][#early-exit] is prohibited.
+What we pass to init is pretty much a component without incoming props, a different return value and [early exit](#early-exit) is prohibited.
 
 ```js
 init(() => {
