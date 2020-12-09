@@ -1,6 +1,8 @@
 #!/bin/env node
 /* eslint-disable no-undef */
 
+const flags = process.argv[2] || '';
+
 const fs = require('fs');
 const child_process_exec = require('child_process')['exec'];
 
@@ -99,6 +101,7 @@ try {
 catch (error) {}
 
 if (
+	flags.includes('d') &&
 	require('os').hostname() === 'l3p3-rk5'
 ) {
 	console.log('deploy...');

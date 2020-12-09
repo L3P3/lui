@@ -49,8 +49,8 @@ var TYPE_SLOT;
 /**
 	@template {TYPE_PROPS} T
 	@typedef {{
-		F: TYPE_COMPONENT<T>,
-		P: T
+		component: TYPE_COMPONENT<T>,
+		props: T
 	}}
 */
 var TYPE_INSTANCE_CALL;
@@ -58,11 +58,13 @@ var TYPE_INSTANCE_CALL;
 /**
 	@template {TYPE_PROPS} T
 	@typedef {{
-		A: TYPE_INSTANCE_CALL<T>,
-		P: ?TYPE_INSTANCE<*>,
-		S: Array<TYPE_SLOT>,
-		C: ?Array<TYPE_INSTANCE<*>>,
-		D: ?HTMLElement
+		icall: TYPE_INSTANCE_CALL<T>,
+		iparent: ?TYPE_INSTANCE<*>,
+		parent_index: number,
+		slots: Array<TYPE_SLOT>,
+		childs: ?Array<TYPE_INSTANCE<*>>,
+		dom: ?HTMLElement,
+		dom_first: ?HTMLElement
 	}}
 */
 var TYPE_INSTANCE;
@@ -80,7 +82,7 @@ var TYPE_QUEUE;
 let current = null;
 
 /**
-	first render call for current instance
+	first instance_render call for current instance
 	@type {boolean}
 */
 let current_first = true;
@@ -124,7 +126,8 @@ let rerender_requested = false;
 
 DEBUG && (
 	window.onerror = () => {
-		current && log('error');
+		current !== null &&
+			log('error');
 		render_queue.clear();
 		render_queue_next.clear();
 	}
@@ -149,9 +152,9 @@ const stack_get = () => {
 	let item = current;
 	while (item !== null) {
 		stack.unshift(
-			component_name_get(item.A.F)
+			component_name_get(item.icall.component)
 		);
-		item = item.P;
+		item = item.iparent;
 	}
 	return (
 		stack.join('>') ||
@@ -209,8 +212,8 @@ const assert_hook = type => {
 		error('hook called outside of component rendering');
 
 	type !== undefined &&
-	current_index < current.S.length &&
-	current.S[current_index][0] !== type &&
+	current_index < current.slots.length &&
+	current.slots[current_index][0] !== type &&
 		error('inconsistent hook order at index ' + current_index);
 }
 
@@ -285,135 +288,178 @@ const tuple_comp = (a, b) => {
 /**
 	update an instance
 	@param {TYPE_INSTANCE<*>} instance
+	@param {?HTMLElement} dom_parent
+	@param {?HTMLElement} dom_after
 */
-const render = instance => {
-	const parent = current;
-
+const instance_render = (instance, dom_parent, dom_after) => {
 	(
 		current_first = (
 			current = instance
-		).S === null
+		).slots === null
 	) && (
-		current.S = []
+		instance.slots = []
 	);
 	current_index = 0;
 
-	VERBOSE && log('render');
+	VERBOSE && log('instance_render');
 	render_queue.delete(instance);
 
-	const child_calls = (instance.A.F)(instance.A.P);
+	const child_calls = (instance.icall.component)(instance.icall.props);
 
-	if (instance.D === null) {
-		instance.D = document_.createElement('span');//TODO
-	}
+	const {dom} = instance;
+
+	let dom_first = dom_after;
+
+	DEBUG &&
+	typeof child_calls !== 'object' &&
+		error('components need to return child list or null');
 
 	if (child_calls !== null) {
+		if (dom !== null) {
+			dom_parent = dom;
+			dom_first = null;
+		}
+
 		let childs_index = child_calls.length;
-		let child_d_last = null;
+		let child;
 		let child_call;
 
-		DEBUG &&
-		childs_index === 0 &&
-			error('returned childs list empty');
-
-		DEBUG &&
-		instance.C &&
-		childs_index !== instance.C.length &&
-			error('returned childs count changed');
+		DEBUG && (
+			typeof childs_index !== 'number' &&
+				error('childs must be returned in a list'),
+			childs_index === 0 &&
+				error('returned childs list empty'),
+			instance.childs !== null &&
+			childs_index !== instance.childs.length &&
+				error('returned childs count changed')
+		);
 
 		/** @type {Array<TYPE_INSTANCE<*>>} */
 		const instance_childs = (
-			instance.C ||
+			instance.childs ||
 			(
-				instance.C =
+				instance.childs =
 					new Array_(childs_index).fill(null)
 			)
 		);
 
 		do {
+			child = instance_childs[--childs_index];
+
 			if (
 				(
-					child_call = child_calls[--childs_index]
+					child_call = child_calls[childs_index]
 				) &&
 				child_call !== true
 			) {
 				DEBUG &&
-				instance_childs[childs_index] &&
-				instance_childs[childs_index].A.F !== child_call.F &&
-					error('child type changed at ' + childs_index);
+				child !== null &&
+				child.icall.component !== child_call.component &&
+					error('child replaced at ' + childs_index);
 
-				if (instance_childs[childs_index] === null) {
-					VERBOSE && log('mount ' + component_name_get(child_call.F));
+				if (child === null) {
+					VERBOSE && log('child add');
 
-					render(
-						instance_childs[childs_index] = {
-							A: child_call,
-							P: instance,
-							S: null,
-							C: null,
-							D: null
-						}
+					instance_render(
+						child = instance_childs[childs_index] = {
+							icall: child_call,
+							iparent: instance,
+							parent_index: childs_index,
+							slots: null,
+							childs: null,
+							dom: null,
+							dom_first: null
+						},
+						dom_parent,
+						dom_first
 					);
 
-					instance.D.insertBefore(
-						instance_childs[childs_index].D,
-						child_d_last
+					DEBUG && (
+						current = instance
 					);
+
+					child.dom !== null &&
+						dom_parent.insertBefore(
+							child.dom_first = child.dom,
+							dom_first
+						);
 				}
 				else if (
 					!object_comp(
-						instance_childs[childs_index].A.P,
-						child_call.P
+						child.icall.props,
+						child_call.props
 					)
 				) {
-					VERBOSE && log('props changed', object_diff(instance_childs[childs_index].A.P, child_call.P));
-					instance_childs[childs_index].A = child_call;
-					render(instance_childs[childs_index]);
+					VERBOSE && log('child modify', object_diff(child.icall.props, child_call.props));
+
+					child.icall = child_call;
+					instance_render(
+						child,
+						dom_parent,
+						dom_first
+					);
+
+					DEBUG && (
+						current = instance
+					);
 				}
 
-				child_d_last = instance_childs[childs_index].D;
-			}
-			else if (instance_childs[childs_index] !== null) {
-				instance.D.removeChild(
-					instance_childs[childs_index].D
+				child.dom_first !== null && (
+					dom_first = child.dom_first
 				);
-				unmount(instance_childs[childs_index]);
+			}
+			else if (child !== null) {
+				instance_unmount(child, dom_parent);
 				instance_childs[childs_index] = null;
 			}
 		}
 		while (childs_index > 0);
 	}
-	else if (instance.C !== null) {
-		for (const child of instance.C)
-			if (child !== null) {
-				instance.D.removeChild(child.D);
-				unmount(child);
-			}
-		instance.C = null;
+	else if (instance.childs !== null) {
+		VERBOSE && log('discard childs');
+		for (const child of instance.childs)
+			child !== null &&
+				instance_unmount(child, dom_parent);
+		instance.childs = null;
 	}
 
-	current = parent;
+	instance.dom === null &&
+	(
+		instance.dom_first =
+			dom_first !== dom_after
+			?	dom_first
+			:	null
+	);
 }
 
 /**
 	unmount an instance
 	@param {TYPE_INSTANCE<*>} instance
+	@param {?HTMLElement} dom_parent
 */
-const unmount = instance => {
-	VERBOSE && log('unmount ' + component_name_get(instance.A.F));
+const instance_unmount = (instance, dom_parent) => {
+	VERBOSE && log('instance_unmount ' + component_name_get(instance.icall.component));
 
-	const childs = instance.C;
-	if (childs) {
-		instance.C = null;
-		for (const child of childs) {
-			unmount(child);
+	dom_parent !== null &&
+	instance.dom !== null && (
+		dom_parent.removeChild(
+			instance.dom
+		),
+		dom_parent = null
+	);
+
+	if (instance.childs !== null) {
+		for (const child of instance.childs) {
+			child !== null &&
+				instance_unmount(child, dom_parent);
 		}
 	}
 
-	for (const slot of instance.S) {
+	for (const slot of instance.slots) {
 		switch (slot[0]) {
 			case HOOK_EFFECT:
-				slot[2] !== null && slot[2](slot[1]);
+				slot[2] !== null &&
+					slot[2](slot[1]);
 				break;
 			case HOOK_ASYNC:
 				slot[1] = null;
@@ -430,16 +476,16 @@ const unmount = instance => {
 	request rerendering for instance
 	@param {TYPE_INSTANCE<*>} instance
 */
-const dirtify = instance => {
+const instance_dirtify = instance => {
 	VERBOSE &&
 	!render_queue.has(instance) &&
-		log('dirtify ' + component_name_get(instance.A.F));
+		log('instance_dirtify ' + component_name_get(instance.icall.component));
 
 	render_queue.add(instance);
 	//TODO order
 
 	rerender_pending ||
-		rerender(null);
+		rerender();
 }
 
 
@@ -459,7 +505,7 @@ export const hook_rerender = () => {
 }
 
 /**
-	get if this is the first render call
+	get if this is the first instance_render call
 	@return {boolean}
 */
 export const hook_first = () => (
@@ -475,8 +521,8 @@ export const hook_first = () => (
 export const hook_effect = (effect, deps) => {
 	DEBUG && assert_hook(HOOK_EFFECT);
 
-	if (current_index < current.S.length) {
-		const slot = current.S[current_index++];
+	if (current_index < current.slots.length) {
+		const slot = current.slots[current_index++];
 		if (!tuple_comp(slot[1], deps)) {
 			VERBOSE && log('effect again', deps);
 			slot[2] !== null &&
@@ -495,7 +541,7 @@ export const hook_effect = (effect, deps) => {
 	}
 	else {
 		VERBOSE && log('effect initial', deps);
-		current.S[current_index++] = [
+		current.slots[current_index++] = [
 			HOOK_EFFECT,
 			deps = deps || [],
 			effect(...deps) || null
@@ -503,8 +549,8 @@ export const hook_effect = (effect, deps) => {
 	}
 
 	DEBUG &&
-	current.S[current_index - 1][2] &&
-	current.S[current_index - 1][2].then &&
+	current.slots[current_index - 1][2] &&
+	current.slots[current_index - 1][2].then &&
 		error('effect function must be synchronous, use hook_async instead');
 }
 
@@ -520,10 +566,10 @@ export const hook_async = (getter, deps, nullify) => {
 	DEBUG && assert_hook(HOOK_ASYNC);
 
 	const slot = (
-		current_index < current.S.length
-		?	current.S[current_index++]
+		current_index < current.slots.length
+		?	current.slots[current_index++]
 		:	(
-			current.S[current_index++] = [
+			current.slots[current_index++] = [
 				HOOK_ASYNC,
 				null,
 				null
@@ -552,13 +598,13 @@ export const hook_async = (getter, deps, nullify) => {
 		)
 	)
 	.then(value => {
-		VERBOSE && log('async end ' + component_name_get(current_.A.F));
+		VERBOSE && log('async end ' + component_name_get(current_.icall.component));
 		if (
 			slot[2] === value ||
 			slot[1] !== deps
 		) return;
 		slot[2] = value;
-		dirtify(current_);
+		instance_dirtify(current_);
 	});
 	return slot[2];
 }
@@ -572,8 +618,8 @@ export const hook_async = (getter, deps, nullify) => {
 export const hook_state = initial => {
 	DEBUG && assert_hook(HOOK_STATE);
 
-	if (current_index < current.S.length) {
-		return current.S[current_index++][1];
+	if (current_index < current.slots.length) {
+		return current.slots[current_index++][1];
 	}
 
 	const current_ = current;
@@ -581,14 +627,14 @@ export const hook_state = initial => {
 	const slot = [
 		initial,
 		value => {
-			VERBOSE && log('state set ' + component_name_get(current_.A.F), value);
+			VERBOSE && log('state set ' + component_name_get(current_.icall.component), value);
 			if (slot[0] === value) return;
 			slot[0] = value;
-			dirtify(current_);
+			instance_dirtify(current_);
 		},
 		() => slot[0]
 	];
-	current.S[current_index++] = [HOOK_STATE, slot];
+	current.slots[current_index++] = [HOOK_STATE, slot];
 	return slot;
 }
 
@@ -602,10 +648,10 @@ export const hook_static = value => {
 	DEBUG && assert_hook(HOOK_STATIC);
 
 	return (
-		current_index < current.S.length
-		?	current.S[current_index++]
+		current_index < current.slots.length
+		?	current.slots[current_index++]
 		:	(
-			current.S[current_index++] = [
+			current.slots[current_index++] = [
 				HOOK_STATIC,
 				value === undefined ? {} : value
 			]
@@ -623,8 +669,8 @@ export const hook_static = value => {
 export const hook_memo = (getter, deps) => {
 	DEBUG && assert_hook(HOOK_MEMO);
 
-	if (current_index < current.S.length) {
-		const slot = current.S[current_index++];
+	if (current_index < current.slots.length) {
+		const slot = current.slots[current_index++];
 		return (
 			tuple_comp(slot[1], deps)
 			?	slot[2]
@@ -646,7 +692,7 @@ export const hook_memo = (getter, deps) => {
 			deps = deps || []
 		)
 	);
-	current.S[current_index++] = [HOOK_MEMO, deps, value];
+	current.slots[current_index++] = [HOOK_MEMO, deps, value];
 	return value;
 }
 
@@ -660,14 +706,14 @@ export const hook_memo = (getter, deps) => {
 export const hook_prev = (value, initial) => {
 	DEBUG && assert_hook(HOOK_PREV);
 
-	if (current_index < current.S.length) {
-		const slot = current.S[current_index++];
+	if (current_index < current.slots.length) {
+		const slot = current.slots[current_index++];
 		const prev = slot[1];
 		slot[1] = value;
 		return prev;
 	}
 
-	current.S[current_index++] = [HOOK_PREV, value];
+	current.slots[current_index++] = [HOOK_PREV, value];
 	return initial;
 }
 
@@ -726,16 +772,16 @@ export const hook_delay = delay => {
 
 /**
 	smooth transition
-	@param {number} target
+	@param {number} goal
 	@param {number} delay in ms
 	@return {number}
 */
-export const hook_transition = (target, delay) => {
-	const state = hook_static({target});
+export const hook_transition = (goal, delay) => {
+	const state = hook_static({goal});
 	const transition = hook_memo(
-		(target, delay) => ({
-			value_start: state.target,
-			value_end: target,
+		(goal, delay) => ({
+			value_start: state.goal,
+			value_end: goal,
 			time_start: render_time,
 			time_end: (
 				current_first
@@ -743,18 +789,18 @@ export const hook_transition = (target, delay) => {
 				:	render_time + delay
 			)
 		}),
-		[target, delay]
+		[goal, delay]
 	);
 
 	if (transition.time_end <= render_time) {
 		return (
-			state.target = transition.value_end
+			state.goal = transition.value_end
 		);
 	}
 
 	hook_rerender();
 	return (
-		state.target =
+		state.goal =
 		transition.time_start === render_time
 		?	transition.value_start
 		:	transition.value_start +
@@ -791,22 +837,22 @@ export const hook_reducer = reducer => {
 	typeof reducer === 'function' &&
 		error('array required, use hook_reducer_f instead');
 
-	if (current_index < current.S.length)
-		return current.S[current_index++][1];
+	if (current_index < current.slots.length)
+		return current.slots[current_index++][1];
 
 	const current_ = current;
 	/** @type {[T, function(number, *):void]} */
 	const slot = [
 		reducer[0](),
 		(cmd, payload) => {
-			VERBOSE && log('reducer ' + component_name_get(current_.A.F) + ' -> #' + cmd, payload);
+			VERBOSE && log('reducer ' + component_name_get(current_.icall.component) + ' -> #' + cmd, payload);
 			const value = reducer[cmd](slot[0], payload);
 			if (slot[0] === value) return;
 			slot[0] = value;
-			dirtify(current_);
+			instance_dirtify(current_);
 		}
 	];
-	current.S[current_index++] = [HOOK_REDUCEA, slot];
+	current.slots[current_index++] = [HOOK_REDUCEA, slot];
 	return slot;
 }
 
@@ -825,8 +871,8 @@ export const hook_reducer_f = (reducer, initializer) => {
 	typeof reducer !== 'function' &&
 		error('function required');
 
-	if (current_index < current.S.length)
-		return current.S[current_index++][1];
+	if (current_index < current.slots.length)
+		return current.slots[current_index++][1];
 
 	const current_ = current;
 	/** @type {[T, function(U=):void]} */
@@ -837,14 +883,14 @@ export const hook_reducer_f = (reducer, initializer) => {
 			:	null
 		),
 		payload => {
-			VERBOSE && log('reducer ' + component_name_get(current_.A.F), payload);
+			VERBOSE && log('reducer ' + component_name_get(current_.icall.component), payload);
 			const value = reducer(slot[0], payload);
 			if (slot[0] === value) return;
 			slot[0] = value;
-			dirtify(current_);
+			instance_dirtify(current_);
 		}
 	];
-	current.S[current_index++] = [HOOK_REDUCEF, slot];
+	current.slots[current_index++] = [HOOK_REDUCEF, slot];
 	return slot;
 }
 
@@ -859,21 +905,19 @@ export const hook_reducer_f = (reducer, initializer) => {
 	@param {Array<TYPE_INSTANCE_CALL<*>>=} childs
 	@return {TYPE_INSTANCE_CALL<T>}
 */
-export const node = (component, props, childs) => {
-	DEBUG &&
-	typeof component === 'string' &&
-		error('component expected, use node_html instead');
-
-	DEBUG &&
-	childs !== undefined && (
-		!childs ||
-		childs.constructor !== Array_
-	) &&
-		error('invalid childs type');
-
-	return {
-		F: component,
-		P: (
+export const node = (component, props, childs) => (
+	DEBUG && (
+		typeof component === 'string' &&
+			error('component expected, use node_html instead'),
+		childs !== undefined && (
+			!childs ||
+			childs.constructor !== Array_
+		) &&
+			error('invalid childs type')
+	),
+	{
+		component,
+		props: (
 			props
 			?	(
 					childs
@@ -889,8 +933,8 @@ export const node = (component, props, childs) => {
 					:	null
 				)
 		)
-	};
-}
+	}
+)
 
 /**
 	create/use a component with props and childs
@@ -899,10 +943,11 @@ export const node = (component, props, childs) => {
 	@param {!Array} data
 	@return {?TYPE_INSTANCE_CALL}
 */
-export const node_list = (component, props, data) => {
-	DEBUG && error('not implemented yet');
-	return null;
-}
+export const node_list = (component, props, data) => (
+	DEBUG &&
+		error('not implemented yet'),
+	null
+)
 
 /**
 	mounts the body component
@@ -911,42 +956,61 @@ export const node_list = (component, props, data) => {
 export const init = body => {
 	VERBOSE && log('init');
 
-	DEBUG &&
-	(
-		current !== null ||
-		render_queue.size > 0
-	) &&
-		error('init called more than once');
+	DEBUG && (
+		(
+			current !== null ||
+			render_queue.size > 0
+		) &&
+			error('init called more than once'),
+		typeof body !== 'function' &&
+			error('init function requires body component')
+	);
 
-	DEBUG &&
-	typeof body !== 'function' &&
-		error('init function requires body component');
+	let result;//[props, childs]
 
 	const dom = document_.body;
 	dom.innerHTML = '';
 
-	const component_body = () => {
-		const [props, childs] = body();
+	const component = () => (
 		DEBUG && (
-			assert_hook_equal(!props),
-			props && assert_keys(hook_prev(props, props), props),
-			props && props.C && error('body childs must be in second return value')
-		);
-		component_html_generic(props);
-		return childs;
-	};
+			(
+				!(
+					result = body()
+				) ||
+				result.length !== 2
+			) && error('root component must return [props, childs]'),
+			assert_hook_equal(!result[0]),
+			result[0] &&
+				assert_keys(hook_prev(result[0], result[0]), result[0]),
+			result[0] &&
+			result[0].C &&
+				error('body childs must be in second return value')
+		),
+		component_html_generic(
+			(
+				DEBUG
+				?	result
+				:	result = body()
+			)[0]
+		),
+		result[1]
+	);
 
-	DEBUG && (component_body['name_'] = '$body');
+	DEBUG && (
+		component['name_'] = '$body'
+	);
 
-	dirtify({
-		A: {
-			F: component_body,
-			P: null
+	instance_dirtify({
+		icall: {
+			component,
+			props: null
 		},
-		P: null,
-		S: null,
-		C: null,
-		D: dom
+		iparent: null,
+		parent_index: 0,
+		slots: null,
+		childs: null,
+		dom,
+		dom_first: dom
 	});
 }
 
@@ -964,17 +1028,82 @@ export const now = () => (
 const rerender = () => {
 	render_time = performance.now();
 	rerender_pending = true;
-	let rerenders = 0;
-	do {
-		DEBUG &&
-		++rerenders > 5 &&
-			error('too many immediate rerenders');
+	for (const instance of render_queue) {
+		if (instance.dom !== null) {
+			instance_render(instance, null, null);
 
-		for (const instance of render_queue) {
-			render(instance);
+			DEBUG && (
+				current = null
+			);
+		}
+		else {
+			let dom_parent = null;
+			let dom_after = null;
+			let dom_first = instance.dom_first;
+			let dom_parent_instance = instance;
+			let instance2 = instance;
+
+			while (
+				(
+					dom_parent = (
+						dom_parent_instance = dom_parent_instance.iparent
+					).dom
+				) === null
+			) {}
+
+			do {
+				let index = instance2.parent_index;
+				const {childs} = (
+					instance2 = instance2.iparent
+				);
+				const childs_length = childs.length;
+
+				while (
+					++index < childs_length &&
+					(
+						childs[index] === null ||
+						(
+							dom_after = childs[index].dom_first
+						) === null
+					)
+				) {}
+			}
+			while (
+				dom_after === null &&
+				instance2 !== dom_parent_instance
+			);
+
+			instance_render(
+				instance2 = instance,
+				dom_parent,
+				dom_after
+			);
+
+			DEBUG && (
+				current = null
+			);
+			
+			if (dom_first !== instance2.dom_first)//TODO it better
+			while (
+				(
+					instance2 = instance2.iparent
+				).dom === null
+			) {
+				dom_first = null;
+				for (const child of instance2.childs) {//TODO skip n items if possible
+					if (
+						child !== null &&
+						(
+							dom_first = child.dom_first
+						) !== null
+					)
+						break;
+				}
+				if (dom_first === instance2.dom_first) break;
+				instance2.dom_first = dom_first;
+			}
 		}
 	}
-	while (render_queue.size > 0);
 	rerender_pending = false;
 
 	if (
@@ -1035,7 +1164,7 @@ export const node_html = (descriptor, props, childs) => (
 	@return {TYPE_COMPONENT_HTML}
 */
 const component_html_get = descriptor => {
-	VERBOSE && log('create html ' + descriptor);
+	VERBOSE && log('html create ' + descriptor);
 
 	const index_sqb = descriptor.indexOf('[');
 	const index_ht = descriptor.indexOf('#');
@@ -1125,14 +1254,16 @@ const component_html_get = descriptor => {
 	}
 
 	/** @type {TYPE_COMPONENT_HTML} */
-	const component = props => {
-		if (current_first)
-			current.D = /** @type {HTMLElement} */ (dom.cloneNode(true));
+	const component = props => (
+		current_first && (
+			current.dom = /** @type {HTMLElement} */ (dom.cloneNode(true))
+		),
+		component_html_generic(props)
+	);
 
-		return component_html_generic(props);
-	}
-
-	DEBUG && (component['name_'] = '$' + descriptor);
+	DEBUG && (
+		component['name_'] = '$' + descriptor
+	);
 
 	return component;
 }
@@ -1146,7 +1277,7 @@ const component_html_generic = props => {
 		return null;
 	}
 
-	const dom = current.D;
+	const {dom} = current;
 
 	for (const key of hook_object_changes(props)) {
 		DEBUG &&
@@ -1181,13 +1312,15 @@ const component_html_generic = props => {
 		}
 	}
 
-	DEBUG && assert_hook_equal(!props.S);
+	DEBUG &&
+		assert_hook_equal(!props.S);
 	if (props.S)
 		for (const key of hook_object_changes(props.S)) {
 			VERBOSE && log('html css ' + key + '=' + props.S[key]);
 			dom.style[key] = props.S[key];
 		}
 
-	DEBUG && assert_hook_equal(!props.C);
+	DEBUG &&
+		assert_hook_equal(!props.C);
 	return props.C || null;
 }
