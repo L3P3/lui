@@ -126,7 +126,7 @@ let rerender_requested = false;
 
 DEBUG && (
 	window.onerror = () => {
-		current !== null &&
+		current !== null_ &&
 			log('error');
 		render_queue.clear();
 		render_queue_next.clear();
@@ -136,6 +136,7 @@ DEBUG && (
 
 /// ALIAS ///
 
+const null_ = current;
 const Array_ = Array;
 const Object_ = Object;
 const document_ = document;
@@ -150,7 +151,7 @@ const document_ = document;
 const stack_get = () => {
 	const stack = [];
 	let item = current;
-	while (item !== null) {
+	while (item !== null_) {
 		stack.unshift(
 			component_name_get(item.icall.component)
 		);
@@ -208,7 +209,7 @@ const assert_keys = (a, b) => {
 	@param {number=} type
 */
 const assert_hook = type => {
-	current === null &&
+	current === null_ &&
 		error('hook called outside of component rendering');
 
 	type !== undefined &&
@@ -295,7 +296,7 @@ const instance_render = (instance, dom_parent, dom_after) => {
 	(
 		current_first = (
 			current = instance
-		).slots === null
+		).slots === null_
 	) && (
 		instance.slots = []
 	);
@@ -314,10 +315,10 @@ const instance_render = (instance, dom_parent, dom_after) => {
 	typeof child_calls !== 'object' &&
 		error('components need to return child list or null');
 
-	if (child_calls !== null) {
-		if (dom !== null) {
+	if (child_calls !== null_) {
+		if (dom !== null_) {
 			dom_parent = dom;
-			dom_first = null;
+			dom_first = null_;
 		}
 
 		let childs_index = child_calls.length;
@@ -329,7 +330,7 @@ const instance_render = (instance, dom_parent, dom_after) => {
 				error('childs must be returned in a list'),
 			childs_index === 0 &&
 				error('returned childs list empty'),
-			instance.childs !== null &&
+			instance.childs !== null_ &&
 			childs_index !== instance.childs.length &&
 				error('returned childs count changed')
 		);
@@ -339,7 +340,7 @@ const instance_render = (instance, dom_parent, dom_after) => {
 			instance.childs ||
 			(
 				instance.childs =
-					new Array_(childs_index).fill(null)
+					new Array_(childs_index).fill(null_)
 			)
 		);
 
@@ -353,11 +354,11 @@ const instance_render = (instance, dom_parent, dom_after) => {
 				child_call !== true
 			) {
 				DEBUG &&
-				child !== null &&
+				child !== null_ &&
 				child.icall.component !== child_call.component &&
 					error('child replaced at ' + childs_index);
 
-				if (child === null) {
+				if (child === null_) {
 					VERBOSE && log('child add');
 
 					instance_render(
@@ -365,10 +366,10 @@ const instance_render = (instance, dom_parent, dom_after) => {
 							icall: child_call,
 							iparent: instance,
 							parent_index: childs_index,
-							slots: null,
-							childs: null,
-							dom: null,
-							dom_first: null
+							slots: null_,
+							childs: null_,
+							dom: null_,
+							dom_first: null_
 						},
 						dom_parent,
 						dom_first
@@ -378,7 +379,7 @@ const instance_render = (instance, dom_parent, dom_after) => {
 						current = instance
 					);
 
-					child.dom !== null &&
+					child.dom !== null_ &&
 						dom_parent.insertBefore(
 							child.dom_first = child.dom,
 							dom_first
@@ -404,31 +405,31 @@ const instance_render = (instance, dom_parent, dom_after) => {
 					);
 				}
 
-				child.dom_first !== null && (
+				child.dom_first !== null_ && (
 					dom_first = child.dom_first
 				);
 			}
-			else if (child !== null) {
+			else if (child !== null_) {
 				instance_unmount(child, dom_parent);
-				instance_childs[childs_index] = null;
+				instance_childs[childs_index] = null_;
 			}
 		}
 		while (childs_index > 0);
 	}
-	else if (instance.childs !== null) {
+	else if (instance.childs !== null_) {
 		VERBOSE && log('discard childs');
 		for (const child of instance.childs)
-			child !== null &&
+			child !== null_ &&
 				instance_unmount(child, dom_parent);
-		instance.childs = null;
+		instance.childs = null_;
 	}
 
-	instance.dom === null &&
+	instance.dom === null_ &&
 	(
 		instance.dom_first =
 			dom_first !== dom_after
 			?	dom_first
-			:	null
+			:	null_
 	);
 }
 
@@ -440,17 +441,17 @@ const instance_render = (instance, dom_parent, dom_after) => {
 const instance_unmount = (instance, dom_parent) => {
 	VERBOSE && log('instance_unmount ' + component_name_get(instance.icall.component));
 
-	dom_parent !== null &&
-	instance.dom !== null && (
+	dom_parent !== null_ &&
+	instance.dom !== null_ && (
 		dom_parent.removeChild(
 			instance.dom
 		),
-		dom_parent = null
+		dom_parent = null_
 	);
 
-	if (instance.childs !== null) {
+	if (instance.childs !== null_) {
 		for (const child of instance.childs) {
-			child !== null &&
+			child !== null_ &&
 				instance_unmount(child, dom_parent);
 		}
 	}
@@ -458,11 +459,11 @@ const instance_unmount = (instance, dom_parent) => {
 	for (const slot of instance.slots) {
 		switch (slot[0]) {
 			case HOOK_EFFECT:
-				slot[2] !== null &&
+				slot[2] !== null_ &&
 					slot[2](slot[1]);
 				break;
 			case HOOK_ASYNC:
-				slot[1] = null;
+				slot[1] = null_;
 				break;
 			default:
 		}
@@ -525,7 +526,7 @@ export const hook_effect = (effect, deps) => {
 		const slot = current.slots[current_index++];
 		if (!tuple_comp(slot[1], deps)) {
 			VERBOSE && log('effect again', deps);
-			slot[2] !== null &&
+			slot[2] !== null_ &&
 				(slot[2])(
 					...slot[1]
 				);
@@ -535,7 +536,7 @@ export const hook_effect = (effect, deps) => {
 						slot[1] = deps || []
 					)
 				) ||
-				null
+				null_
 			);
 		}
 	}
@@ -544,7 +545,7 @@ export const hook_effect = (effect, deps) => {
 		current.slots[current_index++] = [
 			HOOK_EFFECT,
 			deps = deps || [],
-			effect(...deps) || null
+			effect(...deps) || null_
 		];
 	}
 
@@ -571,14 +572,14 @@ export const hook_async = (getter, deps, nullify) => {
 		:	(
 			current.slots[current_index++] = [
 				HOOK_ASYNC,
-				null,
-				null
+				null_,
+				null_
 			]
 		)
 	);
 
 	if (
-		slot[1] !== null &&
+		slot[1] !== null_ &&
 		tuple_comp(slot[1], deps)
 	) {
 		return slot[2];
@@ -587,7 +588,7 @@ export const hook_async = (getter, deps, nullify) => {
 	VERBOSE && log('async start', deps);
 
 	nullify && (
-		slot[2] = null
+		slot[2] = null_
 	);
 
 	const current_ = current;
@@ -880,7 +881,7 @@ export const hook_reducer_f = (reducer, initializer) => {
 		(
 			initializer
 			?	initializer()
-			:	null
+			:	null_
 		),
 		payload => {
 			VERBOSE && log('reducer ' + component_name_get(current_.icall.component), payload);
@@ -930,7 +931,7 @@ export const node = (component, props, childs) => (
 			:	(
 					childs
 					?	/** @type {T} */ ({C: childs})
-					:	null
+					:	null_
 				)
 		)
 	}
@@ -946,7 +947,7 @@ export const node = (component, props, childs) => (
 export const node_list = (component, props, data) => (
 	DEBUG &&
 		error('not implemented yet'),
-	null
+	null_
 )
 
 /**
@@ -958,7 +959,7 @@ export const init = body => {
 
 	DEBUG && (
 		(
-			current !== null ||
+			current !== null_ ||
 			render_queue.size > 0
 		) &&
 			error('init called more than once'),
@@ -1003,12 +1004,12 @@ export const init = body => {
 	instance_dirtify({
 		icall: {
 			component,
-			props: null
+			props: null_
 		},
-		iparent: null,
+		iparent: null_,
 		parent_index: 0,
-		slots: null,
-		childs: null,
+		slots: null_,
+		childs: null_,
 		dom,
 		dom_first: dom
 	});
@@ -1029,16 +1030,16 @@ const rerender = () => {
 	render_time = performance.now();
 	rerender_pending = true;
 	for (const instance of render_queue) {
-		if (instance.dom !== null) {
-			instance_render(instance, null, null);
+		if (instance.dom !== null_) {
+			instance_render(instance, null_, null_);
 
 			DEBUG && (
-				current = null
+				current = null_
 			);
 		}
 		else {
-			let dom_parent = null;
-			let dom_after = null;
+			let dom_parent = null_;
+			let dom_after = null_;
 			let dom_first = instance.dom_first;
 			let dom_parent_instance = instance;
 			let instance2 = instance;
@@ -1048,7 +1049,7 @@ const rerender = () => {
 					dom_parent = (
 						dom_parent_instance = dom_parent_instance.iparent
 					).dom
-				) === null
+				) === null_
 			) {}
 
 			do {
@@ -1061,15 +1062,15 @@ const rerender = () => {
 				while (
 					++index < childs_length &&
 					(
-						childs[index] === null ||
+						childs[index] === null_ ||
 						(
 							dom_after = childs[index].dom_first
-						) === null
+						) === null_
 					)
 				) {}
 			}
 			while (
-				dom_after === null &&
+				dom_after === null_ &&
 				instance2 !== dom_parent_instance
 			);
 
@@ -1080,22 +1081,22 @@ const rerender = () => {
 			);
 
 			DEBUG && (
-				current = null
+				current = null_
 			);
 			
 			if (dom_first !== instance2.dom_first)//TODO it better
 			while (
 				(
 					instance2 = instance2.iparent
-				).dom === null
+				).dom === null_
 			) {
-				dom_first = null;
+				dom_first = null_;
 				for (const child of instance2.childs) {//TODO skip n items if possible
 					if (
-						child !== null &&
+						child !== null_ &&
 						(
 							dom_first = child.dom_first
-						) !== null
+						) !== null_
 					)
 						break;
 				}
@@ -1273,8 +1274,8 @@ const component_html_get = descriptor => {
 	@type {TYPE_COMPONENT_HTML}
 */
 const component_html_generic = props => {
-	if (props === null) {
-		return null;
+	if (props === null_) {
+		return null_;
 	}
 
 	const {dom} = current;
@@ -1322,5 +1323,5 @@ const component_html_generic = props => {
 
 	DEBUG &&
 		assert_hook_equal(!props.C);
-	return props.C || null;
+	return props.C || null_;
 }
