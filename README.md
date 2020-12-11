@@ -105,7 +105,9 @@ If you want to map an array with changing order or length to a list of component
 
 ### HTML components
 
-The leaves of your component tree are mostly made out of native html elements. To use such a component, use `node_html` instead of `node`. The signature is the same, except for the first argument being a descriptor, similar to css selectors: `tag#id[attr=value][attr]` The tag is required but `#id` or `[attr]` are optional. Having attributes in the descriptor instead of the props brings tiny performance improvements. The selector cannot be changed, so the attributes specified in it are somewhat constant which enables some optimizations.
+The leaves of your component tree are mostly made out of native html elements. To use such a component, use `node_html` instead of `node`. The signature is the same, except for the first argument being a descriptor, similar to css selectors: `tagName[attr1=value][attr2][...]`
+
+The `tagName` is required but number and order of attributes are optional. Having static attributes in the descriptor instead of in the props improves efficiency (re-using of nodes, reduced diffing).
 
 Props are directly mapped to html attributes, except these 4 special props:
 prop | Description
@@ -156,7 +158,7 @@ However, you need to set up babel and the jsx plugin properly and I have not tri
 
 ### Hooks
 
-Instead of using object oriented syntax like `this.number = 42;` inside components, you call hooks. Actually, from application code, there is no way to access component instances at all! This may be very confusing at first but once you understood it, it will be very easy to work with.
+Instead of using object oriented syntax like `this.number = 42;` (or `this.setNumber(42);` allowing automatic updates) inside components, you call hooks. Actually, from application code, there is no way to access component _instances_ at all! This may be very confusing at first but once you understood it, it will be very easy to work with.
 
 **Stateful hooks** are identified by their _calling order_ per instance. Keep that order by never placing a hook in an `if`, a loop or a `switch` body – unless their condition, item order or key will stay the same per instance.
 

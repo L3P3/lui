@@ -1165,52 +1165,30 @@ export const node_html = (descriptor, props, childs) => (
 	@return {TYPE_COMPONENT_HTML}
 */
 const component_html_get = descriptor => {
-	VERBOSE && log('html create ' + descriptor);
+	VERBOSE && log('dom create ' + descriptor);
 
 	const index_sqb = descriptor.indexOf('[');
-	const index_ht = descriptor.indexOf('#');
 	const tag = (
-		index_sqb >= 0 && index_ht >= 0
-		?	descriptor.substr(0, Math.min(index_sqb, index_ht))
-		:	index_sqb < 0 && index_ht < 0
+		index_sqb < 0
 		?	descriptor.substr(0)
-		:	descriptor.substr(0, index_sqb < 0 ? index_ht : index_sqb)
+		:	descriptor.substr(0, index_sqb)
 	);
 
 	DEBUG && (
 		tag.length === 0 ||
 		tag !== tag.toLowerCase() ||
-		tag.includes(' ')
+		tag.includes(' ') ||
+		tag.includes('#') ||
+		tag.includes('.')
 	) &&
-		error('selector: invalid tag');
-
-	DEBUG &&
-	index_sqb > 0 &&
-	index_ht > 0 &&
-	descriptor.lastIndexOf(']') < index_ht &&
-	index_ht > index_sqb &&
-		error('selector: ID must be at tag');
+		error('dom: invalid tag');
 
 	const dom = document_.createElement(tag);
 
-	if (index_ht >= 1) {
-		dom.id = (
-			index_sqb < 0
-			?	descriptor.substr(index_ht + 1)
-			:	descriptor.substring(index_ht + 1, index_sqb)
-		);
-
-		DEBUG && (
-			!dom.id ||
-			dom.id.includes(' ')
-		) &&
-			error('selector: invalid ID');
-	}
-
-	if (index_sqb >= 1) {
+	if (index_sqb > 0) {
 		DEBUG &&
 		!descriptor.endsWith(']') &&
-			error('selector: ] missing');
+			error('dom: ] missing');
 
 		for (
 			const sqbi of
@@ -1223,11 +1201,14 @@ const component_html_get = descriptor => {
 		) {
 			DEBUG &&
 			!sqbi &&
-				error('selector: empty attribute');
+				error('dom: empty attribute');
 
 			DEBUG &&
-			(sqbi.includes('[') || sqbi.includes(']')) &&
-				error('selector: attributes screwed up');
+			(
+				sqbi.includes('[') ||
+				sqbi.includes(']')
+			) &&
+				error('dom: attributes screwed up');
 
 			const eqi = sqbi.indexOf('=');
 
@@ -1236,21 +1217,14 @@ const component_html_get = descriptor => {
 				eqi < 0 ||
 				sqbi.indexOf(' ') < eqi
 			) &&
-				error('selctor: invalid attribute name');
+				error('dom: space in attribute name');
 
-			if (eqi < 0) {
-				dom[sqbi] = true;
-			}
-			else {
-				DEBUG &&
-				sqbi.substr(0, eqi) === 'id' &&
-					error('selector: use tag#ID');
-
-				dom[
+			eqi > 0
+			?	dom[
 					sqbi.substr(0, eqi)
 				] =
-					sqbi.substr(eqi + 1);
-			}
+					sqbi.substr(eqi + 1)
+			:	dom[sqbi] = true;
 		}
 	}
 
