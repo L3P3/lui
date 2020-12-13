@@ -1,5 +1,6 @@
 import {
 	init,
+	hook_assert,
 	hook_state,
 	node,
 	node_html
@@ -8,7 +9,8 @@ import {
 function inner({
 	on
 }) {
-	if (!on) return null;
+	//if (!on) return null;
+	hook_assert(on);
 
 	return [
 		null,

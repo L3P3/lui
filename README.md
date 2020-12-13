@@ -8,9 +8,10 @@ When I was introduced to [React](https://github.com/facebook/react), I liked it 
 - **Stateful components** using [hooks](https://reactjs.org/docs/hooks-intro.html)
 - Will be **compatible** with down to [Internet Explorer 5](https://en.wikipedia.org/wiki/Internet_Explorer_5)
 - Offers **development mode**
-- Can be **bundled** together with your application
+- **Animations** integrated
 - Conditional css classes on elements
 - Not terribly inefficient
+- Can be bundled together with your application
 - 0 dependencies
 - Almost production ready
 
@@ -162,7 +163,7 @@ Instead of using object oriented syntax like `this.number = 42;` (or `this.setNu
 
 **Stateful hooks** are identified by their _calling order_ per instance. Keep that order by never placing a hook in an `if`, a loop or a `switch` body – unless their condition, item order or key will stay the same per instance.
 
-**Stateless hooks** (`hook_first` and `hook_rerender`) may be called anywhere in your component.
+**Stateless hooks** (`hook_assert`, `hook_first` and `hook_rerender`) may be called anywhere in your component.
 
 Using any hook in a **callback** is probably a very bad idea.
 
@@ -174,7 +175,9 @@ But while some hooks also exist in React, some do not. And on the other hand, I 
 
 lui | React
 --- | ---
+`hook_assert` | -
 `hook_async` | -
+`hook_await` | -
 `hook_callback` | [useCallback](https://reactjs.org/docs/hooks-reference.html#usecallback)
 `hook_delay` | -
 `hook_effect` | [useEffect](https://reactjs.org/docs/hooks-reference.html#useeffect)
@@ -203,7 +206,30 @@ In React, you pass an object to [html components](#html-components) via the prop
 
 ### Early exit
 
-If a component decides that it should not (yet) mount anything, it may `return null;` (early-exit) at any time, even before some hooks were reached.
+When the component relies on some kind of condition or possibly unresolved promise, you may use `hook_assert` or `hook_await` to interrupt the rendering. Here is an example for the first:
+
+```js
+function UserName({
+    id
+}) {
+    const name = hook_async(user_name_get, [id]);
+    hook_assert(name !== null);
+    const NAME = name.toUppercase();
+    return [
+        node_html(
+            'span[className=user-name]',
+            {
+                innerText: NAME,
+                title: name
+            }
+        )
+    ];
+}
+```
+
+Here, `user_name_get` is an _async_ function, meaning it returns a promise. When the promise is not yet resolved, this component will just not display anything. Also notice the `NAME` line: Without `hook_assert`, we would get an error, since we cannot call methods on `null`.
+
+When you already know that the condition will be false, just call it like this: `hook_assert();` This is similar to `return null;` but it can be called in _any_ component (including root) or hook.
 
 ### Full API
 
@@ -214,7 +240,9 @@ Function | Description
 `node_html(descriptor: string, props, childs):node` | When you want to add html components, use this function. It is very similar to `node` but needs a descriptor instead.
 `node_list(Component, props: Object, data: Array)` | When you want to add a component n times for each entry of an array, this is the (proper) way to go. If the array items are objects, the [keys](https://reactjs.org/docs/lists-and-keys.html) are directly taken from an `id` property.
 `now():number` | The _relative_ point of time of the latest rerendering call. Do not use this as persistent time reference but just inside of run time. Useful for custom animations.
-`hook_async(function(...deps):Promise<T>, deps: ?Array):T` | If you need to wait for some data until it is available, use this instead of `hook_memo`.
+`hook_assert(condition: boolean):void` | When the condition is falsy, rendering of the current component is interrupted. May be used for error handling or anything else.
+`hook_async(function(...deps):Promise<T>, deps: ?Array, fallback):T` | If you need to wait for some data until it is available, use this instead of `hook_memo`. As long as the promise is pending, `fallback` is returned. If no fallback is given, either `null` or the latest value is returned.
+`hook_await(promise):void` | As long as the promise is not resolved yet, rendering of the current component will be interrupted here.
 `hook_callback(function, deps):function` | Returns a function that never changes. It passes all arguments down to the given function after the `deps`. Use this when you need to pass a callback as props that needs `deps`. If that callback is independent of the current component (has no `deps`), move the callback out of the component.
 `hook_delay(msecs: number):boolean` | Turns `true` after the specified delay.
 `hook_effect(function(...deps):destroy, deps: ?Array):void` | Run the given function once and every time an `deps` item changes. That function _may_ return another function that gets called before the effect appears again or when the component gets unmounted.

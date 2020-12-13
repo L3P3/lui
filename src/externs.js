@@ -27,6 +27,7 @@ var TYPE_PROPS_HTML;
 	@typedef {{
 		hook_rerender,
 		hook_first,
+		hook_assert,
 		hook_effect,
 		hook_async,
 		hook_state,
@@ -39,6 +40,7 @@ var TYPE_PROPS_HTML;
 		hook_object_changes,
 		hook_reducer,
 		hook_reducer_f,
+		hook_await,
 		node,
 		node_html,
 		node_list,

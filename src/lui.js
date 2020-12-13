@@ -260,7 +260,7 @@ const object_comp = (a, b) => (
 )
 
 /**
-	checks if tuples are equal
+	checks if tuples are equal, also used as a private enum
 	@param {Array} a
 	@param {(Array|undefined)} b
 	@return {boolean}
@@ -305,11 +305,20 @@ const instance_render = (instance, dom_parent, dom_after) => {
 	VERBOSE && log('instance_render');
 	render_queue.delete(instance);
 
-	const child_calls = (instance.icall.component)(instance.icall.props);
+	let child_calls = null_;
+	let dom_first = dom_after;
+
+	try {
+		child_calls = (instance.icall.component)(instance.icall.props);
+	}
+	catch (thrown) {
+		if (
+			DEBUG &&
+			thrown !== tuple_comp
+		) throw thrown;
+	}
 
 	const {dom} = instance;
-
-	let dom_first = dom_after;
 
 	DEBUG &&
 	typeof child_calls !== 'object' &&
@@ -515,6 +524,16 @@ export const hook_first = () => (
 )
 
 /**
+	interrupts rendering if condition is not met
+	@param {boolean=} condition
+*/
+export const hook_assert = condition => {
+	DEBUG && assert_hook();
+
+	if (!condition) throw tuple_comp;
+}
+
+/**
 	fire an effect on deps change
 	@param {function(...*=):(void|function(...*=):void)} effect
 	@param {Array=} deps
@@ -560,10 +579,10 @@ export const hook_effect = (effect, deps) => {
 	@template T
 	@param {function(...*=):Promise<T>} getter
 	@param {Array=} deps
-	@param {boolean=} nullify
+	@param {?=} fallback
 	@return {?T}
 */
-export const hook_async = (getter, deps, nullify) => {
+export const hook_async = (getter, deps, fallback) => {
 	DEBUG && assert_hook(HOOK_ASYNC);
 
 	const slot = (
@@ -587,8 +606,8 @@ export const hook_async = (getter, deps, nullify) => {
 
 	VERBOSE && log('async start', deps);
 
-	nullify && (
-		slot[2] = null_
+	fallback !== undefined && (
+		slot[2] = fallback
 	);
 
 	const current_ = current;
@@ -893,6 +912,16 @@ export const hook_reducer_f = (reducer, initializer) => {
 	];
 	current.slots[current_index++] = [HOOK_REDUCEF, slot];
 	return slot;
+}
+
+/**
+	skips rendering until promise is resolved
+	@param {Promise} promise
+*/
+export const hook_await = promise => {
+	hook_assert(
+		hook_async(promise, null_, tuple_comp) !== tuple_comp
+	);
 }
 
 

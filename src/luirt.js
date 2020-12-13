@@ -1,6 +1,7 @@
 import {
 	hook_rerender,
 	hook_first,
+	hook_assert,
 	hook_effect,
 	hook_async,
 	hook_state,
@@ -13,6 +14,7 @@ import {
 	hook_object_changes,
 	hook_reducer,
 	hook_reducer_f,
+	hook_await,
 	node,
 	node_html,
 	node_list,
@@ -23,6 +25,7 @@ import {
 window['lui'] = {
 	hook_rerender,
 	hook_first,
+	hook_assert,
 	hook_effect,
 	hook_async,
 	hook_state,
@@ -35,6 +38,7 @@ window['lui'] = {
 	hook_object_changes,
 	hook_reducer,
 	hook_reducer_f,
+	hook_await,
 	node,
 	node_html,
 	node_list,
