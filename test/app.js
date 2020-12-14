@@ -1,5 +1,6 @@
 import {
 	init,
+	hook_dom,
 	hook_effect,
 	hook_first,
 	hook_reducer_f,
@@ -7,37 +8,40 @@ import {
 	hook_static,
 	hook_transition,
 	node,
-	node_html
+	node_dom
 } from '../src/lui.js';
 
-//BAR
-function Bar({color}) {
+/// BAR ///
+
+function Bar({
+	color
+}) {
 	const [expanded, expanded_set] = hook_state(false);
 
-	return [
-		node_html(
-			'div',
-			{
-				S: {
-					width: hook_transition(
-						expanded ? 500 : 50,
-						1e3
-					) + 'px',
-					height: '10px',
-					background: color
-				},
-				onmouseover: hook_static(() => {
-					expanded_set(true);
-				}),
-				onmouseout: hook_static(() => {
-					expanded_set(false);
-				})
-			}
-		)
-	];
+	hook_dom(
+		'div',
+		{
+			S: {
+				width: hook_transition(
+					expanded ? 500 : 50,
+					1e3
+				) + 'px',
+				height: '10px',
+				background: color
+			},
+			onmouseover: hook_static(() => {
+				expanded_set(true);
+			}),
+			onmouseout: hook_static(() => {
+				expanded_set(false);
+			})
+		}
+	);
+	return null;
 }
 
-//BODY
+
+/// BODY ///
 
 const localStorage_ = window.localStorage;
 
@@ -72,8 +76,8 @@ init(() => {
 			}
 		},
 		[
-			node_html('h1[innerText=Hallo, Welt!]'),
-			node_html(
+			node_dom('h1[innerText=Hallo, Welt!]'),
+			node_dom(
 				'p',
 				{
 					innerText: `Dies ist eine ${
@@ -81,11 +85,11 @@ init(() => {
 					}le Beispielseite!`
 				}
 			),
-			node_html(
+			node_dom(
 				'p',
 				null,
 				[
-					node_html(
+					node_dom(
 						'button[title=Ein Knopf zum Drücken]',
 						{
 							innerText: `${
@@ -103,6 +107,7 @@ init(() => {
 					)
 				]
 			),
+			//since node_list is not yet implemented...
 			hook_static(hook_first() && node(() =>
 				[]
 				.concat(

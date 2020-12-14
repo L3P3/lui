@@ -3,7 +3,7 @@ import {
 	hook_assert,
 	hook_state,
 	node,
-	node_html
+	node_dom
 } from '../src/lui.js';
 
 function inner({
@@ -14,7 +14,7 @@ function inner({
 
 	return [
 		null,
-		node_html('p[innerText=Test]')
+		node_dom('p[innerText=Test]')
 	];
 }
 
@@ -24,12 +24,12 @@ init(() => {
 	return [
 		null,
 		[
-			node_html('h1[innerText=Hallo, Welt!]'),
+			node_dom('h1[innerText=Hallo, Welt!]'),
 			node(inner, {on}),
-			node_html(
+			node_dom(
 				'p', null,
 				[
-					node_html(
+					node_dom(
 						'button[innerText=Toggle]',
 						{
 							onclick: () => {

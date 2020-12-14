@@ -24,8 +24,8 @@ const HOOK_REDUCEF = DEBUG ? 7 : 0;
 */
 var TYPE_COMPONENT;
 
-/** @typedef {TYPE_COMPONENT<TYPE_PROPS_HTML>} */
-var TYPE_COMPONENT_HTML;
+/** @typedef {TYPE_COMPONENT<TYPE_PROPS_DOM>} */
+var TYPE_COMPONENT_DOM;
 
 /** @typedef {?string} */
 var TYPE_KEY;
@@ -41,7 +41,7 @@ var TYPE_PROPS;
 		S: (Object<string, string>|void)
 	}}
 */
-var TYPE_PROPS_HTML;
+var TYPE_PROPS_DOM;
 
 /** @typedef {[number, ...*]} */
 var TYPE_SLOT;
@@ -924,6 +924,94 @@ export const hook_await = promise => {
 	);
 }
 
+/**
+	syncs dom attributes
+	@param {TYPE_PROPS_DOM} attributes
+	@return {HTMLElement}
+*/
+const hook_dom_common = attributes => {
+	DEBUG &&
+		assert_hook_equal(attributes === null_);
+	const {dom} = current;
+	if (attributes !== null_) {
+		for (const key of hook_object_changes(attributes)) {
+			DEBUG &&
+			key.length > 1 &&
+			key.charAt(0).toLowerCase() !== key.charAt(0) &&
+				error('capital prop: ' + key);
+
+			switch (key.charCodeAt(0)) {
+				case 70://F
+					DEBUG && (
+						attributes.F === null_ ||
+						typeof attributes.F !== 'object'
+					) &&
+						error('invalid css flags');
+
+					dom.className = (
+						Object_.keys(
+							/** @type {!Object} */ (attributes.F)
+						)
+						.filter(key => attributes.F[key])
+						.join(' ')
+					);
+
+					VERBOSE && log('dom flags', dom.className.split(' '));
+
+					continue;
+				case 82://R
+					(attributes.R)(dom);
+				case 67://C
+				case 83://S
+					continue;
+				default:
+					DEBUG &&
+					key.charCodeAt(0) < 97 &&
+						error('invalid prop: ' + key);
+
+					VERBOSE && log('dom prop ' + key, attributes[key]);
+
+					dom[key] = attributes[key];
+			}
+		}
+
+		DEBUG &&
+			assert_hook_equal(!attributes.S);
+		if (attributes.S)
+			for (const key of hook_object_changes(attributes.S)) {
+				VERBOSE && log('dom css ' + key + '=' + attributes.S[key]);
+				dom.style[key] = attributes.S[key];
+			}
+	}
+	return dom;
+}
+
+/**
+	turns function component into dom component
+	@param {string} descriptor
+	@param {TYPE_PROPS_DOM} attributes
+	@return {HTMLElement}
+*/
+export const hook_dom = (descriptor, attributes) => (
+	DEBUG && (
+		assert_hook(),
+		current.dom === null_
+		?	current_first || error('hook_dom skipped before')
+		:	current_first && error('hook_dom called twice'),
+		attributes.C !== undefined &&
+			error('hook_dom cannot have childs'),
+		attributes.R !== undefined &&
+			error('hook_dom cannot have a ref')
+	),
+	current_first && (
+		current.dom = /** @type {HTMLElement} */ (
+			dom_get(descriptor)
+			.cloneNode(true)
+		)
+	),
+	hook_dom_common(attributes)
+)
+
 
 /// INTERFACE ///
 
@@ -938,7 +1026,7 @@ export const hook_await = promise => {
 export const node = (component, props, childs) => (
 	DEBUG && (
 		typeof component === 'string' &&
-			error('component expected, use node_html instead'),
+			error('component expected, use node_dom instead'),
 		childs !== undefined && (
 			!childs ||
 			childs.constructor !== Array_
@@ -1009,14 +1097,19 @@ export const init = body => {
 				) ||
 				result.length !== 2
 			) && error('root component must return [props, childs]'),
-			assert_hook_equal(!result[0]),
-			result[0] &&
-				assert_keys(hook_prev(result[0], result[0]), result[0]),
-			result[0] &&
-			result[0].C &&
-				error('body childs must be in second return value')
+			assert_hook_equal(result[0] === null_),
+			result[0] !== null_ && (
+				typeof result[0] !== 'object' &&
+					error('invalid props type'),
+				assert_keys(
+					hook_prev(result[0], result[0]),
+					result[0]
+				),
+				result[0].C !== undefined &&
+					error('body childs must be in second return value')
+			)
 		),
-		component_html_generic(
+		hook_dom_common(
 			(
 				DEBUG
 				?	result
@@ -1162,169 +1255,134 @@ const rerender_next = () => {
 }
 
 
-/// HTML COMPONENTS ///
+/// DOM COMPONENTS ///
 
 /**
-	@dict
-	@type {!Object<string, TYPE_COMPONENT_HTML>}
-*/
-const component_html_cache = {};
-
-/**
-	use a html component with props and childs
+	use a dom component with props and childs
 	@param {string} descriptor
-	@param {TYPE_PROPS_HTML=} props
+	@param {TYPE_PROPS_DOM=} props
 	@param {Array<TYPE_INSTANCE_CALL<*>>=} childs
-	@return {TYPE_INSTANCE_CALL<TYPE_PROPS_HTML>}
+	@return {TYPE_INSTANCE_CALL<TYPE_PROPS_DOM>}
 */
-export const node_html = (descriptor, props, childs) => (
+export const node_dom = (descriptor, props, childs) => (
 	node(
-		component_html_cache[descriptor] || (
-			component_html_cache[descriptor] =
-				component_html_get(descriptor)
-		),
+		component_dom_get(descriptor),
 		props,
 		childs
 	)
 )
 
 /**
-	creates a new component for descriptor
-	@param {string} descriptor
-	@return {TYPE_COMPONENT_HTML}
+	@dict
+	@type {!Object<string, HTMLElement>}
 */
-const component_html_get = descriptor => {
-	VERBOSE && log('dom create ' + descriptor);
+const dom_cache = {};
 
-	const index_sqb = descriptor.indexOf('[');
-	const tag = (
-		index_sqb < 0
-		?	descriptor.substr(0)
-		:	descriptor.substr(0, index_sqb)
-	);
+/**
+	@dict
+	@type {!Object<string, TYPE_COMPONENT_DOM>}
+*/
+const component_dom_cache = {};
 
-	DEBUG && (
-		tag.length === 0 ||
-		tag !== tag.toLowerCase() ||
-		tag.includes(' ') ||
-		tag.includes('#') ||
-		tag.includes('.')
-	) &&
-		error('dom: invalid tag');
+/**
+	returns the described dom
+	@param {string} descriptor
+	@return {HTMLElement}
+*/
+const dom_get = descriptor => {
+	let dom = dom_cache[descriptor];
+	if (dom === undefined) {
+		VERBOSE && log('dom create ' + descriptor);
 
-	const dom = document_.createElement(tag);
-
-	if (index_sqb > 0) {
-		DEBUG &&
-		!descriptor.endsWith(']') &&
-			error('dom: ] missing');
-
-		for (
-			const sqbi of
-			descriptor
-			.substring(
-				index_sqb + 1,
-				descriptor.length - 1
-			)
-			.split('][')
-		) {
+		const index_sqb = descriptor.indexOf('[');
+		const tag = (
+			index_sqb < 0
+			?	descriptor.substr(0)
+			:	descriptor.substr(0, index_sqb)
+		);
+	
+		DEBUG && (
+			tag.length === 0 ||
+			tag !== tag.toLowerCase() ||
+			tag.includes(' ') ||
+			tag.includes('#') ||
+			tag.includes('.')
+		) &&
+			error('dom: invalid tag');
+	
+		dom_cache[descriptor] = dom = /** @type {HTMLElement} */ (
+			document_.createElement(tag)
+		);
+	
+		if (index_sqb > 0) {
 			DEBUG &&
-			!sqbi &&
-				error('dom: empty attribute');
-
-			DEBUG &&
-			(
-				sqbi.includes('[') ||
-				sqbi.includes(']')
-			) &&
-				error('dom: attributes screwed up');
-
-			const eqi = sqbi.indexOf('=');
-
-			DEBUG &&
-			sqbi.includes(' ') && (
-				eqi < 0 ||
-				sqbi.indexOf(' ') < eqi
-			) &&
-				error('dom: space in attribute name');
-
-			eqi > 0
-			?	dom[
-					sqbi.substr(0, eqi)
-				] =
-					sqbi.substr(eqi + 1)
-			:	dom[sqbi] = true;
+			!descriptor.endsWith(']') &&
+				error('dom: ] missing');
+	
+			for (
+				const sqbi of
+				descriptor
+				.substring(
+					index_sqb + 1,
+					descriptor.length - 1
+				)
+				.split('][')
+			) {
+				DEBUG &&
+				!sqbi &&
+					error('dom: empty attribute');
+	
+				DEBUG &&
+				(
+					sqbi.includes('[') ||
+					sqbi.includes(']')
+				) &&
+					error('dom: attributes screwed up');
+	
+				const eqi = sqbi.indexOf('=');
+	
+				DEBUG &&
+				sqbi.includes(' ') && (
+					eqi < 0 ||
+					sqbi.indexOf(' ') < eqi
+				) &&
+					error('dom: space in attribute name');
+	
+				eqi > 0
+				?	dom[
+						sqbi.substr(0, eqi)
+					] =
+						sqbi.substr(eqi + 1)
+				:	dom[sqbi] = true;
+			}
 		}
 	}
-
-	/** @type {TYPE_COMPONENT_HTML} */
-	const component = props => (
-		current_first && (
-			current.dom = /** @type {HTMLElement} */ (dom.cloneNode(true))
-		),
-		component_html_generic(props)
-	);
-
-	DEBUG && (
-		component['name_'] = '$' + descriptor
-	);
-
-	return component;
+	return dom;
 }
 
 /**
-	html component base
-	@type {TYPE_COMPONENT_HTML}
+	returns dom component for descriptor
+	@param {string} descriptor
+	@return {TYPE_COMPONENT_DOM}
 */
-const component_html_generic = props => {
-	if (props === null_) {
-		return null_;
+const component_dom_get = descriptor => {
+	let component = component_dom_cache[descriptor];
+	if (component === undefined) {
+		const dom = dom_get(descriptor);
+		/** @type {TYPE_COMPONENT_DOM} */
+		component_dom_cache[descriptor] = component = props => (
+			current_first && (
+				current.dom = /** @type {HTMLElement} */ (
+					dom.cloneNode(true)
+				)
+			),
+			hook_dom_common(props),
+			props !== null_ && props.C || null_
+		);
+
+		DEBUG && (
+			component['name_'] = '$' + descriptor
+		);
 	}
-
-	const {dom} = current;
-
-	for (const key of hook_object_changes(props)) {
-		DEBUG &&
-		key.length > 1 &&
-		key.charAt(0).toLowerCase() !== key.charAt(0) &&
-			error('capital prop: ' + key);
-
-		switch (key.charCodeAt(0)) {
-			case 70://F
-				dom.className = (
-					Object_.keys(props.F)
-					.filter(key => props.F[key])
-					.join(' ')
-				);
-
-				VERBOSE && log('html flags', dom.className.split(' '));
-
-				continue;
-			case 82://R
-				(props.R)(dom);
-			case 67://C
-			case 83://S
-				continue;
-			default:
-				DEBUG &&
-				key.charCodeAt(0) < 97 &&
-					error('invalid prop: ' + key);
-
-				VERBOSE && log('html prop ' + key, props[key]);
-
-				dom[key] = props[key];
-		}
-	}
-
-	DEBUG &&
-		assert_hook_equal(!props.S);
-	if (props.S)
-		for (const key of hook_object_changes(props.S)) {
-			VERBOSE && log('html css ' + key + '=' + props.S[key]);
-			dom.style[key] = props.S[key];
-		}
-
-	DEBUG &&
-		assert_hook_equal(!props.C);
-	return props.C || null_;
+	return component;
 }

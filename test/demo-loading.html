@@ -35,7 +35,7 @@
 			import {
 				init,
 				node,
-				node_html,
+				node_dom,
 				now,
 				hook_delay,
 				hook_effect,
@@ -90,7 +90,7 @@
 				
 				return [
 					show_factor &&
-					node_html(
+					node_dom(
 						'div#busy_back',
 						{S: {
 							opacity: (
@@ -99,7 +99,7 @@
 						}}
 					),
 					show_factor &&
-					node_html(
+					node_dom(
 						'div#busy_dot',
 						{S: {
 							opacity: show_factor,
@@ -116,9 +116,9 @@
 			// Geladene Seite
 			function Seite() {
 				return [
-					node_html('h1[innerText=Fertig geladen?!]'),
-					node_html('p', {innerText: `Jetzt passiert nicht mehr viel, aber trotzdem haben wir noch ${hook_fps()} fps!`}),
-					node_html('p[innerText=Irgendwo klicken, um die Animation wieder anzuzeigen.]')
+					node_dom('h1[innerText=Fertig geladen?!]'),
+					node_dom('p', {innerText: `Jetzt passiert nicht mehr viel, aber trotzdem haben wir noch ${hook_fps()} fps!`}),
+					node_dom('p[innerText=Irgendwo klicken, um die Animation wieder anzuzeigen.]')
 				];
 			}
 			

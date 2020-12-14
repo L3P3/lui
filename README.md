@@ -4,10 +4,10 @@ When I was introduced to [React](https://github.com/facebook/react), I liked it 
 
 ## Features
 
-- Under **4k** code size (<2k compressed)
+- About **4k** code size (<2k compressed)
 - **Stateful components** using [hooks](https://reactjs.org/docs/hooks-intro.html)
 - Will be **compatible** with down to [Internet Explorer 5](https://en.wikipedia.org/wiki/Internet_Explorer_5)
-- Offers **development mode**
+- Optional **development mode**
 - **Animations** integrated
 - Conditional css classes on elements
 - Not terribly inefficient
@@ -59,7 +59,7 @@ If you bundle lui together with your app, you can access these functions by a si
 
 ### Components
 
-A component is a function which takes props and returns a list of its child components. By recursion, you can build up a html tree in a very flexible way. I also recommend reading [React's explaination](https://reactjs.org/docs/components-and-props.html).
+A component is a function which takes props and returns a list of its child components. By recursion, you can build up a dom tree in a very flexible way. I also recommend reading [React's explaination](https://reactjs.org/docs/components-and-props.html).
 
 Here is a very simple component. It takes two props (one of which is optional) and it contains just one node.
 
@@ -69,7 +69,7 @@ function ColoredText({
     text
 }) {
     return [
-        node_html(
+        node_dom(
             'span',
             {
                 S: {color},
@@ -82,7 +82,7 @@ function ColoredText({
 
 To have child components, you have to return nodes. It does not matter where you create nodes as long as you always return them in the same order in components. In order to not use a node, return a boolean or something falsy in its place.
 
-In the above example, we use the `span` [html component](#html-components). If you want to use a custom component like `ColoredText` above, just refer to it like this:
+In the above example, we use the `span` [dom component](#dom-components). If you want to use a custom component like `ColoredText` above, just refer to it like this:
 
 ```js
 function BlueText({
@@ -104,25 +104,25 @@ function BlueText({
 
 If you want to map an array with changing order or length to a list of components, use `node_list` instead of calling `node` for each item to keep the invariant that nodes must have a stable order.
 
-### HTML components
+### DOM components
 
-The leaves of your component tree are mostly made out of native html elements. To use such a component, use `node_html` instead of `node`. The signature is the same, except for the first argument being a descriptor, similar to css selectors: `tagName[attr1=value][attr2][...]`
+The leaves of your component tree are mostly made out of native dom elements. To use such a component, use `node_dom` instead of `node`. The signature is the same, except for the first argument being a descriptor, similar to css selectors: `tagName[attr1=value][attr2][...]`
 
 The `tagName` is required but number and order of attributes are optional. Having static attributes in the descriptor instead of in the props improves efficiency (re-using of nodes, reduced diffing).
 
-Props are directly mapped to html attributes, except these 4 special props:
+Props are directly mapped to dom attributes, except these 4 special props:
 prop | Description
 --- | ---
 `C: Array<node>` | The nodes that should come into it. Instead of as a prop, you can pass this array as the third argument to the `node` function.
 `F: Object<string, boolean>` | An object of applied css classes. Each key with a `true` value will be applied. Others not.
-`R: function(HTMLElement)` | This function is given the instance's html element after it is created.
+`R: function(HTMLElement)` | This function is given the instance's dom element after it is created.
 `S: Object<string, string>` | Pretty much the same as element.style, keys are the css properties, values their values.
 
 ### Initialization
 
 The component tree's root is defined by just the one and only call to `init`. It gets a callback which then returns the body props and its childs.
 
-The (virtual) body component is an html component, so the same rules as above apply to the props object returned by the root component. Except for the `C` prop since body childs must be returned separately.
+The (virtual) body component is an dom component, so the same rules as above apply to the props object returned by the root component. Except for the `C` prop since body childs must be returned separately.
 
 What we pass to init is pretty much a component without incoming props, a different return value and [early exit](#early-exit) is prohibited.
 
@@ -155,7 +155,7 @@ function YellowText({
 }
 ```
 
-However, you need to set up babel and the jsx plugin properly and I have not tried that yet. The plugin must use `node` or `node_html` instead of `React.createElement`. And nodes must always be supplied in a flat array. Personally, I am not interested in that feature.
+However, you need to set up babel and the jsx plugin properly and I have not tried that yet. The plugin must use `node` or `node_dom` instead of `React.createElement`. And nodes must always be supplied in a flat array. Personally, I am not interested in that feature.
 
 ### Hooks
 
@@ -180,6 +180,7 @@ lui | React
 `hook_await` | -
 `hook_callback` | [useCallback](https://reactjs.org/docs/hooks-reference.html#usecallback)
 `hook_delay` | -
+`hook_dom` | -
 `hook_effect` | [useEffect](https://reactjs.org/docs/hooks-reference.html#useeffect)
 `hook_first` | -
 `hook_memo` | [useMemo](https://reactjs.org/docs/hooks-reference.html#usememo)
@@ -200,9 +201,9 @@ If the callback requires something from your component, wrap it in `hook_callbac
 
 This _may_ just have a small impact on performance and you may as well just use closures as the React guys are doing it. Modern browsers are quite efficient in frequent function definitions. But older browsers would heavily profit from externalizing function definitions.
 
-### Accessing html elements
+### Accessing dom elements
 
-In React, you pass an object to [html components](#html-components) via the prop `ref`. In lui, you pass a function (eg. a setter) via the prop `R`. This way, you can get properties of the element or manipulate it in a way impossible via the props provided by html components.
+In React, you pass an object to [dom components](#dom-components) via the prop `ref`. In lui, you pass a function (eg. a setter) via the prop `R`. This way, you can get properties of the element or manipulate it in a way impossible via the props provided by dom components.
 
 ### Early exit
 
@@ -216,7 +217,7 @@ function UserName({
     hook_assert(name !== null);
     const NAME = name.toUppercase();
     return [
-        node_html(
+        node_dom(
             'span[className=user-name]',
             {
                 innerText: NAME,
@@ -237,7 +238,7 @@ Function | Description
 --- | ---
 `init(Body):void` | This mounts the body once, you give it the so-to-say body component. But unlinke actual components, you return the props for the body element and its content. So `Body` looks like this: `function():[body_props: Object, body_content: Array<node>]`
 `node(Component, props: ?Object=, childs: ?Array<node>=):node` | This is how you add child components. If the added component accepts childs (`C` prop), you can pass that as the third argument as an array of nodes.
-`node_html(descriptor: string, props, childs):node` | When you want to add html components, use this function. It is very similar to `node` but needs a descriptor instead.
+`node_dom(descriptor: string, props=, childs=):node` | When you want to add dom components, use this function. It is very similar to `node` but needs a descriptor instead.
 `node_list(Component, props: Object, data: Array)` | When you want to add a component n times for each entry of an array, this is the (proper) way to go. If the array items are objects, the [keys](https://reactjs.org/docs/lists-and-keys.html) are directly taken from an `id` property.
 `now():number` | The _relative_ point of time of the latest rerendering call. Do not use this as persistent time reference but just inside of run time. Useful for custom animations.
 `hook_assert(condition: boolean):void` | When the condition is falsy, rendering of the current component is interrupted. May be used for error handling or anything else.
@@ -245,6 +246,7 @@ Function | Description
 `hook_await(promise):void` | As long as the promise is not resolved yet, rendering of the current component will be interrupted here.
 `hook_callback(function, deps):function` | Returns a function that never changes. It passes all arguments down to the given function after the `deps`. Use this when you need to pass a callback as props that needs `deps`. If that callback is independent of the current component (has no `deps`), move the callback out of the component.
 `hook_delay(msecs: number):boolean` | Turns `true` after the specified delay.
+`hook_dom(descriptor, props=):dom` | Alternative to a single `node_dom` child. Returned childs will be wrapped by this element. Must not be skipped or called twice per component.
 `hook_effect(function(...deps):destroy, deps: ?Array):void` | Run the given function once and every time an `deps` item changes. That function _may_ return another function that gets called before the effect appears again or when the component gets unmounted.
 `hook_first():boolean` | This just tells you if this is the first time the component is being rendered.
 `hook_memo(function(...deps):T, deps: ?Array):T` | When you need to do some data transformation, put your transformation code inside this hook and it only gets called when a `deps` entry changes.

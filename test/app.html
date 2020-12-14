@@ -64,7 +64,7 @@
 		<script>
 			const {
 				node,
-				node_html,
+				node_dom,
 				hook_effect,
 				hook_memo,
 				hook_reducer_f,
@@ -148,7 +148,7 @@
 				if (opened_ratio === 0) return null;
 				
 				return [
-					node_html(
+					node_dom(
 						'div[className=sd]',
 						{
 							S: {
@@ -159,7 +159,7 @@
 							}
 						}
 					),
-					node_html(
+					node_dom(
 						'div[className=sb]',
 						{
 							C,
@@ -185,7 +185,7 @@
 					:	null
 				);
 				return [
-					node_html(
+					node_dom(
 						'div',
 						{
 							F: {
@@ -227,7 +227,7 @@
 							width
 						},
 						[
-							node_html('h1[innerText=Tolle Seitenleiste!]'),
+							node_dom('h1[innerText=Tolle Seitenleiste!]'),
 							node(
 								SidebarButton,
 								{
@@ -267,21 +267,21 @@
 				return [
 					null,
 					[
-						node_html('h1[innerText=Moin!]'),
-						node_html(
+						node_dom('h1[innerText=Moin!]'),
+						node_dom(
 							'table',
 							null,
 							[
-								node_html(
+								node_dom(
 									'tr',
 									null,
 									[
-										node_html('td[innerText=Breite: ]'),
-										node_html(
+										node_dom('td[innerText=Breite: ]'),
+										node_dom(
 											'td',
 											null,
 											[
-												node_html(
+												node_dom(
 													'input[type=range][min=0][max=500]',
 													{
 														value: width,
@@ -294,16 +294,16 @@
 										)
 									]
 								),
-								node_html(
+								node_dom(
 									'tr',
 									null,
 									[
-										node_html('td[innerText=Dauer: ]'),
-										node_html(
+										node_dom('td[innerText=Dauer: ]'),
+										node_dom(
 											'td',
 											null,
 											[
-												node_html(
+												node_dom(
 													'input[type=range][min=0][max=1000]',
 													{
 														value: delay,
@@ -318,11 +318,11 @@
 								)
 							]
 						),
-						node_html(
+						node_dom(
 							'p',
 							null,
 							[
-								node_html(
+								node_dom(
 									'button[innerText=Seitenleiste öffnen]',
 									{
 										onclick: sidebar && sidebar.open

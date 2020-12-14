@@ -15,8 +15,9 @@ import {
 	hook_reducer,
 	hook_reducer_f,
 	hook_await,
+	hook_dom,
 	node,
-	node_html,
+	node_dom,
 	node_list,
 	now,
 	init
@@ -39,8 +40,9 @@ window['lui'] = {
 	hook_reducer,
 	hook_reducer_f,
 	hook_await,
+	hook_dom,
 	node,
-	node_html,
+	node_dom,
 	node_list,
 	now,
 	init

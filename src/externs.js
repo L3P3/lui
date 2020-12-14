@@ -4,24 +4,24 @@
 	@typedef {!Object<string, boolean>}
 	@dict
 */
-var TYPE_PROPS_HTML_F;
+var TYPE_PROPS_DOM_F;
 
 /**
 	@typedef {!Object<string, string>}
 	@dict
 */
-var TYPE_PROPS_HTML_S;
+var TYPE_PROPS_DOM_S;
 
 /**
 	@typedef {?{
 		C: (Array<TYPE_INSTANCE_CALL<*>>|void),
-		F: (TYPE_PROPS_HTML_F|void),
+		F: (TYPE_PROPS_DOM_F|void),
 		R: (function(HTMLElement):void|void),
-		S: (TYPE_PROPS_HTML_S|void)
+		S: (TYPE_PROPS_DOM_S|void)
 	}}
 	@dict
 */
-var TYPE_PROPS_HTML;
+var TYPE_PROPS_DOM;
 
 /**
 	@typedef {{
@@ -41,8 +41,9 @@ var TYPE_PROPS_HTML;
 		hook_reducer,
 		hook_reducer_f,
 		hook_await,
+		hook_dom,
 		node,
-		node_html,
+		node_dom,
 		node_list,
 		now,
 		init
