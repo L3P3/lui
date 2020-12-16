@@ -2,19 +2,18 @@ import {
 	init,
 	hook_dom,
 	hook_effect,
-	hook_first,
 	hook_reducer_f,
 	hook_state,
 	hook_static,
 	hook_transition,
-	node,
-	node_dom
+	node_dom,
+	node_list
 } from '../src/lui.js';
 
 /// BAR ///
 
 function Bar({
-	color
+	I: color
 }) {
 	const [expanded, expanded_set] = hook_state(false);
 
@@ -60,6 +59,21 @@ const dark_save = dark => {
 		+dark
 	)
 };
+
+const colors = (
+	new Array(16)
+	.fill(0)
+	.map((n, index) => index.toString(16))
+	.map(char => '#0'+char+'8')
+);
+
+const colors_reversed = (
+	[
+		...colors,
+		'#f00'
+	]
+	.reverse()
+);
 
 init(() => {
 	const [dark, dark_toggle] = hook_reducer_f(dark_reducer, dark_init);
@@ -107,21 +121,10 @@ init(() => {
 					)
 				]
 			),
-			//since node_list is not yet implemented...
-			hook_static(hook_first() && node(() =>
-				[]
-				.concat(
-					...(
-						new Array(16)
-						.fill(0)
-						.map((n, index) => index.toString(16))
-						.map(char => '#0'+char+'8')
-						.map(color =>
-							node(Bar, {color})
-						)
-					)
-				)
-			))
+			node_list(
+				Bar,
+				dark ? colors : colors_reversed
+			)
 		]
 	];
 });

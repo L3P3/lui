@@ -124,6 +124,22 @@ let rerender_pending = false;
 let rerender_requested = false;
 
 
+/// MAPS ///
+
+/**
+	also enum default value
+	@dict
+	@type {!Object<string, HTMLElement>}
+*/
+const dom_cache = {};
+
+/**
+	@dict
+	@type {!Object<string, TYPE_COMPONENT_DOM>}
+*/
+const component_dom_cache = {};
+
+
 DEBUG && (
 	window.onerror = () => {
 		current !== null_ &&
@@ -169,6 +185,7 @@ const stack_get = () => {
 	@return {string}
 */
 const component_name_get = component => (
+	component === tuple_comp ? 'list' :
 	component['name_'] ||
 	component.name ||
 	'?'
@@ -260,7 +277,7 @@ const object_comp = (a, b) => (
 )
 
 /**
-	checks if tuples are equal, also used as a private enum
+	checks if tuples are equal, also enum for node_list
 	@param {Array} a
 	@param {(Array|undefined)} b
 	@return {boolean}
@@ -302,107 +319,263 @@ const instance_render = (instance, dom_parent, dom_after) => {
 	);
 	current_index = 0;
 
+	let dom_first = dom_after;
+
 	VERBOSE && log('instance_render');
 	render_queue.delete(instance);
 
-	let child_calls = null_;
-	let dom_first = dom_after;
+	// not node_list?
+	if (instance.icall.component !== tuple_comp) {
+		let child_calls = null_;
 
-	try {
-		child_calls = (instance.icall.component)(instance.icall.props);
-	}
-	catch (thrown) {
-		if (
-			DEBUG &&
-			thrown !== tuple_comp
-		) throw thrown;
-	}
-
-	const {dom} = instance;
-
-	DEBUG &&
-	typeof child_calls !== 'object' &&
-		error('components need to return child list or null');
-
-	if (child_calls !== null_) {
-		if (dom !== null_) {
-			dom_parent = dom;
-			dom_first = null_;
+		try {
+			child_calls = (instance.icall.component)(instance.icall.props);
+		}
+		catch (thrown) {
+			if (
+				DEBUG &&
+				thrown !== dom_cache
+			) throw thrown;
 		}
 
-		let childs_index = child_calls.length;
-		let child;
-		let child_call;
+		const {dom} = instance;
 
-		DEBUG && (
-			typeof childs_index !== 'number' &&
-				error('childs must be returned in a list'),
-			childs_index === 0 &&
-				error('returned childs list empty'),
-			instance.childs !== null_ &&
-			childs_index !== instance.childs.length &&
-				error('returned childs count changed')
+		DEBUG &&
+		typeof child_calls !== 'object' &&
+			error('components need to return child list or null');
+
+		if (child_calls !== null_) {
+			if (dom !== null_) {
+				dom_parent = dom;
+				dom_first = null_;
+			}
+
+			let childs_index = child_calls.length;
+			let child;
+			let child_call;
+
+			DEBUG && (
+				typeof childs_index !== 'number' &&
+					error('childs must be returned in a list'),
+				childs_index === 0 &&
+					error('returned childs list empty'),
+				instance.childs !== null_ &&
+				childs_index !== instance.childs.length &&
+					error('returned childs count changed')
+			);
+
+			/** @type {Array<TYPE_INSTANCE<*>>} */
+			const instance_childs = (
+				instance.childs ||
+				(
+					instance.childs =
+						new Array_(childs_index).fill(null_)
+				)
+			);
+
+			do {
+				child = instance_childs[--childs_index];
+
+				if (
+					(
+						child_call = child_calls[childs_index]
+					) &&
+					child_call !== true
+				) {
+					DEBUG &&
+					child !== null_ &&
+					child.icall.component !== child_call.component &&
+						error('child replaced at ' + childs_index);
+
+					if (child === null_) {
+						VERBOSE && log('child add');
+
+						instance_render(
+							child = instance_childs[childs_index] = {
+								icall: child_call,
+								iparent: instance,
+								parent_index: childs_index,
+								slots: null_,
+								childs: null_,
+								dom: null_,
+								dom_first: null_
+							},
+							dom_parent,
+							dom_first
+						);
+
+						DEBUG && (
+							current = instance
+						);
+
+						child.dom !== null_ &&
+							dom_parent.insertBefore(
+								child.dom_first = child.dom,
+								dom_first
+							);
+					}
+					else if (
+						!object_comp(
+							child.icall.props,
+							child_call.props
+						)
+					) {
+						VERBOSE && log('child modify', object_diff(child.icall.props, child_call.props));
+
+						child.icall = child_call;
+						instance_render(
+							child,
+							dom_parent,
+							dom_first
+						);
+
+						DEBUG && (
+							current = instance
+						);
+					}
+
+					child.dom_first !== null_ && (
+						dom_first = child.dom_first
+					);
+				}
+				else if (child !== null_) {
+					instance_unmount(child, dom_parent);
+					instance_childs[childs_index] = null_;
+				}
+			}
+			while (childs_index > 0);
+		}
+		else if (instance.childs !== null_) {
+			VERBOSE && log('discard childs');
+			for (const child of instance.childs)
+				child !== null_ &&
+					instance_unmount(child, dom_parent);
+			instance.childs = null_;
+		}
+
+		dom === null_ &&
+		(
+			instance.dom_first =
+				dom_first !== dom_after
+				?	dom_first
+				:	null_
 		);
-
-		/** @type {Array<TYPE_INSTANCE<*>>} */
-		const instance_childs = (
-			instance.childs ||
+	}
+	// node_list?
+	else {
+		const {
+			component,
+			data,
+			props
+		} = instance.icall.props;
+		if (DEBUG) {
 			(
-				instance.childs =
-					new Array_(childs_index).fill(null_)
+				typeof data !== 'object' ||
+				data === null_ ||
+				typeof data.length !== 'number'
+			) &&
+				error('node_list data must be an array');
+			(
+				typeof props !== 'object' ||
+				props === null_
+			) &&
+				error('node_list props must be an object');
+			assert_hook_equal(component);
+			const item_type_ref = hook_static({val: null_});
+			data.length > 0 && (
+				item_type_ref.val !== null_
+				?	(
+						typeof data[0] !== item_type_ref.val &&
+							error('node_list item type changed'),
+						typeof data[0] === 'object' &&
+						data[0] !== null_ &&
+						typeof data[0].id !== item_type_ref.val_id &&
+							error('node_list item id type changed')
+					)
+				:	(
+						['object', 'string', 'number']
+						.includes(
+							item_type_ref.val = typeof data[0]
+						) ||
+							error('node_list item type invalid'),
+						typeof data[0] === 'object' &&
+						data[0] !== null_ &&
+						!['string', 'number']
+						.includes(
+							item_type_ref.val_id = typeof data[0].id
+						) &&
+							error('node_list item id type invalid')
+					)
+			);
+		}
+		const data_map = {};
+		const data_order = [];
+		let data_index = data.length;
+		if (data_index > 0) {
+			const items_objects = typeof data[0] === 'object';
+			for (const item of data) {
+				DEBUG && (
+					item === null_ &&
+						error('node_list item is null'),
+					typeof item !== typeof data[0] &&
+						error('node_list item type changed'),
+					items_objects &&
+					typeof item.id !== typeof data[0].id &&
+						error('node_list item id type changed')
+				);
+	
+				const key = (
+					items_objects
+					?	item.id
+					:	item
+				);
+
+				DEBUG &&
+				key in data_map &&
+					error('node_list item not unique');
+	
+				data_map[key] = item;
+				data_order.push(key);
+			}
+		}
+
+		const item_map = hook_static();
+		const data_order_prev = hook_prev(data_order);
+		const props_prev = hook_prev(props);
+		const props_changed = (
+			current_first ||
+			!object_comp(
+				props,
+				props_prev
 			)
 		);
 
-		do {
-			child = instance_childs[--childs_index];
+		VERBOSE && !current_first && props_changed && log('childs modify', object_diff(props_prev, props));
 
-			if (
-				(
-					child_call = child_calls[childs_index]
-				) &&
-				child_call !== true
-			) {
-				DEBUG &&
-				child !== null_ &&
-				child.icall.component !== child_call.component &&
-					error('child replaced at ' + childs_index);
+		// remove items
+		if(!current_first)
+		for (const key of data_order_prev) {
+			if (key in data_map) continue;
+			instance_unmount(item_map[key], dom_parent);
+			delete item_map[key];
+		}
 
-				if (child === null_) {
-					VERBOSE && log('child add');
+		// insert/reinsert all items
+		const childs = instance.childs = new Array(data_index);
+		while (data_index > 0) {
+			const key = data_order[--data_index];
+			let child = item_map[key];
+			if (child !== undefined) {
+				child.parent_index !== data_index && (
+					instance_reinsert(child, dom_parent, dom_first),
+					child.parent_index = data_index
+				);
 
-					instance_render(
-						child = instance_childs[childs_index] = {
-							icall: child_call,
-							iparent: instance,
-							parent_index: childs_index,
-							slots: null_,
-							childs: null_,
-							dom: null_,
-							dom_first: null_
-						},
-						dom_parent,
-						dom_first
-					);
-
-					DEBUG && (
-						current = instance
-					);
-
-					child.dom !== null_ &&
-						dom_parent.insertBefore(
-							child.dom_first = child.dom,
-							dom_first
-						);
-				}
-				else if (
-					!object_comp(
-						child.icall.props,
-						child_call.props
-					)
-				) {
-					VERBOSE && log('child modify', object_diff(child.icall.props, child_call.props));
-
-					child.icall = child_call;
+				if (props_changed) {
+					child.icall.props = {
+						...props,
+						I: data_map[key]
+					};
 					instance_render(
 						child,
 						dom_parent,
@@ -413,33 +586,52 @@ const instance_render = (instance, dom_parent, dom_after) => {
 						current = instance
 					);
 				}
+			}
+			else {
+				VERBOSE && log('child add');
 
-				child.dom_first !== null_ && (
-					dom_first = child.dom_first
+				instance_render(
+					item_map[key] = child = {
+						icall: {
+							component,
+							props: {
+								...props,
+								I: data_map[key]
+							}
+						},
+						iparent: instance,
+						parent_index: data_index,
+						slots: null_,
+						childs: null_,
+						dom: null_,
+						dom_first: null_
+					},
+					dom_parent,
+					dom_first
 				);
-			}
-			else if (child !== null_) {
-				instance_unmount(child, dom_parent);
-				instance_childs[childs_index] = null_;
-			}
-		}
-		while (childs_index > 0);
-	}
-	else if (instance.childs !== null_) {
-		VERBOSE && log('discard childs');
-		for (const child of instance.childs)
-			child !== null_ &&
-				instance_unmount(child, dom_parent);
-		instance.childs = null_;
-	}
 
-	instance.dom === null_ &&
-	(
+				DEBUG && (
+					current = instance
+				);
+
+				child.dom !== null_ &&
+					dom_parent.insertBefore(
+						child.dom_first = child.dom,
+						dom_first
+					);
+			}
+
+			(
+				childs[data_index] = child
+			).dom_first !== null_ && (
+				dom_first = child.dom_first
+			);
+		}
 		instance.dom_first =
 			dom_first !== dom_after
 			?	dom_first
-			:	null_
-	);
+			:	null_;
+	}
 }
 
 /**
@@ -480,6 +672,34 @@ const instance_unmount = (instance, dom_parent) => {
 
 	render_queue.delete(instance);
 	render_queue_next.delete(instance);
+}
+
+/**
+	reinsert all dom nodes of an instance
+	@param {TYPE_INSTANCE<*>} instance
+	@param {HTMLElement} dom_parent
+	@param {?HTMLElement} dom_first
+	@return {?HTMLElement}
+*/
+const instance_reinsert = (instance, dom_parent, dom_first) => {
+	if (instance.dom !== null_) {
+		dom_parent.insertBefore(instance.dom, dom_first);
+		return instance.dom;
+	}
+	if (instance.dom_first !== null_) {
+		let childs_index = instance.childs.length;
+		do {
+			instance.childs[--childs_index] !== null_ && (
+				dom_first = instance_reinsert(
+					instance.childs[childs_index],
+					dom_parent,
+					dom_first
+				)
+			);
+		}
+		while (childs_index > 0);
+	}
+	return dom_first;
 }
 
 /**
@@ -530,7 +750,7 @@ export const hook_first = () => (
 export const hook_assert = condition => {
 	DEBUG && assert_hook();
 
-	if (!condition) throw tuple_comp;
+	if (!condition) throw dom_cache;
 }
 
 /**
@@ -920,7 +1140,7 @@ export const hook_reducer_f = (reducer, initializer) => {
 */
 export const hook_await = promise => {
 	hook_assert(
-		hook_async(promise, null_, tuple_comp) !== tuple_comp
+		hook_async(promise, null_, dom_cache) !== dom_cache
 	);
 }
 
@@ -1055,16 +1275,21 @@ export const node = (component, props, childs) => (
 )
 
 /**
-	create/use a component with props and childs
+	create/use a component with props for each data item
 	@param {TYPE_COMPONENT} component
-	@param {TYPE_PROPS} props
 	@param {!Array} data
+	@param {TYPE_PROPS=} props
 	@return {?TYPE_INSTANCE_CALL}
 */
-export const node_list = (component, props, data) => (
-	DEBUG &&
-		error('not implemented yet'),
-	null_
+export const node_list = (component, data, props) => (
+	node(
+		tuple_comp,
+		{
+			component,
+			data,
+			props: props || {}
+		}
+	)
 )
 
 /**
@@ -1271,18 +1496,6 @@ export const node_dom = (descriptor, props, childs) => (
 		childs
 	)
 )
-
-/**
-	@dict
-	@type {!Object<string, HTMLElement>}
-*/
-const dom_cache = {};
-
-/**
-	@dict
-	@type {!Object<string, TYPE_COMPONENT_DOM>}
-*/
-const component_dom_cache = {};
 
 /**
 	returns the described dom
