@@ -57,9 +57,13 @@ async function build(prod) {
 	))[2]);
 	
 	const code_js = (
-		fs.readFileSync(file, 'utf8')
-		//.trim()
+		(
+			fs.readFileSync(file, 'utf8')
+			.trim() + '%END%'
+		)
 		.replace('lui.js web frame work', 'lui.js web frame work ' + version)
+		.replace('*/\n', '*/\n(()=>{')
+		.replace(';%END%', '})()')
 		//.split('\n').join('')
 	);
 
