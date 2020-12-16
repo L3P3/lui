@@ -17,7 +17,8 @@ var TYPE_PROPS_DOM_S;
 		C: (Array<TYPE_INSTANCE_CALL<*>>|void),
 		F: (TYPE_PROPS_DOM_F|void),
 		R: (function(HTMLElement):void|void),
-		S: (TYPE_PROPS_DOM_S|void)
+		S: (TYPE_PROPS_DOM_S|void),
+		I: (*|void)
 	}}
 	@dict
 */

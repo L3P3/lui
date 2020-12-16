@@ -1279,7 +1279,7 @@ export const node = (component, props, childs) => (
 	@param {TYPE_COMPONENT} component
 	@param {!Array} data
 	@param {TYPE_PROPS=} props
-	@return {?TYPE_INSTANCE_CALL}
+	@return {TYPE_INSTANCE_CALL}
 */
 export const node_list = (component, data, props) => (
 	node(
