@@ -20,10 +20,11 @@ import {
 	node,
 	node_dom,
 	node_list,
-	now
+	now,
+	window_
 } from './lui.js';
 
-window['lui'] = {
+window_['lui'] = {
 	hook_assert,
 	hook_async,
 	hook_await,

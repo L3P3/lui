@@ -123,16 +123,6 @@ const dom_cache = {};
 const component_dom_cache = {};
 
 
-DEBUG && (
-	window.onerror = () => (
-		current !== null_ &&
-			log('error'),
-		render_queue.clear(),
-		render_queue_next.clear()
-	)
-);
-
-
 /// ALIAS ///
 
 const null_ = current;
@@ -141,7 +131,8 @@ const false_ = rerender_requested;
 const Array_ = Array;
 const Object_keys = Object.keys;
 const document_ = document;
-const performance_ = window.performance || Date;
+export const window_ = window;
+const performance_ = window_.performance || Date;
 
 
 /// DEBUGGING ///
@@ -462,42 +453,42 @@ const instance_render = (dom_parent, dom_first) => {
 	else {
 		const {
 			component,
-			list,
+			list_data,
 			props
 		} = instance.icall.props;
 		const item_type_ref = DEBUG && hook_static({val: null_});
 		DEBUG && (
 			(
-				typeof list !== 'object' ||
-				list === null_ ||
-				typeof list.length !== 'number'
+				typeof list_data !== 'object' ||
+				list_data === null_ ||
+				typeof list_data.length !== 'number'
 			) &&
-				error('list must be an array'),
+				error('list_data must be an array'),
 			typeof props !== 'object' &&
 				error('props must be an object'),
 			assert_hook_equal(component, 'item component'),
 			assert_hook_equal(props === null_, 'props presence'),
-			list.length > 0 && (
+			list_data.length > 0 && (
 				item_type_ref.val !== null_
 				?	(
-						typeof list[0] !== item_type_ref.val &&
+						typeof list_data[0] !== item_type_ref.val &&
 							error('item type changed'),
-						typeof list[0] === 'object' &&
-						list[0] !== null_ &&
-						typeof list[0].id !== item_type_ref.val_id &&
+						typeof list_data[0] === 'object' &&
+						list_data[0] !== null_ &&
+						typeof list_data[0].id !== item_type_ref.val_id &&
 							error('item id type changed')
 					)
 				:	(
 						['object', 'string', 'number']
 						.includes(
-							item_type_ref.val = typeof list[0]
+							item_type_ref.val = typeof list_data[0]
 						) ||
 							error('item type invalid'),
-						typeof list[0] === 'object' &&
-						list[0] !== null_ &&
+						typeof list_data[0] === 'object' &&
+						list_data[0] !== null_ &&
 						!['string', 'number']
 						.includes(
-							item_type_ref.val_id = typeof list[0].id
+							item_type_ref.val_id = typeof list_data[0].id
 						) &&
 							error('item id type invalid')
 					)
@@ -505,17 +496,17 @@ const instance_render = (dom_parent, dom_first) => {
 		);
 		const items_map = {};
 		const items_order = [];
-		let items_index = list.length;
+		let items_index = list_data.length;
 		if (items_index > 0) {
-			const items_objects = typeof list[0] === 'object';
-			for (const item of list) {
+			const items_objects = typeof list_data[0] === 'object';
+			for (const item of list_data) {
 				DEBUG && (
 					item === null_ &&
 						error('item is null'),
-					typeof item !== typeof list[0] &&
+					typeof item !== typeof list_data[0] &&
 						error('item type changed'),
 					items_objects &&
-					typeof item.id !== typeof list[0].id &&
+					typeof item.id !== typeof list_data[0].id &&
 						error('item id type changed')
 				);
 	
@@ -1305,16 +1296,16 @@ export const node = (component, props, childs) => (
 /**
 	create/use a component with props for each list item
 	@param {TYPE_COMPONENT} component
-	@param {Array<TYPE_LIST_ITEM>} list
+	@param {Array<TYPE_LIST_ITEM>} list_data
 	@param {TYPE_PROPS=} props
 	@return {TYPE_INSTANCE_CALL}
 */
-export const node_list = (component, list, props) => (
+export const node_list = (component, list_data, props) => (
 	node(
 		/** @type {TYPE_COMPONENT} */ (deps_comp),
 		{
 			component,
-			list,
+			list_data,
 			props: props || null_
 		}
 	)
@@ -1637,3 +1628,12 @@ const component_dom_get = descriptor => {
 	}
 	return component;
 }
+
+DEBUG && (
+	window_.onerror = () => (
+		current !== null_ &&
+			log('error'),
+		render_queue.clear(),
+		render_queue_next.clear()
+	)
+);
