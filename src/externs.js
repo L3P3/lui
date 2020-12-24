@@ -1,53 +1,58 @@
 /** @externs */
 
 /**
+	@typedef {(string|number|{id: (string|number)})}
+*/
+var TYPE_LIST_ITEM;
+
+/**
 	@typedef {!Object<string, boolean>}
 	@dict
 */
-var TYPE_PROPS_DOM_F;
+var TYPE_PROPS_F;
 
 /**
 	@typedef {!Object<string, string>}
 	@dict
 */
-var TYPE_PROPS_DOM_S;
-
-/**
-	@typedef {?{
-		C: (Array<TYPE_INSTANCE_CALL<*>>|void),
-		F: (TYPE_PROPS_DOM_F|void),
-		R: (function(HTMLElement):void|void),
-		S: (TYPE_PROPS_DOM_S|void),
-		I: (*|void)
-	}}
-	@dict
-*/
-var TYPE_PROPS_DOM;
+var TYPE_PROPS_S;
 
 /**
 	@typedef {{
-		hook_rerender,
-		hook_first,
+		C: (void|Array<TYPE_INSTANCE_CALL_OPTIONAL>),
+		F: (void|TYPE_PROPS_F),
+		R: (void|function(HTMLElement):void),
+		S: (void|TYPE_PROPS_S),
+		I: (void|TYPE_LIST_ITEM)
+	}}
+	@dict
+*/
+var TYPE_PROPS;
+
+/**
+	@typedef {{
 		hook_assert,
-		hook_effect,
 		hook_async,
-		hook_state,
-		hook_static,
-		hook_memo,
-		hook_prev,
+		hook_await,
 		hook_callback,
 		hook_delay,
-		hook_transition,
+		hook_dom,
+		hook_effect,
+		hook_first,
+		hook_memo,
 		hook_object_changes,
+		hook_prev,
 		hook_reducer,
 		hook_reducer_f,
-		hook_await,
-		hook_dom,
+		hook_rerender,
+		hook_state,
+		hook_static,
+		hook_transition,
+		init,
 		node,
 		node_dom,
 		node_list,
-		now,
-		init
+		now
 	}}
 */
 window.lui;

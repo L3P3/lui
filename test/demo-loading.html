@@ -91,7 +91,7 @@
 				return [
 					show_factor &&
 					node_dom(
-						'div#busy_back',
+						'div[id=busy_back]',
 						{S: {
 							opacity: (
 								breath * .5 + .5
@@ -100,7 +100,7 @@
 					),
 					show_factor &&
 					node_dom(
-						'div#busy_dot',
+						'div[id=busy_dot]',
 						{S: {
 							opacity: show_factor,
 							transform: `translate(${

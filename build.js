@@ -62,8 +62,8 @@ async function build(prod) {
 			.trim() + '%END%'
 		)
 		.replace('lui.js web frame work', 'lui.js web frame work ' + version)
-		.replace('*/\n', '*/\n(()=>{')
-		.replace(';%END%', '})()')
+		.replace('*/\n', '*/\n{')
+		.replace(';%END%', '}')
 		//.split('\n').join('')
 	);
 
