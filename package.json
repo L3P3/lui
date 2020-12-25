@@ -3,12 +3,28 @@
 	"version": "0.11.1",
 	"description": "web framework",
 	"homepage": "https://l3p3.de/dok/lui.html",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/l3p3/lui"
+	},
+	"bugs": {
+		"url": "https://github.com/l3p3/lui/issues"
+	},
 	"main": "src/lui.js",
+	"types": "types/main.d.ts",
 	"scripts": {
 		"build": "node ./build.js",
 		"buildd": "node ./build.js d"
 	},
-	"keywords": ["framework", "html", "tiny", "hooks"],
+	"keywords": [
+		"framework",
+		"html",
+		"tiny",
+		"hooks"
+	],
 	"author": "L3P3 <dev@l3p3.de> (https://l3p3.de)",
+	"contributors": [
+		"Johann Laur <jl.01@icloud.com> (https://github.com/johann-lr)"
+	],
 	"license": "ISC"
 }
