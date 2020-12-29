@@ -274,7 +274,7 @@ const object_comp = (a, b) => (
 )
 
 /**
-	checks if tuples are equal, symbol "node_list"
+	checks if tuples are equal, symbol "node_map"
 	@param {!Array} a
 	@param {?Array} b
 	@return {boolean}
@@ -316,7 +316,7 @@ const instance_render = (dom_parent, dom_first) => {
 	VERBOSE && log('instance_render' + (current_first ? ' first' : ''));
 	render_queue.delete(instance);
 
-	// not node_list?
+	// not node_map?
 	if (instance.icall.component !== deps_comp) {
 		let child_calls = null_;
 
@@ -449,7 +449,7 @@ const instance_render = (dom_parent, dom_first) => {
 				:	null_
 		);
 	}
-	// node_list?
+	// node_map?
 	else {
 		const {
 			component,
@@ -1300,7 +1300,7 @@ export const node = (component, props, childs) => (
 	@param {TYPE_PROPS=} props
 	@return {TYPE_INSTANCE_CALL}
 */
-export const node_list = (component, list_data, props) => (
+export const node_map = (component, list_data, props) => (
 	node(
 		/** @type {TYPE_COMPONENT} */ (deps_comp),
 		{

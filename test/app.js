@@ -7,7 +7,7 @@ import {
 	hook_static,
 	hook_transition,
 	node_dom,
-	node_list
+	node_map
 } from '../src/lui.js';
 
 /// BAR ///
@@ -121,7 +121,7 @@ init(() => {
 					)
 				]
 			),
-			node_list(
+			node_map(
 				Bar,
 				dark ? colors : colors_reversed
 			)

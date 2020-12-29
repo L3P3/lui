@@ -51,7 +51,7 @@ var TYPE_PROPS;
 		init,
 		node,
 		node_dom,
-		node_list,
+		node_map,
 		now
 	}}
 */

@@ -8,7 +8,7 @@ import {
 	init,
 	node,
 	node_dom,
-	node_list
+	node_map
 } from '../src/lui.js';
 
 const TODO_RESET = 1;
@@ -169,7 +169,7 @@ init(() => {
 			node_dom('hr'),
 			todo_list.length === 0 &&
 			node_dom('p[innerHTML=<i>nothing there</i>]'),
-			node_list(
+			node_map(
 				TodoListItem,
 				todo_list,
 				{

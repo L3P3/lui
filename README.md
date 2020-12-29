@@ -104,9 +104,9 @@ function BlueText({
 
 ### Variable number of child nodes
 
-If you want to map an array with changing order or length to a list of components, use `node_list` instead of calling `node` for each item to keep the invariant that nodes must have a stable order.
+If you want to map an array with changing order or length to a list of components, use `node_map` instead of calling `node` for each item to keep the invariant that nodes must have a stable order.
 
-The component you pass to `node_list` gets mounted for each item of the array you pass to it. The component gets a prop `I` containing the corresponding array item. If you pass props as the third argument, every child will get them in addition to `I`.
+The component you pass to `node_map` gets mounted for each item of the array you pass to it. The component gets a prop `I` containing the corresponding array item. If you pass props as the third argument, every child will get them in addition to `I`.
 
 Allowed array items are numbers, strings and objects. If you pass objects, they must have an unique `id` property. There must not be two items of the same value or id.
 
@@ -245,7 +245,7 @@ Function | Description
 `init(Body):void` | This mounts the body once, you give it the so-to-say body component. But unlinke actual components, you return the props for the body element and its content. So `Body` looks like this: `function():[body_props: Object, body_content: Array<node>]`
 `node(Component, props: ?Object=, childs: ?Array<node>=):node` | This is how you add child components. If the added component accepts childs (`C` prop), you can pass that as the third argument as an array of nodes.
 `node_dom(descriptor: string, props=, childs=):node` | When you want to add dom components, use this function. It is very similar to `node` but needs a descriptor instead.
-`node_list(Component, data: Array, props: Object=)` | When you want to add a component n times for each entry of an array, this is the (proper) way to go. If the array items are objects, the [keys](https://reactjs.org/docs/lists-and-keys.html) are directly taken from an `id` property.
+`node_map(Component, data: Array, props: Object=)` | When you want to add a component n times for each entry of an array, this is the (proper) way to go. If the array items are objects, the [keys](https://reactjs.org/docs/lists-and-keys.html) are directly taken from an `id` property.
 `now():number` | The _relative_ point of time of the latest rerendering call. Do not use this as persistent time reference but just inside of run time. Useful for custom animations.
 `hook_assert(condition: boolean):void` | When the condition is falsy, rendering of the current component is interrupted. May be used for error handling or anything else.
 `hook_async(function(...deps):Promise<T>, deps: ?Array, fallback):T` | If you need to wait for some data until it is available, use this instead of `hook_memo`. As long as the promise is pending, `fallback` is returned. If no fallback is given, either `null` or the latest value is returned.
