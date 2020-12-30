@@ -47,6 +47,7 @@ var TYPE_PROPS;
 		hook_rerender,
 		hook_state,
 		hook_static,
+		hook_sub,
 		hook_transition,
 		init,
 		node,

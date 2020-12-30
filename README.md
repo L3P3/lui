@@ -4,7 +4,7 @@ When I was introduced to [React](https://github.com/facebook/react), I liked it 
 
 ## Features
 
-- Under **5k** code size (<3k compressed)
+- About **5k** code size (<3k compressed)
 - **Stateful components** using [hooks](https://reactjs.org/docs/hooks-intro.html)
 - Will be **compatible** with down to [Internet Explorer 5](https://en.wikipedia.org/wiki/Internet_Explorer_5)
 - Optional **development mode**
@@ -197,6 +197,7 @@ lui | React
 `hook_rerender` | -
 `hook_state` | [useState](https://reactjs.org/docs/hooks-reference.html#usestate)
 `hook_static` | [useRef](https://reactjs.org/docs/hooks-reference.html#useref)
+`hook_sub` | -
 `hook_transition` | -
 
 ### Callbacks
@@ -263,6 +264,7 @@ Function | Description
 `hook_rerender():void` | When this is called, this component will be rendered again next frame, only intended for _animations_.
 `hook_state(T):[value, setter, getter]` | A simple component state. The first argument is the _initial_ value.
 `hook_static(T):T` | This is a much cheaper version of `hook_memo`: What you put in it the first time will _always_ come out of it.
+`hook_sub(function(...deps):T, deps):T` | Like `hook_memo` but the getter function may be swapped and it may contain hooks.
 `hook_transition(target: number, msecs: number):number` | When `target` changes, the output number will smoothly pass to the new target, taking the specified time for that transition.
 
 ## Contribution and Support

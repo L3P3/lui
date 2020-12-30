@@ -14,6 +14,7 @@ const HOOK_MEMO = DEBUG ? 4 : 0;
 const HOOK_PREV = DEBUG ? 5 : 0;
 const HOOK_REDUCEA = DEBUG ? 6 : 0;
 const HOOK_REDUCEF = DEBUG ? 7 : 0;
+const HOOK_SUB = DEBUG ? 8 : 0;
 
 
 /// COMPILATION ///
@@ -70,10 +71,16 @@ let current = null;
 let current_first = true;
 
 /**
+	state slots
+	@type {?Array<Array>}
+*/
+let current_slots = current;
+
+/**
 	next state slot pointer
 	@type {number}
 */
-let current_index = 0;
+let current_slots_index = 0;
 
 /**
 	relative time of the last rerender call
@@ -129,7 +136,9 @@ const null_ = current;
 const true_ = current_first;
 const false_ = rerender_requested;
 const Array_ = Array;
-const Object_keys = Object.keys;
+const Object_ = Object;
+const Object_assign = Object_.assign;
+const Object_keys = Object_.keys;
 const document_ = document;
 export const window_ = window;
 const performance_ = window_.performance || Date;
@@ -211,18 +220,23 @@ const assert_keys = (a, b) => {
 
 /**
 	ensures hook rules
-	@param {number=} type
+	@param {?number} type
+	@param {boolean} component only allowed directly in components
 */
-const assert_hook = type => {
-	current === null_ &&
+const assert_hook = (type, component) => {
+	current_slots === null_ &&
+		error('hook called outside of hook context');
+
+	current_slots = /** @type {!Array<Array>} */ (current_slots);
+
+	component &&
+	current.slots !== current_slots &&
 		error('hook called outside of component rendering');
 
-	current = /** @type {TYPE_INSTANCE} */ (current);
-
-	type !== undefined &&
-	current_index < current.slots.length &&
-	current.slots[current_index][0] !== type &&
-		error('inconsistent hook order at #' + current_index);
+	type !== null_ &&
+	current_slots_index < current_slots.length &&
+	current_slots[current_slots_index][0] !== type &&
+		error('inconsistent hook order at #' + current_slots_index);
 }
 
 /**
@@ -230,7 +244,7 @@ const assert_hook = type => {
 	@param {*} value
 */
 const assert_hook_equal = (value, description) => {
-	assert_hook();
+	assert_hook(null_, false_);
 
 	value !== hook_prev(value, value) &&
 		error(description + ' changed between renderings');
@@ -311,7 +325,8 @@ const deps_comp = (a, b) => {
 const instance_render = (dom_parent, dom_first) => {
 	const instance = /** @type {TYPE_INSTANCE} */ (current);
 	const dom_after = dom_first;
-	current_index = 0;
+	current_slots = instance.slots;
+	current_slots_index = 0;
 
 	VERBOSE && log('instance_render' + (current_first ? ' first' : ''));
 	render_queue.delete(instance);
@@ -551,7 +566,7 @@ const instance_render = (dom_parent, dom_first) => {
 		}
 
 		// insert/reinsert all items
-		const childs = instance.childs = new Array(items_index);
+		const childs = instance.childs = new Array_(items_index);
 		while (items_index > 0) {
 			const key = items_order[--items_index];
 			let child = item_map[key];
@@ -569,10 +584,9 @@ const instance_render = (dom_parent, dom_first) => {
 							?	{
 									I: items_map[key]
 								}
-							:	{
-									...props,
+							:	Object_assign({
 									I: items_map[key]
-								}
+								}, props)
 						)
 					},
 					iparent: instance,
@@ -608,10 +622,9 @@ const instance_render = (dom_parent, dom_first) => {
 						?	{
 								I: items_map[key]
 							}
-						:	{
-								...props,
+						:	Object_assign({
 								I: items_map[key]
-							}
+							}, props)
 					);
 
 					instance_render(
@@ -665,7 +678,6 @@ const instance_unmount = (instance, dom_parent) => {
 				break;
 			case HOOK_ASYNC:
 				slot[1] = null_;
-				break;
 			default:
 		}
 	}
@@ -725,7 +737,7 @@ const instance_dirtify = instance => {
 	request rerendering for current instance
 */
 export const hook_rerender = () => {
-	DEBUG && assert_hook();
+	DEBUG && assert_hook(null_, true_);
 	current = /** @type {TYPE_INSTANCE} */ (current);
 
 	VERBOSE &&
@@ -740,16 +752,16 @@ export const hook_rerender = () => {
 	@return {boolean}
 */
 export const hook_first = () => (
-	DEBUG && assert_hook(),
+	DEBUG && assert_hook(null_, false_),
 	current_first
 )
 
 /**
-	interrupts rendering if condition is not met
+	interrupts if condition is not met
 	@param {boolean=} condition
 */
 export const hook_assert = condition => {
-	DEBUG && assert_hook();
+	DEBUG && assert_hook(null_, false_);
 
 	if (!condition) throw dom_cache;
 }
@@ -760,11 +772,10 @@ export const hook_assert = condition => {
 	@param {?Array=} deps
 */
 export const hook_effect = (effect, deps) => {
-	DEBUG && assert_hook(HOOK_EFFECT);
-	current = /** @type {TYPE_INSTANCE} */ (current);
+	DEBUG && assert_hook(HOOK_EFFECT, false_);
 
-	if (current_index < current.slots.length) {
-		const slot = current.slots[current_index++];
+	if (current_slots_index < current_slots.length) {
+		const slot = current_slots[current_slots_index++];
 		if (!deps_comp(slot[1], deps || null_)) {
 			VERBOSE && log('effect again', deps);
 			slot[2] !== null_ &&
@@ -783,7 +794,7 @@ export const hook_effect = (effect, deps) => {
 	}
 	else {
 		VERBOSE && log('effect initial', deps);
-		current.slots[current_index++] = [
+		current_slots[current_slots_index++] = [
 			HOOK_EFFECT,
 			deps = deps || [],
 			effect(...deps) || null_
@@ -791,8 +802,8 @@ export const hook_effect = (effect, deps) => {
 	}
 
 	DEBUG &&
-	current.slots[current_index - 1][2] &&
-	current.slots[current_index - 1][2].then &&
+	current_slots[current_slots_index - 1][2] &&
+	current_slots[current_slots_index - 1][2].then &&
 		error('effect function must be synchronous, use hook_async instead');
 }
 
@@ -805,14 +816,13 @@ export const hook_effect = (effect, deps) => {
 	@return {?T}
 */
 export const hook_async = (getter, deps, fallback) => {
-	DEBUG && assert_hook(HOOK_ASYNC);
-	current = /** @type {TYPE_INSTANCE} */ (current);
+	DEBUG && assert_hook(HOOK_ASYNC, true_);
 
 	const slot = (
-		current_index < current.slots.length
-		?	current.slots[current_index++]
+		current_slots_index < current_slots.length
+		?	current_slots[current_slots_index++]
 		:	(
-			current.slots[current_index++] = [
+			current_slots[current_slots_index++] = [
 				HOOK_ASYNC,
 				null_,
 				null_
@@ -833,7 +843,7 @@ export const hook_async = (getter, deps, fallback) => {
 		slot[2] = fallback
 	);
 
-	const current_ = current;
+	const current_ = /** @type {TYPE_INSTANCE} */ (current);
 	getter(
 		...(
 			slot[1] = deps =
@@ -859,14 +869,13 @@ export const hook_async = (getter, deps, fallback) => {
 	@return {[T, function(T):void, function():T]}
 */
 export const hook_state = initial => {
-	DEBUG && assert_hook(HOOK_STATE);
-	current = /** @type {TYPE_INSTANCE} */ (current);
+	DEBUG && assert_hook(HOOK_STATE, true_);
 
-	if (current_index < current.slots.length) {
-		return current.slots[current_index++][1];
+	if (current_slots_index < current_slots.length) {
+		return current_slots[current_slots_index++][1];
 	}
 
-	const current_ = current;
+	const current_ = /** @type {TYPE_INSTANCE} */ (current);
 	/** @type [T, function(T):void, function():T] */
 	const slot = [
 		initial,
@@ -878,7 +887,7 @@ export const hook_state = initial => {
 		},
 		() => slot[0]
 	];
-	current.slots[current_index++] = [HOOK_STATE, slot];
+	current_slots[current_slots_index++] = [HOOK_STATE, slot];
 	return slot;
 }
 
@@ -889,14 +898,13 @@ export const hook_state = initial => {
 	@return {T}
 */
 export const hook_static = value => {
-	DEBUG && assert_hook(HOOK_STATIC);
-	current = /** @type {TYPE_INSTANCE} */ (current);
+	DEBUG && assert_hook(HOOK_STATIC, false_);
 
 	return (
-		current_index < current.slots.length
-		?	current.slots[current_index++]
+		current_slots_index < current_slots.length
+		?	current_slots[current_slots_index++]
 		:	(
-			current.slots[current_index++] = [
+			current_slots[current_slots_index++] = [
 				HOOK_STATIC,
 				value === undefined ? {} : value
 			]
@@ -912,11 +920,10 @@ export const hook_static = value => {
 	@return {T}
 */
 export const hook_memo = (getter, deps) => {
-	DEBUG && assert_hook(HOOK_MEMO);
-	current = /** @type {TYPE_INSTANCE} */ (current);
+	DEBUG && assert_hook(HOOK_MEMO, false_);
 
-	if (current_index < current.slots.length) {
-		const slot = current.slots[current_index++];
+	if (current_slots_index < current_slots.length) {
+		const slot = current_slots[current_slots_index++];
 		return (
 			deps_comp(slot[1], deps || null_)
 			?	slot[2]
@@ -938,7 +945,7 @@ export const hook_memo = (getter, deps) => {
 			deps = deps || []
 		)
 	);
-	current.slots[current_index++] = [HOOK_MEMO, deps, value];
+	current_slots[current_slots_index++] = [HOOK_MEMO, deps, value];
 	return value;
 }
 
@@ -950,17 +957,16 @@ export const hook_memo = (getter, deps) => {
 	@return {T}
 */
 export const hook_prev = (value, initial) => {
-	DEBUG && assert_hook(HOOK_PREV);
-	current = /** @type {TYPE_INSTANCE} */ (current);
+	DEBUG && assert_hook(HOOK_PREV, false_);
 
-	if (current_index < current.slots.length) {
-		const slot = current.slots[current_index++];
+	if (current_slots_index < current_slots.length) {
+		const slot = current_slots[current_slots_index++];
 		const prev = slot[1];
 		slot[1] = value;
 		return prev;
 	}
 
-	current.slots[current_index++] = [HOOK_PREV, value];
+	current_slots[current_slots_index++] = [HOOK_PREV, value];
 	return initial;
 }
 
@@ -1015,6 +1021,80 @@ export const hook_delay = delay => {
 		[delay, expired_set]
 	);
 	return expired;
+}
+
+/**
+	dynamic hook block
+	@template T
+	@param {function(...*):T} getter
+	@param {?Array=} deps
+	@return {?T}
+*/
+export const hook_sub = (getter, deps) => {
+	DEBUG && assert_hook(HOOK_SUB, false_);
+
+	let slot = null_;
+
+	if (current_slots_index++ < current_slots.length) {
+		if (
+			(
+				slot = current_slots[current_slots_index - 1]
+			)[1] !== getter
+		) {
+			VERBOSE && log('sub getter change', deps);
+			slot = null_;
+		}
+		else if (deps_comp(slot[2], deps || null_))
+			return slot[3];
+		else {
+			VERBOSE && log('sub deps change', deps);
+		}
+	}
+	else {
+		VERBOSE && log('sub initial', deps);
+	}
+
+	const current_first_before = current_first;
+	const current_slots_before = current_slots;
+	const current_slots_index_before = current_slots_index;
+	deps = deps || [];
+
+	if (
+		current_first =
+		slot === null_
+	) {
+		current_slots[current_slots_index - 1] = slot = [
+			HOOK_SUB,
+			getter,
+			deps,
+			null_,//value
+			[]//slots
+		];
+	}
+	else {
+		slot[2] = deps;
+	}
+
+	current_slots = slot[4];
+	current_slots_index = 0;
+
+	try {
+		slot[3] = getter(
+			...deps
+		);
+	}
+	catch (thrown) {
+		if (
+			DEBUG &&
+			thrown !== dom_cache
+		) throw thrown;
+	}
+
+	current_first = current_first_before;
+	current_slots = current_slots_before;
+	current_slots_index = current_slots_index_before;
+
+	return slot[3];
 }
 
 /**
@@ -1078,17 +1158,16 @@ export const hook_object_changes = object => {
 	@return {[T, function(number, *):void]}
 */
 export const hook_reducer = reducer => {
-	DEBUG && assert_hook(HOOK_REDUCEA);
-	current = /** @type {TYPE_INSTANCE} */ (current);
+	DEBUG && assert_hook(HOOK_REDUCEA, true_);
 
 	DEBUG &&
 	typeof reducer === 'function' &&
 		error('array required, use hook_reducer_f instead');
 
-	if (current_index < current.slots.length)
-		return current.slots[current_index++][1];
+	if (current_slots_index < current_slots.length)
+		return current_slots[current_slots_index++][1];
 
-	const current_ = current;
+	const current_ = /** @type {TYPE_INSTANCE} */ (current);
 	/** @type {[T, function(number, *):void]} */
 	const slot = [
 		reducer[0](),
@@ -1100,7 +1179,7 @@ export const hook_reducer = reducer => {
 			instance_dirtify(current_);
 		}
 	];
-	current.slots[current_index++] = [HOOK_REDUCEA, slot];
+	current_slots[current_slots_index++] = [HOOK_REDUCEA, slot];
 	return slot;
 }
 
@@ -1113,17 +1192,16 @@ export const hook_reducer = reducer => {
 	@return {[T, function(U=):void]}
 */
 export const hook_reducer_f = (reducer, initializer) => {
-	DEBUG && assert_hook(HOOK_REDUCEF);
-	current = /** @type {TYPE_INSTANCE} */ (current);
+	DEBUG && assert_hook(HOOK_REDUCEF, true_);
 
 	DEBUG &&
 	typeof reducer !== 'function' &&
 		error('function required');
 
-	if (current_index < current.slots.length)
-		return current.slots[current_index++][1];
+	if (current_slots_index < current_slots.length)
+		return current_slots[current_slots_index++][1];
 
-	const current_ = current;
+	const current_ = /** @type {TYPE_INSTANCE} */ (current);
 	/** @type {[T, function(U=):void]} */
 	const slot = [
 		(
@@ -1139,7 +1217,7 @@ export const hook_reducer_f = (reducer, initializer) => {
 			instance_dirtify(current_);
 		}
 	];
-	current.slots[current_index++] = [HOOK_REDUCEF, slot];
+	current_slots[current_slots_index++] = [HOOK_REDUCEF, slot];
 	return slot;
 }
 
@@ -1231,7 +1309,7 @@ const hook_dom_common = attributes => {
 */
 export const hook_dom = (descriptor, attributes) => (
 	DEBUG && (
-		assert_hook(),
+		assert_hook(null_, true_),
 		current = /** @type {TYPE_INSTANCE} */ (current),
 		current.dom === null_
 		?	current_first || error('hook_dom skipped before')
@@ -1477,7 +1555,7 @@ const rerender = () => {
 	rerender_pending = false_;
 
 	DEBUG && (
-		current = null_
+		current = current_slots = null_
 	);
 
 	if (
