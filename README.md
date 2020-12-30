@@ -183,7 +183,6 @@ lui | React
 --- | ---
 `hook_assert` | -
 `hook_async` | -
-`hook_await` | -
 `hook_callback` | [useCallback](https://reactjs.org/docs/hooks-reference.html#usecallback)
 `hook_delay` | -
 `hook_dom` | -
@@ -214,7 +213,7 @@ In React, you pass an object to [dom components](#dom-components) via the prop `
 
 ### Early exit
 
-When the component relies on some kind of condition or possibly unresolved promise, you may use `hook_assert` or `hook_await` to interrupt the rendering. Here is an example for the first:
+When the component relies on some kind of condition or possibly unresolved promise, you may use `hook_assert` to interrupt the rendering. Here is an example for the first:
 
 ```js
 function UserName({
@@ -250,7 +249,6 @@ Function | Description
 `now():number` | The _relative_ point of time of the latest rerendering call. Do not use this as persistent time reference but just inside of run time. Useful for custom animations.
 `hook_assert(condition: boolean):void` | When the condition is falsy, rendering of the current component is interrupted. May be used for error handling or anything else.
 `hook_async(function(...deps):Promise<T>, deps: ?Array, fallback):T` | If you need to wait for some data until it is available, use this instead of `hook_memo`. As long as the promise is pending, `fallback` is returned. If no fallback is given, either `null` or the latest value is returned.
-`hook_await(promise):void` | As long as the promise is not resolved yet, rendering of the current component will be interrupted here.
 `hook_callback(function, deps):function` | Returns a function that never changes. It passes all arguments down to the given function after the `deps`. Use this when you need to pass a callback as props that needs `deps`. If that callback is independent of the current component (has no `deps`), move the callback out of the component.
 `hook_delay(msecs: number):boolean` | Turns `true` after the specified delay.
 `hook_dom(descriptor, props=):dom` | Alternative to a single `node_dom` child. Returned childs will be wrapped by this element. Must not be skipped or called twice per component.

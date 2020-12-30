@@ -33,7 +33,6 @@ var TYPE_PROPS;
 	@typedef {{
 		hook_assert,
 		hook_async,
-		hook_await,
 		hook_callback,
 		hook_delay,
 		hook_dom,

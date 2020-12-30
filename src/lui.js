@@ -1222,20 +1222,6 @@ export const hook_reducer_f = (reducer, initializer) => {
 }
 
 /**
-	skips rendering until promise is resolved
-	@param {Promise} promise
-*/
-export const hook_await = promise => {
-	hook_assert(
-		hook_async(
-			() => promise,
-			[],
-			dom_cache
-		) !== dom_cache
-	);
-}
-
-/**
 	syncs dom attributes
 	@param {?TYPE_PROPS} attributes
 	@return {HTMLElement}
