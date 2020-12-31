@@ -512,8 +512,9 @@ const instance_render = (dom_parent, dom_first) => {
 		const items_map = {};
 		const items_order = [];
 		let items_index = list_data.length;
+		let items_objects = false_;
 		if (items_index > 0) {
-			const items_objects = typeof list_data[0] === 'object';
+			items_objects = typeof list_data[0] === 'object';
 			for (const item of list_data) {
 				DEBUG && (
 					item === null_ &&
@@ -614,7 +615,14 @@ const instance_render = (dom_parent, dom_first) => {
 					child.parent_index = items_index
 				);
 
-				if (props_changed) {
+				if (
+					props_changed ||
+					items_objects &&
+						object_comp(
+							items_map[key],
+							child.icall.props.I
+						)
+				) {
 					(
 						current = child
 					).icall.props = (
