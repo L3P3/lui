@@ -10,8 +10,13 @@
 	"bugs": {
 		"url": "https://github.com/l3p3/lui/issues"
 	},
-	"main": "src/lui.js",
-	"types": "types/main.d.ts",
+	"main": "./src/lui.js",
+	"module": "./src/lui.js",
+	"exports": {
+		".": "./src/lui.js",
+		"./link": "./src/lui-link.js"
+	},
+	"types": "./src/lui.d.ts",
 	"scripts": {
 		"build": "node ./build.js",
 		"buildd": "node ./build.js d"
