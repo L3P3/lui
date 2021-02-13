@@ -10,17 +10,15 @@ declare namespace lui {
 	*/
 	type NodeData = (string | number | { id: (string | number) });
 
-	type NodeDataOptional = NodeData | void;
-
 	/**
-		Child instance symbol, should not be modified but can be cached
+		Child instance symbol, must not be modified but can be cached
 	*/
 	interface LuiNode {}
 
 	/**
 		List of child instance symbols, an entry can be replaced with `true`, `false` or `null` to skip it
 	*/
-	type LuiNodeList = (LuiNode | boolean | null)[];
+	type LuiNodeList = (LuiNode | boolean | null | void)[];
 
 	/**
 		Descriptor for dom elements using following syntax:
@@ -29,26 +27,9 @@ declare namespace lui {
 	type DomDescriptor = string;
 
 	/**
-		Data passed from a parent to a child instance
-	*/
-	interface Props<T extends NodeDataOptional> {
-		/**
-			Nodes to be put inside the component instance
-		*/
-		C?: LuiNodeList,
-		/**
-			Data item for this instance when mounted by node_map
-		*/
-		I: T,
-		[key: string]: any
-	}
-
-	type PropsOptional<T extends NodeDataOptional> = Props<T> | null;
-
-	/**
 		Attributes passed to dom hooks
 	*/
-	interface Attrs extends Omit<HTMLElement, 'style'> {
+	interface Attrs extends Omit<Partial<HTMLElement>, 'style'> {
 		/**
 			CSS classes and their conditions
 		*/
@@ -56,7 +37,7 @@ declare namespace lui {
 		/**
 			CSS properties and their values
 		*/
-		S?: CSSStyleDeclaration,
+		S?: Partial<Record<Exclude<keyof CSSStyleDeclaration, number>, string | null>>,
 		/**
 			CSS properties as string
 		*/
@@ -80,7 +61,7 @@ declare namespace lui {
 	/**
 		View element with its own logic, its instances will have their own state
 	*/
-	type Component<T extends NodeDataOptional, U extends PropsOptional<T>> = (props: U) => LuiNodeList;
+	type Component<T extends {}> = (props: T) => LuiNodeList | null;
 
 	/**
 		Conditionally interrupt the instance's rendering process
@@ -170,25 +151,27 @@ declare namespace lui {
 	/**
 		Mounts root component on document's body
 	*/
-	export function init(body: () => [bodyProps: PropsOptional<void>, bodyContent: LuiNodeList]): void;
+	export function init(body: () => [bodyProps: Attrs | null, bodyContent: LuiNodeList]): void;
 
 	/**
 		Component instantiation
 	*/
-	export function node<T extends PropsOptional<void>>(component: Component<void, T>, props?: T | null, children?: LuiNodeList): LuiNode;
+	export function node<T extends {}>(component: Component<T>, props?: T | null, children?: LuiNodeList): LuiNode;
 
 	/**
 		DOM element instantiation
 	*/
-	export function node_dom(descriptor: DomDescriptor, attrs?: AttrsNode, children?: LuiNodeList): LuiNode;
+	export function node_dom(descriptor: DomDescriptor, attrs?: AttrsNode | null, children?: LuiNodeList): LuiNode;
 
 	/**
 		Dynamic component instantiation from data array
 	*/
-	export function node_map<T extends NodeData, U extends Props<T>>(component: Component<T, U>, data: T[], props?: U): LuiNode;
+	export function node_map<T extends NodeData, U extends {}>(component: Component<U & { I: T }>, data: T[], props?: U): LuiNode;
 
 	/**
 		Reference time of current rendering
 	*/
 	export function now(): number;
 }
+
+export = lui;

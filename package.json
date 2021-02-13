@@ -16,7 +16,8 @@
 		".": "./src/lui.js",
 		"./link": "./src/lui-link.js"
 	},
-	"types": "./src/lui.d.ts",
+	"type": "module",
+	"types": "./index.d.ts",
 	"scripts": {
 		"build": "node ./build.js",
 		"buildd": "node ./build.js d"
