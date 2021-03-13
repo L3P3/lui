@@ -4,7 +4,7 @@ When I was introduced to [React](https://github.com/facebook/react), I liked it 
 
 ## Features
 
-- About **5k** code size (<3k compressed)
+- About **6k** code size (<3k compressed)
 - **Stateful components** using [hooks](https://reactjs.org/docs/hooks-intro.html)
 - Will be **compatible** with down to [Internet Explorer 5](https://en.wikipedia.org/wiki/Internet_Explorer_5)
 - Optional **development mode**
@@ -47,9 +47,9 @@ When load speed, reliability or privacy is important enough, you should mirror t
 
 ### Bundle lui with your app
 
-I will add lui to npm later so that you can simply `npm install` it. The following method is not really recommended but a temporary workaround.
+You can simply run `npm install https://github.com/l3p3/lui` to install it. Later, when lui ist complete enough, I may add it to npm as well.
 
-When you want to store everything in just one file (eg. by using [closure compiler](https://github.com/google/closure-compiler)), just place `src/lui.js` anywhere reasonable and import from it whenever you need to.
+When bundling for production, you should make sure to set `DEBUG` to `false` in `node_modules/lui/src/flags.js`. If that is not done, the result will be bigger and slower.
 
 Please do NOT try to use the uncompiled `src/lui.js` in production!
 
@@ -124,6 +124,10 @@ prop | Description
 `R: function(HTMLElement)` | This function is given the instance's dom element after it is created.
 `S: Object<string, string>` | Pretty much the same as element.style, keys are the css properties, values their values.
 
+### Virtual components
+
+When you wanna use hooks for component-like abstraction without always having to return nodes as in components, lui offers `hook_sub` and `hook_map`. They are a mixture of `hook_memo` with `node` and `node_map`, respectively. But that's some high-level shit; average Joe won't really need (nor understand) it.
+
 ### Initialization
 
 The component tree's root is defined by just the one and only call to `init`. It gets a callback which then returns the body props and its childs.
@@ -188,6 +192,7 @@ lui | React
 `hook_dom` | -
 `hook_effect` | [useEffect](https://reactjs.org/docs/hooks-reference.html#useeffect)
 `hook_first` | -
+`hook_map` | -
 `hook_memo` | [useMemo](https://reactjs.org/docs/hooks-reference.html#usememo)
 `hook_object_changes` | -
 `hook_prev` | -
@@ -240,30 +245,33 @@ When you already know that the condition will be false, just call it like this: 
 
 ### Full API
 
+For the exact signatures, see [the typescript definition file](index.d.ts)! You should somehow integrate it into your project anyway, so your IDE will show you the types automatically.
+
 Function | Description
 --- | ---
-`init(Body):void` | This mounts the body once, you give it the so-to-say body component. But unlinke actual components, you return the props for the body element and its content. So `Body` looks like this: `function():[body_props: Object, body_content: Array<node>]`
-`node(Component, props: ?Object=, childs: ?Array<node>=):node` | This is how you add child components. If the added component accepts childs (`C` prop), you can pass that as the third argument as an array of nodes.
-`node_dom(descriptor: string, props=, childs=):node` | When you want to add dom components, use this function. It is very similar to `node` but needs a descriptor instead.
-`node_map(Component, data: Array, props: Object=)` | When you want to add a component n times for each entry of an array, this is the (proper) way to go. If the array items are objects, the [keys](https://reactjs.org/docs/lists-and-keys.html) are directly taken from an `id` property.
+`init(Body)` | This mounts the body once, you give it the so-to-say body component. But unlinke actual components, you return the props for the body element and its content. So `Body` looks like this: `()=>[body_props{}, body_content: node[]]`
+`node(Component, props{}, childs[]):node` | This is how you add child components. If the added component accepts childs (`C` prop), you can pass that as the third argument as an array of nodes.
+`node_dom(descriptor', attrs{}, childs[]):node` | When you want to add dom components, use this function. It is very similar to `node` but needs a descriptor instead.
+`node_map(Component, data[], props{})` | When you want to add a component n times for each entry of an array, this is the (proper) way to go. If the array items are objects, the [keys](https://reactjs.org/docs/lists-and-keys.html) are directly taken from an `id` property.
 `now():number` | The _relative_ point of time of the latest rerendering call. Do not use this as persistent time reference but just inside of run time. Useful for custom animations.
-`hook_assert(condition: boolean):void` | When the condition is falsy, rendering of the current component is interrupted. May be used for error handling or anything else.
-`hook_async(function(...deps):Promise<T>, deps: ?Array, fallback):T` | If you need to wait for some data until it is available, use this instead of `hook_memo`. As long as the promise is pending, `fallback` is returned. If no fallback is given, either `null` or the latest value is returned.
-`hook_callback(function, deps):function` | Returns a function that never changes. It passes all arguments down to the given function after the `deps`. Use this when you need to pass a callback as props that needs `deps`. If that callback is independent of the current component (has no `deps`), move the callback out of the component.
-`hook_delay(msecs: number):boolean` | Turns `true` after the specified delay.
-`hook_dom(descriptor, props=):dom` | Alternative to a single `node_dom` child. Returned childs will be wrapped by this element. Must not be skipped or called twice per component.
-`hook_effect(function(...deps):destroy, deps: ?Array):void` | Run the given function once and every time an `deps` item changes. That function _may_ return another function that gets called before the effect appears again or when the component gets unmounted.
+`hook_assert(boolean)` | When the condition is falsy, rendering of the current component is interrupted. May be used for error handling or anything else.
+`hook_async((...deps)=>Promise<T>, deps[], fallback):T` | If you need to wait for some data until it is available, use this instead of `hook_memo`. As long as the promise is pending, `fallback` is returned. If no fallback is given, either `null` or the latest value is returned.
+`hook_callback(function, deps[]):function` | Returns a function that never changes. It passes all arguments down to the given function after the `deps`. Use this when you need to pass a callback as props that needs `deps`. If that callback is independent of the current component (has no `deps`), move the callback out of the component.
+`hook_delay(msecs):boolean` | Turns `true` after the specified delay.
+`hook_dom(descriptor, props{}):element` | Alternative to a single `node_dom` child. Returned childs will be wrapped by this element. Must not be skipped or called twice per component.
+`hook_effect((...deps)=>destroy, deps[])` | Run the given function once and every time an `deps` item changes. That function _may_ return another function that gets called before the effect appears again or when the component gets unmounted.
 `hook_first():boolean` | This just tells you if this is the first time the component is being rendered.
-`hook_memo(function(...deps):T, deps: ?Array):T` | When you need to do some data transformation, put your transformation code inside this hook and it only gets called when a `deps` entry changes.
-`hook_object_changes(object):Array<string>` | This gives you a list of properties that changed since the last rendering.
-`hook_prev(T, initial: T):T` | If you want to compare something to its version from the previous rendering, use this. At first rendering, `initial` is returned.
-`hook_reducer(Array<function>):[value, dispatch]` | If you use a state that has some logic with it, use this.
-`hook_reducer_f(reducer, initializer):[value, dispatch]` | This is a bit _simpler_ than the array approach above.
-`hook_rerender():void` | When this is called, this component will be rendered again next frame, only intended for _animations_.
-`hook_state(T):[value, setter, getter]` | A simple component state. The first argument is the _initial_ value.
-`hook_static(T):T` | This is a much cheaper version of `hook_memo`: What you put in it the first time will _always_ come out of it.
-`hook_sub(function(...deps):T, deps):T` | Like `hook_memo` but the getter function may be swapped and it may contain hooks.
-`hook_transition(target: number, msecs: number):number` | When `target` changes, the output number will smoothly pass to the new target, taking the specified time for that transition.
+`hook_map((item, ...deps)=>T, items[], deps[]):T[]` | Like `hook_sub` but for each data item as in `node_map`.
+`hook_memo((...deps)=>T, deps[]):T` | When you need to do some data transformation, put your transformation code inside this hook and it only gets called when a `deps` entry changes.
+`hook_object_changes(object):keys[]` | This gives you a list of properties that changed since the last rendering.
+`hook_prev(current, initial):prev` | If you want to compare something to its version from the previous rendering, use this. At first rendering, `initial` is returned.
+`hook_reducer(functions[]):[value, dispatch()]` | If you use a state that has some logic with it, use this.
+`hook_reducer_f(reducer(), initializer()):[value, dispatch()]` | This is a bit _simpler_ than the array approach above.
+`hook_rerender()` | When this is called, this component will be rendered again next frame, only intended for _animations_.
+`hook_state(initial):[value, setter(), getter()]` | A simple component state. The first argument is the _initial_ value.
+`hook_static(initial):initial` | This is a much cheaper version of `hook_memo`: What you put in it the first time will _always_ come out of it.
+`hook_sub((...deps)=>T, deps[]):T` | Like `hook_memo` but the getter function may be swapped and it may contain hooks.
+`hook_transition(target, msecs):current` | When `target` changes, the output number will smoothly pass to the new target, taking the specified time for that transition.
 
 ## Contribution and Support
 

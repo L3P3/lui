@@ -6,6 +6,7 @@ import {
 	hook_dom,
 	hook_effect,
 	hook_first,
+	hook_map,
 	hook_memo,
 	hook_object_changes,
 	hook_prev,
@@ -32,6 +33,7 @@ window_['lui'] = {
 	hook_dom,
 	hook_effect,
 	hook_first,
+	hook_map,
 	hook_memo,
 	hook_object_changes,
 	hook_prev,
@@ -47,4 +49,4 @@ window_['lui'] = {
 	node_dom,
 	node_map,
 	now
-};
+}

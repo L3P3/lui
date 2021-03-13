@@ -1,7 +1,7 @@
 /**
 	@preserve lui.js web frame work
 	inspired by react and mithril
-	L3P3.de 2020
+	L3P3.de 2021
 */
 
 import {DEBUG, VERBOSE} from './flags.js';
@@ -10,11 +10,12 @@ const HOOK_EFFECT = DEBUG ? 0 : 1;
 const HOOK_ASYNC = DEBUG ? 1 : 2;
 const HOOK_STATE = DEBUG ? 2 : 0;
 const HOOK_STATIC = DEBUG ? 3 : 0;
-const HOOK_MEMO = DEBUG ? 4 : 0;
-const HOOK_PREV = DEBUG ? 5 : 0;
-const HOOK_REDUCEA = DEBUG ? 6 : 0;
-const HOOK_REDUCEF = DEBUG ? 7 : 0;
-const HOOK_SUB = DEBUG ? 8 : 0;
+const HOOK_MAP = DEBUG ? 4 : 3;
+const HOOK_MEMO = DEBUG ? 5 : 0;
+const HOOK_PREV = DEBUG ? 6 : 0;
+const HOOK_REDUCEA = DEBUG ? 7 : 0;
+const HOOK_REDUCEF = DEBUG ? 8 : 0;
+const HOOK_SUB = DEBUG ? 9 : 3;
 
 
 /// COMPILATION ///
@@ -133,6 +134,7 @@ const component_dom_cache = {};
 /// ALIAS ///
 
 const null_ = current;
+const undefined_ = void 0;
 const true_ = current_first;
 const false_ = rerender_requested;
 const Array_ = Array;
@@ -165,7 +167,22 @@ const instance_name_get = ({icall: {component}}) => (
 */
 const stack_get = () => {
 	const stack = [];
-	let item = current;
+	let item = current_slots;
+	if (item !== null_) {
+		while (item[0][0] === null_) {
+			stack.unshift(
+				item[0].length === 5
+				?	'hook_map:' + (
+						typeof item[0][3] === 'object'
+						?	item[0][3].id
+						:	item[0][3]
+					)
+				:	'hook_sub'
+			);
+			item = item[0][1];
+		}
+		item = item[0][0];
+	}
 	let index = null_;
 	while (item !== null_) {
 		stack.unshift(
@@ -230,7 +247,7 @@ const assert_hook = (type, component) => {
 	current_slots = /** @type {!Array<Array>} */ (current_slots);
 
 	component &&
-	current.slots !== current_slots &&
+	current_slots[0][0] === null &&
 		error('hook called outside of component rendering');
 
 	type !== null_ &&
@@ -326,7 +343,7 @@ const instance_render = (dom_parent, dom_first) => {
 	const instance = /** @type {TYPE_INSTANCE} */ (current);
 	const dom_after = dom_first;
 	current_slots = instance.slots;
-	current_slots_index = 0;
+	current_slots_index = 1;
 
 	VERBOSE && log('instance_render' + (current_first ? ' first' : ''));
 	render_queue.delete(instance);
@@ -408,6 +425,7 @@ const instance_render = (dom_parent, dom_first) => {
 							dom: null_,
 							dom_first: null_
 						};
+						child.slots[0] = [child];
 
 						instance_render(
 							dom_parent,
@@ -471,7 +489,7 @@ const instance_render = (dom_parent, dom_first) => {
 			list_data,
 			props
 		} = instance.icall.props;
-		const item_type_ref = DEBUG && hook_static({val: null_});
+
 		DEBUG && (
 			(
 				typeof list_data !== 'object' ||
@@ -482,64 +500,20 @@ const instance_render = (dom_parent, dom_first) => {
 			typeof props !== 'object' &&
 				error('props must be an object'),
 			assert_hook_equal(component, 'item component'),
-			assert_hook_equal(props === null_, 'props presence'),
-			list_data.length > 0 && (
-				item_type_ref.val !== null_
-				?	(
-						typeof list_data[0] !== item_type_ref.val &&
-							error('item type changed'),
-						typeof list_data[0] === 'object' &&
-						list_data[0] !== null_ &&
-						typeof list_data[0].id !== item_type_ref.val_id &&
-							error('item id type changed')
-					)
-				:	(
-						['object', 'string', 'number']
-						.includes(
-							item_type_ref.val = typeof list_data[0]
-						) ||
-							error('item type invalid'),
-						typeof list_data[0] === 'object' &&
-						list_data[0] !== null_ &&
-						!['string', 'number']
-						.includes(
-							item_type_ref.val_id = typeof list_data[0].id
-						) &&
-							error('item id type invalid')
-					)
-			)
+			assert_hook_equal(props === null_, 'props presence')
 		);
+
+		let items_index = list_data.length;
 		const items_map = {};
 		const items_order = [];
-		let items_index = list_data.length;
-		let items_objects = false_;
-		if (items_index > 0) {
-			items_objects = typeof list_data[0] === 'object';
-			for (const item of list_data) {
-				DEBUG && (
-					item === null_ &&
-						error('item is null'),
-					typeof item !== typeof list_data[0] &&
-						error('item type changed'),
-					items_objects &&
-					typeof item.id !== typeof list_data[0].id &&
-						error('item id type changed')
-				);
-	
-				const key = (
-					items_objects
-					?	item.id
-					:	item
-				);
+		const items_objects = (
+			items_index > 0 &&
+			list_data_index(list_data, items_map, items_order)
+		);
 
-				DEBUG &&
-				key in items_map &&
-					error('item not unique');
-	
-				items_map[key] = item;
-				items_order.push(key);
-			}
-		}
+		DEBUG &&
+		items_index === 0 &&
+			hook_static();
 
 		const item_map = hook_static();
 		const items_order_prev = hook_prev(items_order);
@@ -559,7 +533,7 @@ const instance_render = (dom_parent, dom_first) => {
 		VERBOSE && !current_first && props_changed && log('childs modify', object_diff(props_prev, props));
 
 		// remove items
-		if(!current_first)
+		if (!current_first)
 		for (const key of items_order_prev) {
 			if (key in items_map) continue;
 			instance_unmount(item_map[key], dom_parent);
@@ -573,9 +547,9 @@ const instance_render = (dom_parent, dom_first) => {
 			let child = item_map[key];
 			if (
 				current_first =
-				child === undefined
+				child === undefined_
 			) {
-				VERBOSE && log('child add');
+				VERBOSE && log('child add: ' + key);
 
 				item_map[key] = current = child = {
 					icall: {
@@ -597,6 +571,7 @@ const instance_render = (dom_parent, dom_first) => {
 					dom: null_,
 					dom_first: null_
 				}
+				child.slots[0] = [child];
 
 				instance_render(
 					dom_parent,
@@ -678,20 +653,107 @@ const instance_unmount = (instance, dom_parent) => {
 		}
 	}
 
-	for (const slot of instance.slots) {
-		switch (slot[0]) {
+	hooks_unmount(instance.slots);
+
+	render_queue.delete(instance);
+	render_queue_next.delete(instance);
+}
+
+/**
+	unmount all hooks in context
+	@param {!Array<!Array>} slots
+*/
+const hooks_unmount = slots => {
+	let slot, slots_index = slots.length;
+	while (slots_index > 1) {
+		switch (
+			(
+				slot = slots[--slots_index]
+			)[0]
+		) {
 			case HOOK_EFFECT:
 				slot[2] !== null_ &&
 					slot[2](slot[1]);
 				break;
 			case HOOK_ASYNC:
 				slot[1] = null_;
+				break;
+			case HOOK_SUB:
+				hooks_unmount(slot[4]);
+				break;
+			case HOOK_MAP:
+				hook_map_unmount(slot);
 			default:
 		}
 	}
+}
 
-	render_queue.delete(instance);
-	render_queue_next.delete(instance);
+/**
+	generate map and order list from data list
+	@template T
+	@param {!Array<T>} list_data must not be empty
+	@param {!Object<(string|number),T>} items_map
+	@param {!Array<(string|number)>} items_order
+	@return {boolean}
+*/
+const list_data_index = (list_data, items_map, items_order) => {
+	const items_objects = typeof list_data[0] === 'object';
+
+	if (DEBUG) {
+		const item_type_ref = hook_static();
+
+		if (item_type_ref.val) {
+			list_data[0] !== null_ &&
+			typeof list_data[0] === item_type_ref.val ||
+				error('item type changed');
+
+			items_objects &&
+			typeof list_data[0].id !== item_type_ref.val_id &&
+				error('item id type changed');
+		}
+		else {
+			list_data[0] !== null_ &&
+			['object', 'string', 'number']
+			.includes(
+				item_type_ref.val = typeof list_data[0]
+			) ||
+				error('item type invalid');
+
+			items_objects &&
+			!['string', 'number']
+			.includes(
+				item_type_ref.val_id = typeof list_data[0].id
+			) &&
+				error('item id type invalid');
+		}
+	}
+
+	for (const item of list_data) {
+		DEBUG && (
+			item === null_ &&
+				error('item is null'),
+			typeof item !== typeof list_data[0] &&
+				error('item type changed'),
+			items_objects &&
+			typeof item.id !== typeof list_data[0].id &&
+				error('item id type changed')
+		);
+
+		const key = (
+			items_objects
+			?	item.id
+			:	item
+		);
+
+		DEBUG &&
+		key in items_map &&
+			error('item key not unique: ' + key);
+
+		items_map[key] = item;
+		items_order.push(key);
+	}
+
+	return items_objects;
 }
 
 /**
@@ -723,19 +785,51 @@ const instance_reinsert = (instance, dom_parent, dom_first) => {
 }
 
 /**
-	request rerendering for instance
-	@param {TYPE_INSTANCE} instance
+	return instance for slots
+	@param {!Array<!Array>} slots
+	@return {TYPE_INSTANCE}
 */
-const instance_dirtify = instance => {
-	VERBOSE &&
-	!render_queue.has(instance) &&
-		log('instance_dirtify ' + instance_name_get(instance));
+const instance_current_get = slots => {
+	while (slots[0][0] === null_) {
+		slots = slots[0][1];
+	}
+	return slots[0][0];
+}
 
-	render_queue.add(instance);
-	//TODO order
+/**
+	dirtify parent hooks and return instance, return null if already dirty
+	@param {!Array<!Array>} slots
+	@return {?TYPE_INSTANCE}
+*/
+const dirtup = slots => {
+	while (slots[0][0] === null_) {
+		if (!slots[0][2][5]) {
+			return null_;
+		}
+		slots[0][2][5] = false_;
+		slots = slots[0][1];
+	}
+	return slots[0][0];
+}
 
-	rerender_pending ||
-		rerender();
+/**
+	request rerendering for subs and instance
+	@param {!Array<!Array>} slots
+*/
+const dirtify = slots => {
+	const instance = dirtup(slots);
+
+	if (instance !== null_) {
+		VERBOSE &&
+		!render_queue.has(/** @type {TYPE_INSTANCE} */ (instance)) &&
+			log('dirtify ' + instance_name_get(/** @type {TYPE_INSTANCE} */ (instance)));
+
+		render_queue.add(/** @type {TYPE_INSTANCE} */ (instance));
+		//TODO order
+
+		rerender_pending ||
+			rerender();
+	}
 }
 
 
@@ -745,14 +839,17 @@ const instance_dirtify = instance => {
 	request rerendering for current instance
 */
 export const hook_rerender = () => {
-	DEBUG && assert_hook(null_, true_);
-	current = /** @type {TYPE_INSTANCE} */ (current);
+	DEBUG && assert_hook(null_, false_);
 
-	VERBOSE &&
-	!render_queue_next.has(current) &&
-		log('rerender request');
+	const instance = dirtup(/** @type {!Array<!Array>} */ (current_slots));
 
-	render_queue_next.add(current);
+	if (instance !== null_) {
+		VERBOSE &&
+		!render_queue_next.has(/** @type {TYPE_INSTANCE} */ (instance)) &&
+			log('hook_rerender ' + instance_name_get(/** @type {TYPE_INSTANCE} */ (instance)));
+
+		render_queue_next.add(/** @type {TYPE_INSTANCE} */ (instance));
+	}
 }
 
 /**
@@ -824,7 +921,7 @@ export const hook_effect = (effect, deps) => {
 	@return {?T}
 */
 export const hook_async = (getter, deps, fallback) => {
-	DEBUG && assert_hook(HOOK_ASYNC, true_);
+	DEBUG && assert_hook(HOOK_ASYNC, false_);
 
 	const slot = (
 		current_slots_index < current_slots.length
@@ -847,11 +944,11 @@ export const hook_async = (getter, deps, fallback) => {
 
 	VERBOSE && log('async start', deps);
 
-	fallback !== undefined && (
+	fallback !== undefined_ && (
 		slot[2] = fallback
 	);
 
-	const current_ = /** @type {TYPE_INSTANCE} */ (current);
+	const current_slots_ = /** @type {!Array<!Array>} */ (current_slots);
 	getter(
 		...(
 			slot[1] = deps =
@@ -859,13 +956,13 @@ export const hook_async = (getter, deps, fallback) => {
 		)
 	)
 	.then(value => {
-		VERBOSE && log('async end ' + instance_name_get(current_));
+		VERBOSE && log('async ' + instance_name_get(instance_current_get(current_slots_)), value);
 		if (
 			slot[2] === value ||
 			slot[1] !== deps
 		) return;
 		slot[2] = value;
-		instance_dirtify(current_);
+		dirtify(current_slots_);
 	});
 	return slot[2];
 }
@@ -877,21 +974,21 @@ export const hook_async = (getter, deps, fallback) => {
 	@return {[T, function(T):void, function():T]}
 */
 export const hook_state = initial => {
-	DEBUG && assert_hook(HOOK_STATE, true_);
+	DEBUG && assert_hook(HOOK_STATE, false_);
 
 	if (current_slots_index < current_slots.length) {
 		return current_slots[current_slots_index++][1];
 	}
 
-	const current_ = /** @type {TYPE_INSTANCE} */ (current);
+	const current_slots_ = /** @type {!Array<!Array>} */ (current_slots);
 	/** @type [T, function(T):void, function():T] */
 	const slot = [
 		initial,
 		value => {
-			VERBOSE && log('state set ' + instance_name_get(current_), value);
+			VERBOSE && log('state ' + instance_name_get(instance_current_get(current_slots_)), value);
 			if (slot[0] === value) return;
 			slot[0] = value;
-			instance_dirtify(current_);
+			dirtify(current_slots_);
 		},
 		() => slot[0]
 	];
@@ -914,7 +1011,7 @@ export const hook_static = value => {
 		:	(
 			current_slots[current_slots_index++] = [
 				HOOK_STATIC,
-				value === undefined ? {} : value
+				value === undefined_ ? {} : value
 			]
 		)
 	)[1];
@@ -1046,16 +1143,23 @@ export const hook_sub = (getter, deps) => {
 	if (current_slots_index++ < current_slots.length) {
 		if (
 			(
-				slot = current_slots[current_slots_index - 1]
+				slot = /** @type{!Array} */ (current_slots[current_slots_index - 1])
 			)[1] !== getter
 		) {
 			VERBOSE && log('sub getter change', deps);
+			hooks_unmount(slot[4]);
 			slot = null_;
 		}
-		else if (deps_comp(slot[2], deps || null_))
+		else if (
+			slot[5] &&
+			deps_comp(slot[2], deps || null_)
+		) {
 			return slot[3];
-		else {
-			VERBOSE && log('sub deps change', deps);
+		}
+		else if (VERBOSE) {
+			slot[5]
+			?	log('sub deps change', deps)
+			:	log('sub dirty', deps);
 		}
 	}
 	else {
@@ -1076,15 +1180,18 @@ export const hook_sub = (getter, deps) => {
 			getter,
 			deps,
 			null_,//value
-			[]//slots
+			[],//slots
+			true_//clean
 		];
+		slot[4][0] = [null_, current_slots, slot];
 	}
 	else {
 		slot[2] = deps;
+		slot[5] = true_;
 	}
 
 	current_slots = slot[4];
-	current_slots_index = 0;
+	current_slots_index = 1;
 
 	try {
 		slot[3] = getter(
@@ -1103,6 +1210,165 @@ export const hook_sub = (getter, deps) => {
 	current_slots_index = current_slots_index_before;
 
 	return slot[3];
+}
+
+/**
+	dynamic hook blocks for each item
+	@template T
+	@template U
+	@param {function(U, ...*):T} getter
+	@param {!Array<U>} list_data
+	@param {?Array=} deps
+	@return {!Array<T>}
+*/
+export const hook_map = (getter, list_data, deps) => {
+	DEBUG && assert_hook(HOOK_MAP, false_);
+
+	let slot = null_;
+	let dirty = true_;
+
+	if (current_slots_index++ < current_slots.length) {
+		if (
+			(
+				slot = /** @type{!Array} */ (current_slots[current_slots_index - 1])
+			)[1] !== getter
+		) {
+			VERBOSE && log('map getter change', deps);
+			hook_map_unmount(slot);
+			slot = null_;
+		}
+		else if (
+			slot[5] &&
+			list_data === slot[7] &&
+			deps_comp(slot[2], deps || null_)
+		) {
+			return slot[3];
+		}
+		else if (VERBOSE) {
+			slot[5]
+			?	log('map deps/data change', deps)
+			:	log('map dirty', deps);
+		}
+	}
+	else {
+		VERBOSE && log('map initial', deps);
+	}
+
+	deps = deps || [];
+
+	if (slot === null_) {
+		current_slots[current_slots_index - 1] = slot = [
+			HOOK_MAP,
+			getter,
+			deps,
+			[],//values
+			[],//items order
+			true_,//clean
+			{},//items map
+			list_data
+		];
+	}
+	else {
+		dirty = !slot[5];
+		slot[2] = deps;
+		slot[3] = [];
+		slot[5] = true_;
+		slot[7] = list_data;
+	}
+
+	DEBUG &&
+	list_data.length === 0 &&
+		hook_static();
+
+	const items_data_map = {};
+	const items_order = [];
+	const items_objects = (
+		list_data.length > 0 &&
+		list_data_index(list_data, items_data_map, items_order)
+	);
+
+	const items_slots_map = slot[6];
+	const current_first_before = current_first;
+	const current_slots_before = current_slots;
+	const current_slots_index_before = current_slots_index;
+
+	// remove items
+	for (const key of slot[4]) {
+		if (key in items_data_map) continue;
+		VERBOSE && log('map item remove: ' + key);
+		hooks_unmount(items_slots_map[key]);
+		delete items_slots_map[key];
+	}
+
+	// run/rerun all items
+	for (const key of items_order) {
+		let slots = items_slots_map[key];
+		if (
+			current_first =
+			slots === undefined_
+		) {
+			VERBOSE && log('map item add: ' + key);
+
+			items_slots_map[key] = slots = [[
+				null_,
+				current_slots_before,
+				slot,
+				null_,//data
+				null_//result
+			]];
+		}
+
+		slots = /** @type {!Array<Array>} */ (slots);
+
+		if (
+			dirty ||
+			current_first || (
+				items_objects
+				?	object_comp(
+						items_data_map[key],
+						slots[0][3]
+					)
+				:	items_data_map[key] !== slots[0][3]
+			)
+		) {
+			current_slots = slots;
+			current_slots_index = 1;
+
+			try {
+				slots[0][4] = getter(
+					slots[0][3] = items_data_map[key],
+					...deps
+				);
+			}
+			catch (thrown) {
+				if (
+					DEBUG &&
+					thrown !== dom_cache
+				) throw thrown;
+			}
+
+			DEBUG && (
+				current_slots = current_slots_before
+			);
+		}
+		slot[3].push(slots[0][4]);
+	}
+
+	current_first = current_first_before;
+	current_slots = current_slots_before;
+	current_slots_index = current_slots_index_before;
+
+	slot[4] = items_order;
+	return slot[3];
+}
+
+/**
+	umount all contained hooks
+	@param {!Array} slot
+*/
+const hook_map_unmount = slot => {
+	for (const key of slot[4])
+		hooks_unmount(slot[6][key]);
 }
 
 /**
@@ -1166,7 +1432,7 @@ export const hook_object_changes = object => {
 	@return {[T, function(number, *):void]}
 */
 export const hook_reducer = reducer => {
-	DEBUG && assert_hook(HOOK_REDUCEA, true_);
+	DEBUG && assert_hook(HOOK_REDUCEA, false_);
 
 	DEBUG &&
 	typeof reducer === 'function' &&
@@ -1175,16 +1441,16 @@ export const hook_reducer = reducer => {
 	if (current_slots_index < current_slots.length)
 		return current_slots[current_slots_index++][1];
 
-	const current_ = /** @type {TYPE_INSTANCE} */ (current);
+	const current_slots_ = /** @type {!Array<!Array>} */ (current_slots);
 	/** @type {[T, function(number, *):void]} */
 	const slot = [
 		reducer[0](),
 		(cmd, payload) => {
-			VERBOSE && log('reducer ' + instance_name_get(current_) + ' -> #' + cmd, payload);
+			VERBOSE && log('reducer ' + instance_name_get(instance_current_get(current_slots_)) + ' -> #' + cmd, payload);
 			const value = reducer[cmd](slot[0], payload);
 			if (slot[0] === value) return;
 			slot[0] = value;
-			instance_dirtify(current_);
+			dirtify(current_slots_);
 		}
 	];
 	current_slots[current_slots_index++] = [HOOK_REDUCEA, slot];
@@ -1200,7 +1466,7 @@ export const hook_reducer = reducer => {
 	@return {[T, function(U=):void]}
 */
 export const hook_reducer_f = (reducer, initializer) => {
-	DEBUG && assert_hook(HOOK_REDUCEF, true_);
+	DEBUG && assert_hook(HOOK_REDUCEF, false_);
 
 	DEBUG &&
 	typeof reducer !== 'function' &&
@@ -1209,7 +1475,7 @@ export const hook_reducer_f = (reducer, initializer) => {
 	if (current_slots_index < current_slots.length)
 		return current_slots[current_slots_index++][1];
 
-	const current_ = /** @type {TYPE_INSTANCE} */ (current);
+	const current_slots_ = /** @type {!Array<!Array>} */ (current_slots);
 	/** @type {[T, function(U=):void]} */
 	const slot = [
 		(
@@ -1218,11 +1484,11 @@ export const hook_reducer_f = (reducer, initializer) => {
 			:	null_
 		),
 		payload => {
-			VERBOSE && log('reducer ' + instance_name_get(current_), payload);
+			VERBOSE && log('reducer ' + instance_name_get(instance_current_get(current_slots_)), payload);
 			const value = reducer(slot[0], payload);
 			if (slot[0] === value) return;
 			slot[0] = value;
-			instance_dirtify(current_);
+			dirtify(current_slots_);
 		}
 	];
 	current_slots[current_slots_index++] = [HOOK_REDUCEF, slot];
@@ -1308,10 +1574,10 @@ export const hook_dom = (descriptor, attributes) => (
 		current.dom === null_
 		?	current_first || error('hook_dom skipped before')
 		:	current_first && error('hook_dom called twice'),
-		attributes !== undefined && (
-			attributes.C !== undefined &&
+		attributes !== undefined_ && (
+			attributes.C !== undefined_ &&
 				error('hook_dom cannot have childs'),
-			attributes.R !== undefined &&
+			attributes.R !== undefined_ &&
 				error('hook_dom cannot have a ref')
 		)
 	),
@@ -1338,7 +1604,7 @@ export const node = (component, props, childs) => (
 	DEBUG && (
 		typeof component === 'string' &&
 			error('component expected, use node_dom instead'),
-		childs !== undefined && (
+		childs !== undefined_ && (
 			!childs ||
 			childs.constructor !== Array_
 		) &&
@@ -1424,7 +1690,7 @@ export const init = body => {
 					hook_prev(result[0], result[0]),
 					result[0]
 				),
-				result[0].C !== undefined &&
+				result[0].C !== undefined_ &&
 					error('body childs must be in second return value')
 			)
 		),
@@ -1454,6 +1720,7 @@ export const init = body => {
 		dom,
 		dom_first: dom
 	};
+	current.slots[0] = [current];
 
 	time_update();
 
@@ -1602,7 +1869,7 @@ export const node_dom = (descriptor, props, childs) => (
 */
 const dom_get = descriptor => {
 	let dom = dom_cache[descriptor];
-	if (dom === undefined) {
+	if (dom === undefined_) {
 		VERBOSE && log('dom create ' + descriptor);
 
 		const index_sqb = descriptor.indexOf('[');
@@ -1678,7 +1945,7 @@ const dom_get = descriptor => {
 */
 const component_dom_get = descriptor => {
 	let component = component_dom_cache[descriptor];
-	if (component === undefined) {
+	if (component === undefined_) {
 		const dom = dom_get(descriptor);
 		/**
 			@type {TYPE_COMPONENT}

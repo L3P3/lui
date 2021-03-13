@@ -99,6 +99,11 @@ declare namespace lui {
 	export function hook_first(): boolean;
 
 	/**
+		hook_sub over variable-length array items
+	*/
+	export function hook_map<T extends any[], U extends NodeData, V>(getter: (item: U, ...deps: T) => V, data: U[], deps?: T): V[]
+
+	/**
 		Transform data and redo it on deps change
 	*/
 	export function hook_memo<T extends any[], U>(getter: (...deps: T) => U, deps?: T): U;

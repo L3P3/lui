@@ -3,8 +3,9 @@
 
 const flags = process.argv[2] || '';
 
-const fs = require('fs');
-const child_process_exec = require('child_process')['exec'];
+import * as fs from 'fs';
+import {exec as child_process_exec} from 'child_process';
+import {hostname} from 'os';
 
 const {version} = JSON.parse(
 	fs.readFileSync('./package.json', 'utf-8')
@@ -106,7 +107,7 @@ catch (error) {}
 
 if (
 	flags.includes('d') &&
-	require('os').hostname() === 'l3p3-rk5'
+	hostname() === 'l3p3-rk5'
 ) {
 	console.log('deploy...');
 	await exec('mv ./dist/lui.* /media/Archiv/Anbieter/node/rtjscomp/public/shr/');

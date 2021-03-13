@@ -38,6 +38,7 @@ var TYPE_PROPS;
 		hook_dom,
 		hook_effect,
 		hook_first,
+		hook_map,
 		hook_memo,
 		hook_object_changes,
 		hook_prev,
