@@ -1,0 +1,30 @@
+# Builds prod and dev builds
+name: Build lui
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: Build lui
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setting up NodeJS
+        uses: actions/setup-node@v2
+      - name: Install closure-compiler and zopfli
+        run: |
+          sudo apt-get install zopfli
+          sudo npm i -g google-closure-compiler
+      - name: Build lui
+        run: npm run-script build
+      - name: Upload prod
+        uses: actions/upload-artifact@v2
+        with:
+          name: prod
+          path: dist/lui.js
+      - name: Upload dev
+        uses: actions/upload-artifact@v2
+        with:
+          name: prod
+          path: dist/lui.dev.js
