@@ -18,6 +18,7 @@ jobs:
         run: |
           sudo apt-get install zopfli
           sudo npm i -g google-closure-compiler
+          sudo ln -sf /usr/local/bin/google-closure-compiler /usr/local/bin/closure-compiler
       - name: Build lui
         run: npm run-script build
       - name: Upload prod
