@@ -29,5 +29,5 @@ jobs:
       - name: Upload dev
         uses: actions/upload-artifact@v2
         with:
-          name: prod
+          name: dev
           path: dist/lui.dev.js
