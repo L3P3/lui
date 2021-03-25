@@ -1239,15 +1239,22 @@ export const hook_map = (getter, list_data, deps) => {
 		}
 		else if (
 			slot[5] &&
-			list_data === slot[7] &&
 			deps_comp(slot[2], deps || null_)
 		) {
-			return slot[3];
+			if (list_data === slot[7]) {
+				return slot[3];
+			}
+			VERBOSE && log('map data change', list_data);
+			dirty = false_;
 		}
-		else if (VERBOSE) {
-			slot[5]
-			?	log('map deps/data change', deps)
-			:	log('map dirty', deps);
+		else {
+			VERBOSE && (
+				slot[5]
+				?	log('map deps change', deps)
+				:	log('map dirty')
+			);
+			slot[2] = deps;
+			slot[5] = true_;
 		}
 	}
 	else {
@@ -1269,11 +1276,7 @@ export const hook_map = (getter, list_data, deps) => {
 		];
 	}
 	else {
-		dirty = !slot[5];
-		slot[2] = deps;
 		slot[3] = [];
-		slot[5] = true_;
-		slot[7] = list_data;
 	}
 
 	DEBUG &&
@@ -1292,12 +1295,15 @@ export const hook_map = (getter, list_data, deps) => {
 	const current_slots_before = current_slots;
 	const current_slots_index_before = current_slots_index;
 
-	// remove items
-	for (const key of slot[4]) {
-		if (key in items_data_map) continue;
-		VERBOSE && log('map item remove: ' + key);
-		hooks_unmount(items_slots_map[key]);
-		delete items_slots_map[key];
+	if (slot[7] !== list_data) {
+		slot[7] = list_data;
+		// remove items
+		for (const key of slot[4]) {
+			if (key in items_data_map) continue;
+			VERBOSE && log('map item remove: ' + key);
+			hooks_unmount(items_slots_map[key]);
+			delete items_slots_map[key];
+		}
 	}
 
 	// run/rerun all items
