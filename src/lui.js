@@ -673,7 +673,7 @@ const hooks_unmount = slots => {
 		) {
 			case HOOK_EFFECT:
 				slot[2] !== null_ &&
-					slot[2](slot[1]);
+					slot[2](...slot[1]);
 				break;
 			case HOOK_ASYNC:
 				slot[1] = null_;
