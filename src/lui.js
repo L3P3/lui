@@ -84,34 +84,22 @@ let current_slots = current;
 let current_slots_index = 0;
 
 /**
-	relative time of the last rerender call
+	relative time of the last render call
 	@type {number}
 */
 let render_time = 0;
 
 /**
-	instances that should be rerendered in this frame
-	@type {TYPE_QUEUE}
-*/
-let render_queue = new Set;
-
-/**
-	instances that should be rerendered in the next frame
-	@type {TYPE_QUEUE}
-*/
-let render_queue_next = new Set;
-
-/**
-	is the render loop active?
+	no synchronous rerendering?
 	@type {boolean}
 */
-let rerender_pending = current_first;
+let rerender_deferred = current_first;
 
 /**
-	is a rerender requested?
-	@type {boolean}
+	animation frame request (or null)
+	@type {?number}
 */
-let rerender_requested = !current_first;
+let rerender_requested = current;
 
 
 /// MAPS ///
@@ -136,7 +124,7 @@ const component_dom_cache = {};
 const null_ = current;
 const undefined_ = void 0;
 const true_ = current_first;
-const false_ = rerender_requested;
+const false_ = !current_first;
 const Array_ = Array;
 const Object_ = Object;
 const Object_assign = Object_.assign;
@@ -247,7 +235,7 @@ const assert_hook = (type, component) => {
 	current_slots = /** @type {!Array<Array>} */ (current_slots);
 
 	component &&
-	current_slots[0][0] === null &&
+	current_slots[0][0] === null_ &&
 		error('hook called outside of component rendering');
 
 	type !== null_ &&
@@ -271,11 +259,16 @@ const assert_hook_equal = (value, description) => {
 /// BASICS  ///
 
 /**
-	copies the current time
+	instances that should be rerendered in this frame
+	@type {TYPE_QUEUE}
 */
-const time_update = () => {
-	render_time = performance_.now();
-};
+const render_queue = new Set;
+
+/**
+	instances that should be rerendered in the next frame
+	@type {TYPE_QUEUE}
+*/
+const render_queue_next = new Set;
 
 /**
 	lists all changed properties
@@ -345,7 +338,7 @@ const instance_render = (dom_parent, dom_first) => {
 	current_slots = instance.slots;
 	current_slots_index = 1;
 
-	VERBOSE && log('instance_render' + (current_first ? ' first' : ''));
+	VERBOSE && log('instance_render' + (current_first ? ' initial' : ' again'));
 	render_queue.delete(instance);
 
 	// not node_map?
@@ -827,8 +820,8 @@ const dirtify = slots => {
 		render_queue.add(/** @type {TYPE_INSTANCE} */ (instance));
 		//TODO order
 
-		rerender_pending ||
-			rerender();
+		rerender_deferred ||
+			render();
 	}
 }
 
@@ -1085,12 +1078,13 @@ export const hook_prev = (value, initial) => {
 export const hook_callback = (callback, deps) => {
 	const state = hook_static();
 	state.deps = deps;
-	if (current_first) {
-		state.callback = (...args) => (
-			callback(...state.deps, ...args)
-		);
-	}
-	return state.callback;
+	return (
+		state.callback || (
+			state.callback = (...args) => (
+				callback(...state.deps, ...args)
+			)
+		)
+	);
 }
 
 /**
@@ -1423,9 +1417,9 @@ export const hook_transition = (goal, delay) => {
 	@return {!Array<string>} keys
 */
 export const hook_object_changes = object => {
-	const prev = hook_prev(object);
+	const prev = hook_prev(object, null_);
 	return (
-		current_first
+		prev === null_
 		?	Object_keys(object)
 		:	object_diff(prev, object)
 	);
@@ -1714,25 +1708,27 @@ export const init = body => {
 		component['name_'] = '$body'
 	);
 
-	current = {
-		icall: {
-			component,
-			props: null_
-		},
-		iparent: null_,
-		parent_index: 0,
-		slots: [],
-		childs: null_,
-		dom,
-		dom_first: dom
-	};
-	current.slots[0] = [current];
+	(
+		current = {
+			icall: {
+				component,
+				props: null_
+			},
+			iparent: null_,
+			parent_index: 0,
+			slots: [],
+			childs: null_,
+			dom,
+			dom_first: dom
+		}
+	).slots[0] = [current];
+	render_queue.add(current);
 
-	time_update();
+	DEBUG && (
+		current = current_slots = null_
+	);
 
-	instance_render(null_, null_);
-
-	rerender();
+	render();
 }
 
 /**
@@ -1746,15 +1742,21 @@ export const now = () => (
 /**
 	update dirty instances
 */
-const rerender = () => {
-	time_update();
-	rerender_pending = true_;
+const render = () => {
+	current_first = render_time === 0;
+	VERBOSE && log('render' + (current_first ? ' initial' : ' again'));
+
+	render_time = performance_.now();
+
+	rerender_deferred = true_;
+	rerender_requested = null_;
+
 	for (current of render_queue) {
-		current_first = false_;
 		if (current.dom !== null_) {
 			instance_render(null_, null_);
 		}
 		else {
+			//get parent element and next sibling
 			let dom_parent = null_;
 			let dom_after = null_;
 			let dom_first = current.dom_first;
@@ -1818,36 +1820,60 @@ const rerender = () => {
 				instance.dom_first = dom_first;
 			}
 		}
+		current_first = false_;
 	}
-	rerender_pending = false_;
+	rerender_deferred = false_;
 
 	DEBUG && (
 		current = current_slots = null_
 	);
 
-	if (
-		!rerender_requested &&
-		render_queue_next.size > 0
-	) {
-		rerender_requested = true_;
-		requestAnimationFrame(rerender_next);
+	if (render_queue_next.size > 0) {
+		for (const instance of render_queue_next) {
+			render_queue.add(instance);
+		}
+		render_queue_next.clear();
+		rerender_request();
 	}
 }
 
+const rerender_request = () => (
+	VERBOSE && log('animation frame requested'),
+	rerender_requested === null_ && (
+		rerender_requested = requestAnimationFrame(render)
+	)
+)
+
 /**
-	rerender, only called by timeout/raf
+	do not automatically render on state changes
 */
-const rerender_next = () => {
-	rerender_requested = false_;
+export const defer = () => {
+	DEBUG &&
+	current !== null_ &&
+		error('defer while rendering');
 
-	//swap queues and clear the next one
-	const tmp = render_queue;
-	render_queue = render_queue_next;
-	(
-		render_queue_next = tmp
-	).clear();
+	VERBOSE && log('rerendering deferred');
 
-	rerender();
+	rerender_deferred = true_;
+	rerender_request();
+}
+
+/**
+	render deferred changes now
+*/
+export const defer_end = () => {
+	DEBUG && (
+		current !== null_ &&
+			error('defer_end while rendering'),
+		rerender_deferred ||
+			error('nothing was deferred')
+	);
+
+	VERBOSE && log('rerendering rescheduled');
+
+	cancelAnimationFrame(/** @type {number} */ (rerender_requested));
+
+	render();
 }
 
 

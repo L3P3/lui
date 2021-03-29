@@ -31,6 +31,8 @@ var TYPE_PROPS;
 
 /**
 	@typedef {{
+		defer,
+		defer_end,
 		hook_assert,
 		hook_async,
 		hook_callback,

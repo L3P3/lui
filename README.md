@@ -243,17 +243,30 @@ Here, `user_name_get` is an _async_ function, meaning it returns a promise. When
 
 When you already know that the condition will be false, just call it like this: `hook_assert();` This is similar to `return null;` but it can be called in _any_ component (including root) or hook.
 
+### Merging updates
+
+By default, every state change gets rendered synchronously. In most cases, this is very useful. When a state is set, the view will already be updated when the setter returns.
+
+However, in some rare cases, multiple (or many) setters are called in one go, causing many redundant rerenders. To prevent this and rerender all changes in one single go, use the `defer` method like this:
+
+```js
+function someEvent(value) {
+    defer();
+    foo_set(value);
+    bar_set(value);
+}
+```
+
+When `someEvent` is called, lui will rerender only once instead of twice. The rendering will happen at the next frame. When you need it to happen instantly, call `defer_end` after your state mutations.
+
 ### Full API
 
 For the exact signatures, see [the typescript definition file](index.d.ts)! You should somehow integrate it into your project anyway, so your IDE will show you the types automatically.
 
 Function | Description
 --- | ---
-`init(Body)` | This mounts the body once, you give it the so-to-say body component. But unlinke actual components, you return the props for the body element and its content. So `Body` looks like this: `()=>[body_props{}, body_content: node[]]`
-`node(Component, props{}, childs[]):node` | This is how you add child components. If the added component accepts childs (`C` prop), you can pass that as the third argument as an array of nodes.
-`node_dom(descriptor', attrs{}, childs[]):node` | When you want to add dom components, use this function. It is very similar to `node` but needs a descriptor instead.
-`node_map(Component, data[], props{})` | When you want to add a component n times for each entry of an array, this is the (proper) way to go. If the array items are objects, the [keys](https://reactjs.org/docs/lists-and-keys.html) are directly taken from an `id` property.
-`now():number` | The _relative_ point of time of the latest rerendering call. Do not use this as persistent time reference but just inside of run time. Useful for custom animations.
+`defer()` | Disables synchronous rerenders until the next frame.
+`defer_end()` | Enables synchronous rerenders again and rectifies deferred updates.
 `hook_assert(boolean)` | When the condition is falsy, rendering of the current component is interrupted. May be used for error handling or anything else.
 `hook_async((...deps)=>Promise<T>, deps[], fallback):T` | If you need to wait for some data until it is available, use this instead of `hook_memo`. As long as the promise is pending, `fallback` is returned. If no fallback is given, either `null` or the latest value is returned.
 `hook_callback(function, deps[]):function` | Returns a function that never changes. It passes all arguments down to the given function after the `deps`. Use this when you need to pass a callback as props that needs `deps`. If that callback is independent of the current component (has no `deps`), move the callback out of the component.
@@ -272,6 +285,11 @@ Function | Description
 `hook_static(initial):initial` | This is a much cheaper version of `hook_memo`: What you put in it the first time will _always_ come out of it.
 `hook_sub((...deps)=>T, deps[]):T` | Like `hook_memo` but the getter function may be swapped and it may contain hooks.
 `hook_transition(target, msecs):current` | When `target` changes, the output number will smoothly pass to the new target, taking the specified time for that transition.
+`init(Body)` | This mounts the body once, you give it the so-to-say body component. But unlinke actual components, you return the props for the body element and its content. So `Body` looks like this: `()=>[body_props{}, body_content: node[]]`
+`node(Component, props{}, childs[]):node` | This is how you add child components. If the added component accepts childs (`C` prop), you can pass that as the third argument as an array of nodes.
+`node_dom(descriptor', attrs{}, childs[]):node` | When you want to add dom components, use this function. It is very similar to `node` but needs a descriptor instead.
+`node_map(Component, data[], props{})` | When you want to add a component n times for each entry of an array, this is the (proper) way to go. If the array items are objects, the [keys](https://reactjs.org/docs/lists-and-keys.html) are directly taken from an `id` property.
+`now():number` | The _relative_ point of time of the latest rerendering call. Do not use this as persistent time reference but just inside of run time. Useful for custom animations.
 
 ## Contribution and Support
 

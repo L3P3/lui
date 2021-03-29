@@ -64,6 +64,16 @@ declare namespace lui {
 	type Component<T extends {}> = (props: T) => LuiNodeList | null;
 
 	/**
+		Defer rerenderings until next frame
+	*/
+	export function defer(): void;
+
+	/**
+		Rectify deferred rerenderings now
+	*/
+	export function defer_end(): void;
+
+	/**
 		Conditionally interrupt the instance's rendering process
 	*/
 	export function hook_assert(condition: boolean): void;

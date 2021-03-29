@@ -1,4 +1,6 @@
 import {
+	defer,
+	defer_end,
 	hook_assert,
 	hook_async,
 	hook_callback,
@@ -26,6 +28,8 @@ import {
 } from './lui.js';
 
 window_['lui'] = {
+	defer,
+	defer_end,
 	hook_assert,
 	hook_async,
 	hook_callback,

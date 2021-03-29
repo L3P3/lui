@@ -1,5 +1,7 @@
 export const lui_ = lui;
 
+export const defer = lui_.defer;
+export const defer_end = lui_.defer_end;
 export const hook_assert = lui_.hook_assert;
 export const hook_async = lui_.hook_async;
 export const hook_callback = lui_.hook_callback;
