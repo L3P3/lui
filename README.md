@@ -38,12 +38,8 @@ There are several ways to include lui into your project:
 When you want to automatically include the latest version, just add the following to your HTML file:
 
 ```html
-<script src=https://l3p3.de/shr/lui.js></script>
+<script src="https://cdn.jsdelivr.net/gh/L3P3/lui@dist/lui.js"></script>
 ```
-
-### Host the standalone by yourself
-
-When load speed, reliability or privacy is important enough, you should mirror the released file whereever you want. You can find it and some details on the [releases page](https://github.com/L3P3/lui/releases).
 
 ### Bundle lui with your app
 
