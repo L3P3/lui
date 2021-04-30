@@ -94,21 +94,21 @@ console.log(`raw size: ${
 	Math.round(fs.statSync('./dist/lui.js').size / 1024)
 }k`);
 
-try {
-	console.log('compress...');
-
-	console.log((await exec('zopfli --i1000 ./dist/lui.*'))[2]);
-
-	console.log(`compressed size: ${
-		Math.round(fs.statSync('./dist/lui.js.gz').size / 1024)
-	}k`);
-}
-catch (error) {}
-
 if (
 	flags.includes('d') &&
 	hostname() === 'l3p3-rk5'
 ) {
+	try {
+		console.log('compress...');
+	
+		console.log((await exec('zopfli --i1000 ./dist/lui.*'))[2]);
+	
+		console.log(`compressed size: ${
+			Math.round(fs.statSync('./dist/lui.js.gz').size / 1024)
+		}k`);
+	}
+	catch (error) {}
+
 	console.log('deploy...');
 	await exec('mv ./dist/lui.* /media/Archiv/Anbieter/node/rtjscomp/public/shr/');
 }

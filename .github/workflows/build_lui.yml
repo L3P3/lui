@@ -2,32 +2,38 @@
 name: Build lui
 
 on: [push, pull_request]
+# TODO: only if version in package.json changed
 
 jobs:
   build:
     runs-on: ubuntu-latest
     name: Build lui
     steps:
-      - name: Checkout
+      - name: Checkout source
         uses: actions/checkout@v2
       - name: Setting up NodeJS
         uses: actions/setup-node@v2
         with:
           node-version: 14
-      - name: Install closure-compiler and zopfli
+      - name: Extract lui version
+        run: echo "console.log(require('./package.json').version)" | node - > /tmp/lui-version
+      - name: Install closure-compiler
         run: |
-          sudo apt-get install zopfli
           sudo npm i -g google-closure-compiler
           sudo ln -sf /usr/local/bin/google-closure-compiler /usr/local/bin/closure-compiler
       - name: Build lui
         run: npm run-script build
-      - name: Upload prod
-        uses: actions/upload-artifact@v2
+      - name: Cache artifacts
+        run: mv dist /tmp/lui-dist
+      - name: Checkout dist branch
+        uses: actions/checkout@v2
         with:
-          name: prod
-          path: dist/lui.js
-      - name: Upload dev
-        uses: actions/upload-artifact@v2
-        with:
-          name: dev
-          path: dist/lui.dev.js
+          ref: 'dist'
+      - name: Insert and commit artifacts
+        run: |
+          mv /tmp/lui-dist/* ./
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add .
+          git commit -m "v$(cat /tmp/lui-version)"
+          git push
