@@ -41,6 +41,7 @@ var TYPE_INSTANCE_CALL_OPTIONAL;
 /**
 	@typedef {{
 		icall: TYPE_INSTANCE_CALL,
+		props_comp: ?function(TYPE_PROPS, TYPE_PROPS):boolean,
 		iparent: ?TYPE_INSTANCE,
 		parent_index: number,
 		slots: !Array<!Array>,
@@ -126,6 +127,7 @@ const undefined_ = void 0;
 const true_ = current_first;
 const false_ = !current_first;
 const Array_ = Array;
+const Function_ = Function;
 const Object_ = Object;
 const Object_assign = Object_.assign;
 const Object_keys = Object_.keys;
@@ -271,6 +273,51 @@ const render_queue = new Set;
 const render_queue_next = new Set;
 
 /**
+	functions for set of keys saying if objects are different
+	@type {Object<string, function(Object<string, *>, Object<string, *>):boolean>}
+*/
+const object_comp_functions = {};
+
+/**
+	gets or generates a compare function for keys
+	@param {Object<string, *>} object
+	@return {function(Object<string, *>, Object<string, *>):boolean}
+*/
+const object_comp_get = object => {
+	const key = (
+		object = Object_keys(/** @type {!Object} */ (object))
+	).join(',');
+
+	return (
+		object_comp_functions[key] ||
+		(
+			DEBUG && (
+				object.some(key =>
+					(
+						key.includes('-') ||
+						'0123456789'.includes(key.charAt(0))
+					) &&
+						error('invalid key: ' + key)
+				)
+			),
+			VERBOSE && log('object_comp_get: ' + key),
+			object_comp_functions[key] =
+			new Function_('a', 'b',
+				'return a!==b' + (
+					object.length > 0
+					?	'&&(' +
+						object
+						.map(key => 'a.' + key + '!==b.' + key)
+						.join('||') +
+						')'
+					:	''
+				)
+			)
+		)
+	);
+}
+
+/**
 	lists all changed properties
 	@param {Object<string, *>} a
 	@param {Object<string, *>} b
@@ -282,19 +329,6 @@ const object_diff = (a, b) => (
 	?	[]
 	:	Object_keys(/** @type {!Object} */ (a))
 		.filter(key => a[key] !== b[key])
-)
-
-/**
-	checks if objects are different
-	@param {Object<string, *>} a
-	@param {Object<string, *>} b
-	@return {boolean}
-*/
-const object_comp = (a, b) => (
-	DEBUG && assert_keys(a, b),
-	a !== b &&
-	Object_keys(/** @type {!Object} */ (a))
-	.some(key => a[key] !== b[key])
 )
 
 /**
@@ -411,6 +445,10 @@ const instance_render = (dom_parent, dom_first) => {
 					) {
 						instance_childs[childs_index] = current = child = {
 							icall: child_call,
+							props_comp: (
+								child_call.props &&
+								object_comp_get(child_call.props)
+							),
 							iparent: instance,
 							parent_index: childs_index,
 							slots: [],
@@ -432,7 +470,12 @@ const instance_render = (dom_parent, dom_first) => {
 							);
 					}
 					else if (
-						object_comp(
+						DEBUG && assert_keys(
+							child.icall.props,
+							child_call.props
+						),
+						child.props_comp !== null_ &&
+						child.props_comp(
 							child.icall.props,
 							child_call.props
 						)
@@ -480,7 +523,7 @@ const instance_render = (dom_parent, dom_first) => {
 		const {
 			component,
 			list_data,
-			props
+			props,
 		} = instance.icall.props;
 
 		DEBUG && (
@@ -493,70 +536,90 @@ const instance_render = (dom_parent, dom_first) => {
 			typeof props !== 'object' &&
 				error('props must be an object'),
 			assert_hook_equal(component, 'item component'),
-			assert_hook_equal(props === null_, 'props presence')
+			assert_hook_equal(props && Object_keys(props).join(','), 'common props')
 		);
 
 		let items_index = list_data.length;
+
+		if(
+			hook_prev(items_index, items_index) === 0 &&
+			items_index === 0
+		) return;
+
+		const state = hook_static();
+
 		const items_map = {};
 		const items_order = [];
 		const items_objects = (
 			items_index > 0 &&
 			list_data_index(list_data, items_map, items_order)
 		);
-
 		DEBUG &&
 		items_index === 0 &&
 			hook_static();
 
-		const item_map = hook_static();
-		const items_order_prev = hook_prev(items_order);
-		const props_prev = (
-			props === null_
-			?	null_
-			:	hook_prev(props)
-		);
-		const props_changed = (
-			current_first ||
-			object_comp(
-				props,
-				props_prev
-			)
-		);
+		// rerender?
+		if (state.item_map !== undefined) {
+			state.props_changed = (
+				props !== null_ &&
+				state.props_comp(
+					props,
+					state.props_prev
+				)
+			);
+	
+			VERBOSE &&
+			state.props_changed &&
+				log('props changed', object_diff(state.props_prev, props));
 
-		VERBOSE && !current_first && props_changed && log('childs modify', object_diff(props_prev, props));
+			// remove items
+			for (const key of state.items_order_prev) {
+				if (key in items_map) continue;
 
-		// remove items
-		if (!current_first)
-		for (const key of items_order_prev) {
-			if (key in items_map) continue;
-			instance_unmount(item_map[key], dom_parent);
-			delete item_map[key];
+				VERBOSE && log('item remove: ' + key);
+				instance_unmount(state.item_map[key], dom_parent);
+				delete state.item_map[key];
+			}
+
+			state.props_prev = props;
+			state.items_order_prev = items_order;
+		}
+		// initial render?
+		else {
+			state.item_map = {};
+			state.item_comp = (
+				items_objects
+				?	object_comp_get(items_map[items_order[0]])
+				:	null_
+			);
+			state.items_order_prev = items_order;
+			state.props_comp = (
+				state.props_prev = props
+			) && object_comp_get(props);
+			state.props_changed = true_;
 		}
 
 		// insert/reinsert all items
 		const childs = instance.childs = new Array_(items_index);
 		while (items_index > 0) {
 			const key = items_order[--items_index];
-			let child = item_map[key];
+			let child = state.item_map[key];
 			if (
 				current_first =
 				child === undefined_
 			) {
-				VERBOSE && log('child add: ' + key);
+				VERBOSE && log('item add: ' + key);
 
-				item_map[key] = current = child = {
+				state.item_map[key] = current = child = {
 					icall: {
 						component,
 						props: (
-							props === null_
-							?	{
-									I: items_map[key]
-								}
-							:	Object_assign({
-									I: items_map[key]
-								}, props)
+							Object_assign({
+								I: items_map[key]
+							}, props)
 						)
 					},
+					props_comp: null_,
 					iparent: instance,
 					parent_index: items_index,
 					slots: [],
@@ -578,15 +641,15 @@ const instance_render = (dom_parent, dom_first) => {
 					);
 			}
 			else {
-				child.parent_index !== items_index && (
-					instance_reinsert(child, dom_parent, dom_first),
-					child.parent_index = items_index
-				);
+				if (child.parent_index !== items_index) {
+					instance_reinsert(child, dom_parent, dom_first);
+					child.parent_index = items_index;
+				}
 
 				if (
-					props_changed ||
+					state.props_changed ||
 					items_objects &&
-						object_comp(
+						state.item_comp(
 							items_map[key],
 							child.icall.props.I
 						)
@@ -594,13 +657,9 @@ const instance_render = (dom_parent, dom_first) => {
 					(
 						current = child
 					).icall.props = (
-						props === null_
-						?	{
-								I: items_map[key]
-							}
-						:	Object_assign({
-								I: items_map[key]
-							}, props)
+						Object_assign({
+							I: items_map[key]
+						}, props)
 					);
 
 					instance_render(
@@ -695,16 +754,7 @@ const list_data_index = (list_data, items_map, items_order) => {
 	if (DEBUG) {
 		const item_type_ref = hook_static();
 
-		if (item_type_ref.val) {
-			list_data[0] !== null_ &&
-			typeof list_data[0] === item_type_ref.val ||
-				error('item type changed');
-
-			items_objects &&
-			typeof list_data[0].id !== item_type_ref.val_id &&
-				error('item id type changed');
-		}
-		else {
+		if (!item_type_ref.val) {
 			list_data[0] !== null_ &&
 			['object', 'string', 'number']
 			.includes(
@@ -712,26 +762,31 @@ const list_data_index = (list_data, items_map, items_order) => {
 			) ||
 				error('item type invalid');
 
-			items_objects &&
-			!['string', 'number']
-			.includes(
-				item_type_ref.val_id = typeof list_data[0].id
-			) &&
-				error('item id type invalid');
+			items_objects && (
+				!['string', 'number']
+				.includes(
+					item_type_ref.val_id = typeof list_data[0].id
+				) &&
+					error('item id type invalid'),
+				item_type_ref.keys = Object_keys(list_data[0]).join(',')
+			);
+		}
+
+		for (const item of list_data) {
+			item === null_ &&
+				error('item is null');
+			typeof item !== item_type_ref.val &&
+				error('item type changed');
+			items_objects && (
+				typeof item.id !== item_type_ref.val_id &&
+					error('item id type changed'),
+				Object_keys(item).join(',') !== item_type_ref.keys &&
+					error('item keys differ of ' + item.id)
+			);
 		}
 	}
 
 	for (const item of list_data) {
-		DEBUG && (
-			item === null_ &&
-				error('item is null'),
-			typeof item !== typeof list_data[0] &&
-				error('item type changed'),
-			items_objects &&
-			typeof item.id !== typeof list_data[0].id &&
-				error('item id type changed')
-		);
-
 		const key = (
 			items_objects
 			?	item.id
@@ -1266,7 +1321,8 @@ export const hook_map = (getter, list_data, deps) => {
 			[],//items order
 			true_,//clean
 			{},//items map
-			list_data
+			list_data,
+			null_//item compare
 		];
 	}
 	else {
@@ -1285,15 +1341,25 @@ export const hook_map = (getter, list_data, deps) => {
 	);
 
 	const items_slots_map = slot[6];
+
+	// context push
 	const current_first_before = current_first;
 	const current_slots_before = current_slots;
 	const current_slots_index_before = current_slots_index;
+
+	if (
+		items_objects &&
+		slot[8] === null_
+	) {
+		slot[8] = object_comp_get(list_data[0]);
+	}
 
 	if (slot[7] !== list_data) {
 		slot[7] = list_data;
 		// remove items
 		for (const key of slot[4]) {
 			if (key in items_data_map) continue;
+
 			VERBOSE && log('map item remove: ' + key);
 			hooks_unmount(items_slots_map[key]);
 			delete items_slots_map[key];
@@ -1324,7 +1390,7 @@ export const hook_map = (getter, list_data, deps) => {
 			dirty ||
 			current_first || (
 				items_objects
-				?	object_comp(
+				?	slot[8](
 						items_data_map[key],
 						slots[0][3]
 					)
@@ -1354,6 +1420,7 @@ export const hook_map = (getter, list_data, deps) => {
 		slot[3].push(slots[0][4]);
 	}
 
+	// context pop
 	current_first = current_first_before;
 	current_slots = current_slots_before;
 	current_slots_index = current_slots_index_before;
@@ -1714,6 +1781,7 @@ export const init = body => {
 				component,
 				props: null_
 			},
+			props_comp: null_,
 			iparent: null_,
 			parent_index: 0,
 			slots: [],
