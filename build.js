@@ -36,7 +36,7 @@ async function build(prod) {
 	const file = './dist/lui' + (prod ? '' : '.dev') + '.js';
 
 	console.log((await exec(
-		'closure-compiler --' +
+		'google-closure-compiler --' +
 		[
 			'assume_function_wrapper',
 			'charset UTF-8',
@@ -75,7 +75,7 @@ async function build(prod) {
 
 if(
 	!(
-		await exec('closure-compiler --version')
+		await exec('google-closure-compiler --version')
 	)[1].includes('Version: v202')
 ) {
 	console.log('newer closure compiler version required!');

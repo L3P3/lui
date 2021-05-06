@@ -7,25 +7,22 @@ var TYPE_LIST_ITEM;
 
 /**
 	@typedef {!Object<string, boolean>}
-	@dict
 */
 var TYPE_PROPS_F;
 
 /**
 	@typedef {!Object<string, string>}
-	@dict
 */
 var TYPE_PROPS_S;
 
 /**
 	@typedef {{
-		C: (void|Array<TYPE_INSTANCE_CALL_OPTIONAL>),
+		C: (void|Array<?>),
 		F: (void|TYPE_PROPS_F),
 		R: (void|function(HTMLElement):void),
 		S: (void|TYPE_PROPS_S),
 		I: (void|TYPE_LIST_ITEM)
 	}}
-	@dict
 */
 var TYPE_PROPS;
 
