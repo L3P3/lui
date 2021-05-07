@@ -18,7 +18,7 @@ const HOOK_MEMO = DEBUG ? 8 : 0;
 const HOOK_PREV = DEBUG ? 9 : 0;
 const HOOK_REDUCEA = DEBUG ? 10 : 0;
 const HOOK_REDUCEF = DEBUG ? 11 : 0;
-const HOOK_SUB = DEBUG ? 12 : 3;
+const HOOK_SUB = DEBUG ? 12 : 4;
 
 
 /// COMPILATION ///
