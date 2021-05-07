@@ -297,6 +297,7 @@ const assert_keys = (a, b) => {
 	@param {?number} type
 	@param {boolean} component only allowed directly in components
 	@param {?Array|void} deps
+	@noinline
 */
 const assert_hook = (type, component, deps) => {
 	current_slots ||
@@ -315,8 +316,8 @@ const assert_hook = (type, component, deps) => {
 	current_slots[0].htype !== HOOK_HEAD_INSTANCE &&
 		error('hook called outside of component rendering');
 
+	type !== null_ &&
 	current_slots_index < current_slots.length && (
-		type !== null_ &&
 		current_slots[current_slots_index].htype !== type &&
 			error('inconsistent hook order'),
 		current_slots[current_slots_index].deps &&
