@@ -86,19 +86,16 @@ var TYPE_INSTANCE_CALL_OPTIONAL;
 		icall: TYPE_INSTANCE_CALL,
 		props_comp: ?TYPE_OBJ_COMP,
 		iparent: ?TYPE_INSTANCE,
+		level: number,
 		parent_index: number,
 		slots: !Array<TYPE_SLOT>,
 		childs: ?Array<?TYPE_INSTANCE>,
 		dom: ?HTMLElement,
-		dom_first: ?HTMLElement
+		dom_first: ?HTMLElement,
+		dirty: boolean
 	}}
 */
 var TYPE_INSTANCE;
-
-/**
-	@typedef {!Set<TYPE_INSTANCE>}
-*/
-var TYPE_QUEUE;
 
 
 /// STATE ///
@@ -145,20 +142,20 @@ let rerender_requested = 0;
 */
 let rerender_deferred = current_first;
 
-
-/// MAPS ///
-
 /**
 	instances that should be rerendered in this frame
-	@type {TYPE_QUEUE}
+	@type {!Array<Array<TYPE_INSTANCE>>}
 */
-const render_queue = new Set;
+let render_queue = [];
 
 /**
 	instances that should be rerendered in the next frame
-	@type {TYPE_QUEUE}
+	@type {!Array<Array<TYPE_INSTANCE>>}
 */
-const render_queue_next = new Set;
+let render_queue_next = [];
+
+
+/// MAPS ///
 
 /**
 	descriptor to node cache, symbol "default value"
@@ -465,7 +462,7 @@ const instance_render = (dom_parent, dom_first) => {
 	current_slots_index = 1;
 
 	VERBOSE && log('instance_render ' + (current_first ? 'initial' : 'again'));
-	render_queue.delete(instance);
+	instance.dirty = false_;
 
 	// not node_map?
 	if (instance.icall.component !== object_comp_get) {
@@ -554,11 +551,13 @@ const instance_render = (dom_parent, dom_first) => {
 									object_comp_get(child_call.props)
 								),
 								iparent: instance,
+								level: instance.level + 1,
 								parent_index: childs_index,
 								slots: [],
 								childs: null_,
 								dom: null_,
 								dom_first: null_,
+								dirty: false_,
 							}
 						).slots[0] = {
 							htype: HOOK_HEAD_INSTANCE,
@@ -730,11 +729,13 @@ const instance_render = (dom_parent, dom_first) => {
 						},
 						props_comp: null_,
 						iparent: instance,
+						level: instance.level + 1,
 						parent_index: items_index,
 						slots: [],
 						childs: null_,
 						dom: null_,
 						dom_first: null_,
+						dirty: false_,
 					}
 				).slots[0] = {
 					htype: HOOK_HEAD_INSTANCE,
@@ -818,8 +819,25 @@ const instance_unmount = (instance, dom_parent) => {
 
 	hooks_unmount(instance.slots);
 
-	render_queue.delete(instance);
-	render_queue_next.delete(instance);
+	if (instance.dirty) {
+		let index;
+		let group;
+
+		(
+			!(
+				group = render_queue[index = instance.level]
+			) || (
+				index = group.indexOf(instance)
+			) < 0
+		) && (
+			!(
+				group = render_queue_next[index]
+			) || (
+				index = group.indexOf(instance)
+			) < 0
+		) ||
+			group.splice(index, 1);
+	}
 }
 
 /**
@@ -980,16 +998,18 @@ const dirtup = slots => {
 const dirtify = slots => (
 	(
 		slots = dirtup(/** @type {TYPE_SLOTS} */ (slots))
-	) && (
+	) &&
+	!(
+		/** @type {TYPE_INSTANCE} */ (slots)
+	).dirty && (
 		slots = /** @type {TYPE_INSTANCE} */ (slots),
 
-		VERBOSE && (
-			render_queue.has(slots) ||
-				log('dirtify ' + instance_name_get(slots))
-		),
+		VERBOSE && log('dirtify ' + instance_name_get(slots)),
 
-		render_queue.add(slots),
-		//TODO order
+		slots.dirty = true_,
+		render_queue[slots.level]
+		?	render_queue[slots.level].push(slots)
+		:	render_queue[slots.level] = [slots],
 
 		rerender_deferred ||
 			render()
@@ -1008,12 +1028,16 @@ export const hook_rerender = () => {
 	const instance = dirtup(/** @type {TYPE_SLOTS} */ (current_slots));
 
 	if (instance) {
-		VERBOSE && (
-			render_queue_next.has(/** @type {TYPE_INSTANCE} */ (instance)) ||
-				log('hook_rerender ' + instance_name_get(/** @type {TYPE_INSTANCE} */ (instance)))
-		);
+		VERBOSE && log('hook_rerender ' + instance_name_get(/** @type {TYPE_INSTANCE} */ (instance))),
 
-		render_queue_next.add(/** @type {TYPE_INSTANCE} */ (instance));
+		/** @type {TYPE_INSTANCE} */ (instance).dirty = true_,
+		render_queue_next[/** @type {TYPE_INSTANCE} */ (instance).level]
+		?	render_queue_next[/** @type {TYPE_INSTANCE} */ (instance).level].push(
+				/** @type {TYPE_INSTANCE} */ (instance)
+			)
+		:	render_queue_next[/** @type {TYPE_INSTANCE} */ (instance).level] = [
+				/** @type {TYPE_INSTANCE} */ (instance)
+			];
 	}
 }
 
@@ -1928,7 +1952,8 @@ export const init = body => {
 	DEBUG && (
 		(
 			current ||
-			render_queue.size
+			render_queue.length ||
+			render_queue_next.length
 		) &&
 			error('init called more than once'),
 		typeof body !== 'function' &&
@@ -1985,17 +2010,19 @@ export const init = body => {
 			},
 			props_comp: null_,
 			iparent: null_,
+			level: 0,
 			parent_index: 0,
 			slots: [],
 			childs: null_,
 			dom,
 			dom_first: dom,
+			dirty: true_,
 		}
 	).slots[0] = {
 		htype: HOOK_HEAD_INSTANCE,
 		hinstance: current,
 	};
-	render_queue.add(current);
+	render_queue[0] = [current];
 
 	DEBUG && (
 		current = current_slots = null_
@@ -2024,78 +2051,93 @@ const render = () => {
 	rerender_deferred = true_;
 	rerender_requested = 0;
 
-	for (current of render_queue) {
-		// simple update?
-		if (current.dom) {
-			instance_render(null_, null_);
-		}
-		// complicated update?
-		else {
-			//get parent element and next sibling
-			let dom_parent = null_;
-			let dom_after = null_;
-			let dom_first = current.dom_first;
-			let dom_parent_instance = current;
-			let instance = current;
-
-			while (
-				!(
-					dom_parent = (
-						dom_parent_instance = dom_parent_instance.iparent
-					).dom
-				)
-			) {}
-
-			do {
-				let index = instance.parent_index;
-				const {childs} = (
-					instance = instance.iparent
-				);
-				const childs_length = childs.length;
-
-				while (
-					++index < childs_length &&
-					(
-						childs[index] &&
-						!(
-							dom_after = childs[index].dom_first
-						)
-					)
-				) {}
-			}
-			while (
-				!dom_after &&
-				instance !== dom_parent_instance
-			);
-
-			instance = current;
-
-			instance_render(
-				dom_parent,
-				dom_after
-			);
-			
-			if (instance.dom_first !== dom_first)//TODO it better
-			while (
-				!(
-					instance = instance.iparent
-				).dom
-			) {
-				dom_first = null_;
-				for (const child of instance.childs) {//TODO skip n items if possible
-					if (
-						child &&
-						(
-							dom_first = child.dom_first
-						)
-					)
-						break;
+	let queue;
+	let rerender_count = 0;
+	while (
+		(queue = render_queue).length
+	) {
+		DEBUG &&
+		++rerender_count > 10 &&
+			error('rerender loop detected');
+		render_queue = [];
+		for (const group of queue) {
+			if (group)
+			for (current of group) {
+				// already rerendered?
+				if (!current.dirty) continue;
+				// simple update?
+				if (current.dom) {
+					instance_render(null_, null_);
 				}
-				if (dom_first === instance.dom_first) break;
-				instance.dom_first = dom_first;
+				// complicated update?
+				else {
+					//get parent element and next sibling
+					let dom_parent = null_;
+					let dom_after = null_;
+					let dom_first = current.dom_first;
+					let dom_parent_instance = current;
+					let instance = current;
+
+					while (
+						!(
+							dom_parent = (
+								dom_parent_instance = dom_parent_instance.iparent
+							).dom
+						)
+					) {}
+
+					do {
+						let index = instance.parent_index;
+						const {childs} = (
+							instance = instance.iparent
+						);
+						const childs_length = childs.length;
+
+						while (
+							++index < childs_length &&
+							(
+								childs[index] &&
+								!(
+									dom_after = childs[index].dom_first
+								)
+							)
+						) {}
+					}
+					while (
+						!dom_after &&
+						instance !== dom_parent_instance
+					);
+
+					instance = current;
+
+					instance_render(
+						dom_parent,
+						dom_after
+					);
+					
+					if (instance.dom_first !== dom_first)//TODO it better
+					while (
+						!(
+							instance = instance.iparent
+						).dom
+					) {
+						dom_first = null_;
+						for (const child of instance.childs) {//TODO skip n items if possible
+							if (
+								child &&
+								(
+									dom_first = child.dom_first
+								)
+							)
+								break;
+						}
+						if (dom_first === instance.dom_first) break;
+						instance.dom_first = dom_first;
+					}
+				}
+				current_first = false_;
 			}
 		}
-		current_first = false_;
 	}
 	rerender_deferred = false_;
 
@@ -2103,11 +2145,9 @@ const render = () => {
 		current = current_slots = null_
 	);
 
-	if (render_queue_next.size > 0) {
-		for (const instance of render_queue_next) {
-			render_queue.add(instance);
-		}
-		render_queue_next.clear();
+	if (render_queue_next.length) {
+		render_queue = render_queue_next;
+		render_queue_next = queue;
 		rerender_request();
 	}
 }
@@ -2285,7 +2325,7 @@ DEBUG && (
 	window_.onerror = () => (
 		current &&
 			log('error'),
-		render_queue.clear(),
-		render_queue_next.clear()
+		render_queue =
+		render_queue_next = []
 	)
 );
