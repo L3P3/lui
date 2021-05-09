@@ -20,20 +20,25 @@ const exec = cmd => (
 	)
 )
 
-function flags_set(debug, verbose) {
+function flags_set(debug, verbose, legacy) {
 	fs.writeFileSync(
 		'./src/flags.js',
 `export const DEBUG = ${debug};
 export const VERBOSE = ${verbose};
+export const LEGACY = ${legacy};
 `,
 		'utf8'
 	);
 }
 
-async function build(prod) {
-	flags_set(!prod, false);
+async function build(prod, legacy) {
+	flags_set(!prod, false, legacy);
 
-	const file = './dist/lui' + (prod ? '' : '.dev') + '.js';
+	const file = `./dist/lui${
+		prod ? '' : '.dev'
+	}${
+		legacy ? '.legacy' : ''
+	}.js`;
 
 	console.log((await exec(
 		'google-closure-compiler --' +
@@ -45,9 +50,8 @@ async function build(prod) {
 			'entry_point ./src/luirt.js',
 			'js ./src',
 			'js_output_file ' + file,
-			'jscomp_warning boundedGenerics',
 			'language_in ECMASCRIPT_NEXT',
-			'language_out ECMASCRIPT6_STRICT',
+			`language_out ECMASCRIPT${legacy ? '3' : '6_STRICT'}`,
 			'module_resolution WEBPACK',
 			'rewrite_polyfills false',
 			'strict_mode_input',
@@ -87,12 +91,13 @@ await exec('rm ./dist/lui.*');
 
 console.log(`build ${version}...`);
 
-await build(false);
-await build(true);
+await build(false, false);
+await build(true, false);
+await build(true, true);
 
 console.log(`raw size: ${
-	Math.round(fs.statSync('./dist/lui.js').size / 1024)
-}k`);
+	fs.statSync('./dist/lui.js').size
+} bytes`);
 
 if (
 	flags.includes('d') &&
@@ -104,8 +109,8 @@ if (
 		console.log((await exec('zopfli --i1000 ./dist/lui.*'))[2]);
 	
 		console.log(`compressed size: ${
-			Math.round(fs.statSync('./dist/lui.js.gz').size / 1024)
-		}k`);
+			fs.statSync('./dist/lui.js.gz').size
+		} bytes`);
 	}
 	catch (error) {}
 
@@ -116,5 +121,5 @@ if (
 })()
 .catch(console.log)
 .finally(() => {
-	flags_set(true, false);
+	flags_set(true, false, false);
 });

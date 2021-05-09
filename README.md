@@ -6,20 +6,20 @@ When I was introduced to [React](https://github.com/facebook/react), I liked it 
 
 - About **6k** code size (~3k compressed)
 - **Stateful components** using [hooks](https://reactjs.org/docs/hooks-intro.html)
-- Will be **compatible** with down to [Internet Explorer 5](https://en.wikipedia.org/wiki/Internet_Explorer_5)
+- **Compatible** with ancient browsers
 - Optional **development mode**
 - **Animations** integrated
 - Conditional css classes on elements
 - Not terribly inefficient
 - Can be bundled together with your application
 - 0 dependencies
-- Should be production ready
+- Production ready (at least the dynamic variant)
 
 ## Demos
 
 [Small demonstation app](https://l3p3.de/dev/lui/demo.html)
 
-[TODO app](https://l3p3.de/dev/lui/todo.html)
+[TODO app](https://l3p3.de/dev/lui/todo.html), [ancient browsers variant](http://l3p3.de/dev/lui/todo-legacy.html)
 
 [Animated sidebar](https://l3p3.de/dev/lui/app.html)
 

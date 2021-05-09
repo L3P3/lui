@@ -1,2 +1,3 @@
 export const DEBUG = true;
 export const VERBOSE = false;
+export const LEGACY = false;

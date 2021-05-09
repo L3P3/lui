@@ -4,28 +4,34 @@
 	L3P3.de 2021
 */
 
-import {DEBUG, VERBOSE} from './flags.js';
-
-const HOOK_HEAD_INSTANCE = 0;
-const HOOK_HEAD_MAP = 1;
-const HOOK_HEAD_SUB = 2;
-const HOOK_EFFECT = DEBUG ? 3 : 1;
-const HOOK_ASYNC = DEBUG ? 4 : 2;
-const HOOK_STATE = DEBUG ? 5 : 0;
-const HOOK_STATIC = DEBUG ? 6 : 0;
-const HOOK_MAP = DEBUG ? 7 : 3;
-const HOOK_MEMO = DEBUG ? 8 : 0;
-const HOOK_PREV = DEBUG ? 9 : 0;
-const HOOK_REDUCEA = DEBUG ? 10 : 0;
-const HOOK_REDUCEF = DEBUG ? 11 : 0;
-const HOOK_SUB = DEBUG ? 12 : 4;
+import {DEBUG, VERBOSE, LEGACY} from './flags.js';
 
 
 /// COMPILATION ///
 
 /**
+	type of hook instance
+	@enum {number}
+*/
+const HOOK = {
+	HEAD_INSTANCE: 0,
+	HEAD_MAP: 1,
+	HEAD_SUB: 2,
+	EFFECT: DEBUG ? 3 : 1,
+	ASYNC: DEBUG ? 4 : 2,
+	STATE: DEBUG ? 5 : 0,
+	STATIC: DEBUG ? 6 : 0,
+	MAP: DEBUG ? 7 : 3,
+	MEMO: DEBUG ? 8 : 0,
+	PREV: DEBUG ? 9 : 0,
+	REDUCEA: DEBUG ? 10 : 0,
+	REDUCEF: DEBUG ? 11 : 0,
+	SUB: DEBUG ? 12 : 4,
+}
+
+/**
 	@typedef {{
-		htype: number,
+		htype: HOOK,
 		slots: TYPE_SLOTS,
 		hslot: TYPE_SLOT,
 		hparent: TYPE_SLOTS,
@@ -191,11 +197,54 @@ const true_ = current_first;
 const false_ = !current_first;
 const Array_ = Array;
 const Object_ = Object;
-const Object_assign = Object_.assign;
-const Object_keys = Object_.keys;
+const Object_assign = /** @type {function(!Object, ...(?Object|void)):!Object} */ (
+	LEGACY
+	?	(
+		Object_.assign || (
+			Object_.assign =
+			function(result) {
+				for (
+					var length = arguments.length,
+						index = 0,
+						item, key;
+					++index < length;
+				) {
+					if (item = arguments[index])
+					for (key in item) {
+						result[key] = item[key];
+					}
+				}
+				return result;
+			}
+		)
+	)
+	:	Object_.assign
+);
+const Object_keys = /** @type {function(!Object):!Array<string>} */ (
+	LEGACY
+	?	(
+		Object_.keys || (
+			Object_.keys =
+			function(object) {
+				var result = [];
+				for (var key in object) {
+					result.push(key);
+				}
+				return result;
+			}
+		)
+	)
+	:	Object_.keys
+);
+const setTimeout_ = setTimeout;
+const clearTimeout_ = clearTimeout;
 const document_ = document;
 export const window_ = window;
-const performance_ = window_.performance || Date;
+const performance_ = (
+	LEGACY
+	?	Date
+	:	window_.performance || Date
+);
 
 
 /// DEBUGGING ///
@@ -223,9 +272,9 @@ const stack_get = () => {
 	let index = null_;
 	if (item) {
 		stack.unshift('$' + (current_slots_index - 1));
-		while (item[0].htype !== HOOK_HEAD_INSTANCE) {
+		while (item[0].htype !== HOOK.HEAD_INSTANCE) {
 			stack.unshift(
-				item[0].htype === HOOK_HEAD_MAP
+				item[0].htype === HOOK.HEAD_MAP
 				?	`hook_map[${
 						typeof item[0].item_data === 'object'
 						?	item[0].item_data.id
@@ -291,7 +340,7 @@ const assert_keys = (a, b) => {
 
 /**
 	ensures hook rules
-	@param {?number} type
+	@param {?HOOK} type
 	@param {boolean} component only allowed directly in components
 	@param {?Array|void} deps
 	@noinline
@@ -310,7 +359,7 @@ const assert_hook = (type, component, deps) => {
 	current_slots = /** @type {!Array<TYPE_SLOT>} */ (current_slots);
 
 	component &&
-	current_slots[0].htype !== HOOK_HEAD_INSTANCE &&
+	current_slots[0].htype !== HOOK.HEAD_INSTANCE &&
 		error('hook called outside of component rendering');
 
 	type !== null_ &&
@@ -560,7 +609,7 @@ const instance_render = (dom_parent, dom_first) => {
 								dirty: false_,
 							}
 						).slots[0] = {
-							htype: HOOK_HEAD_INSTANCE,
+							htype: HOOK.HEAD_INSTANCE,
 							hinstance: child,
 						};
 
@@ -738,7 +787,7 @@ const instance_render = (dom_parent, dom_first) => {
 						dirty: false_,
 					}
 				).slots[0] = {
-					htype: HOOK_HEAD_INSTANCE,
+					htype: HOOK.HEAD_INSTANCE,
 					hinstance: child,
 				};
 
@@ -852,18 +901,18 @@ const hooks_unmount = slots => {
 			slot = slots[--slots_index]
 		).htype
 	) {
-		case HOOK_EFFECT:
+		case HOOK.EFFECT:
 			slot.unmount &&
 				(slot.unmount)(...slot.deps);
 			break;
-		case HOOK_ASYNC:
+		case HOOK.ASYNC:
 			slot.deps = Array_empty;
 			break;
-		case HOOK_SUB:
-			hooks_unmount(slot.slots);
-			break;
-		case HOOK_MAP:
+		case HOOK.MAP:
 			hook_map_unmount(slot);
+			break;
+		case HOOK.SUB:
+			hooks_unmount(slot.slots);
 		default:
 	}
 }
@@ -969,7 +1018,7 @@ const instance_reinsert = (instance, dom_parent, dom_first) => {
 	@return {TYPE_INSTANCE}
 */
 const instance_current_get = slots => {
-	while (slots[0].htype !== HOOK_HEAD_INSTANCE) {
+	while (slots[0].htype !== HOOK.HEAD_INSTANCE) {
 		slots = slots[0].hparent;
 	}
 	return slots[0].hinstance;
@@ -981,7 +1030,7 @@ const instance_current_get = slots => {
 	@return {?TYPE_INSTANCE}
 */
 const dirtup = slots => {
-	while (slots[0].htype !== HOOK_HEAD_INSTANCE) {
+	while (slots[0].htype !== HOOK.HEAD_INSTANCE) {
 		if (!slots[0].hslot.clean) {
 			return null_;
 		}
@@ -1066,7 +1115,7 @@ export const hook_assert = condition => {
 	@param {?Array=} deps
 */
 export const hook_effect = (effect, deps) => {
-	DEBUG && assert_hook(HOOK_EFFECT, false_, deps);
+	DEBUG && assert_hook(HOOK.EFFECT, false_, deps);
 
 	// initial?
 	if (current_slots_index >= current_slots.length) {
@@ -1074,7 +1123,7 @@ export const hook_effect = (effect, deps) => {
 
 		current_slots[current_slots_index] =
 		/** @type {TYPE_SLOT} */ ({
-			htype: HOOK_EFFECT,
+			htype: HOOK.EFFECT,
 			deps_comp: deps_comp_get(deps),
 			deps: deps = deps || Array_empty,
 			unmount: effect(...deps) || null_,
@@ -1122,7 +1171,7 @@ export const hook_effect = (effect, deps) => {
 	@return {*}
 */
 export const hook_async = (getter, deps, fallback) => {
-	DEBUG && assert_hook(HOOK_ASYNC, false_, deps);
+	DEBUG && assert_hook(HOOK.ASYNC, false_, deps);
 
 	/**
 		@type {TYPE_SLOT}
@@ -1141,7 +1190,7 @@ export const hook_async = (getter, deps, fallback) => {
 			:	(
 				slot = current_slots[current_slots_index++] =
 				/** @type {TYPE_SLOT} */ ({
-					htype: HOOK_ASYNC,
+					htype: HOOK.ASYNC,
 					deps_comp: deps_comp_get(deps),
 					deps: deps || Array_empty,
 					hvalue: null_,
@@ -1184,7 +1233,7 @@ export const hook_async = (getter, deps, fallback) => {
 	@return {!Array}
 */
 export const hook_state = initial => {
-	DEBUG && assert_hook(HOOK_STATE, false_, null_);
+	DEBUG && assert_hook(HOOK.STATE, false_, null_);
 
 	if (current_slots_index < current_slots.length) {
 		return /** @type {!Array} */ (current_slots[current_slots_index++].hvalue);
@@ -1205,7 +1254,7 @@ export const hook_state = initial => {
 	];
 	current_slots[current_slots_index++] =
 	/** @type {TYPE_SLOT} */ ({
-		htype: HOOK_STATE,
+		htype: HOOK.STATE,
 		hvalue: slot,
 	});
 	return slot;
@@ -1217,7 +1266,7 @@ export const hook_state = initial => {
 	@return {*}
 */
 export const hook_static = value => (
-	DEBUG && assert_hook(HOOK_STATIC, false_, null_),
+	DEBUG && assert_hook(HOOK.STATIC, false_, null_),
 
 	(
 		current_slots_index < current_slots.length
@@ -1225,7 +1274,7 @@ export const hook_static = value => (
 		:	(
 			current_slots[current_slots_index++] =
 			/** @type {TYPE_SLOT} */ ({
-				htype: HOOK_STATIC,
+				htype: HOOK.STATIC,
 				hvalue: value === undefined_ ? {} : value,
 			})
 		)
@@ -1239,7 +1288,7 @@ export const hook_static = value => (
 	@return {*}
 */
 export const hook_memo = (getter, deps) => (
-	DEBUG && assert_hook(HOOK_MEMO, false_, deps),
+	DEBUG && assert_hook(HOOK.MEMO, false_, deps),
 
 	current_slots_index >= current_slots.length
 	// initial?
@@ -1248,7 +1297,7 @@ export const hook_memo = (getter, deps) => (
 
 		current_slots[current_slots_index++] =
 		/** @type {TYPE_SLOT} */ ({
-			htype: HOOK_MEMO,
+			htype: HOOK.MEMO,
 			deps_comp: deps_comp_get(deps),
 			deps: deps = deps || Array_empty,
 			hvalue: getter(...deps),
@@ -1287,7 +1336,7 @@ export const hook_memo = (getter, deps) => (
 	@return {*}
 */
 export const hook_prev = (value, initial) => (
-	DEBUG && assert_hook(HOOK_PREV, false_, null_),
+	DEBUG && assert_hook(HOOK.PREV, false_, null_),
 
 	current_slots_index < current_slots.length
 	?	(
@@ -1297,7 +1346,7 @@ export const hook_prev = (value, initial) => (
 	:	(
 		current_slots[current_slots_index++] =
 		/** @type {TYPE_SLOT} */ ({
-			htype: HOOK_PREV,
+			htype: HOOK.PREV,
 			hvalue: value,
 		})
 	),
@@ -1335,12 +1384,20 @@ export const hook_callback = (callback, deps) => {
 	@return {function():void}
 */
 const hook_delay_effect = (delay, expired_set) => (
-	delay = setTimeout(
+	delay = (
+		LEGACY
+		?	setTimeout_
+		:	setTimeout
+	)(
 		() => expired_set(true_),
 		delay
 	),
 
-	() => clearTimeout(delay)
+	() => (
+		LEGACY
+		?	clearTimeout_
+		:	clearTimeout
+	)(delay)
 )
 
 /**
@@ -1364,7 +1421,7 @@ export const hook_delay = delay => {
 	@return {*}
 */
 export const hook_sub = (getter, deps) => {
-	DEBUG && assert_hook(HOOK_SUB, false_, deps);
+	DEBUG && assert_hook(HOOK.SUB, false_, deps);
 
 	/**
 		@type {?TYPE_SLOT}
@@ -1426,7 +1483,7 @@ export const hook_sub = (getter, deps) => {
 		(
 			current_slots[current_slots_index] = slot =
 			/** @type {TYPE_SLOT} */ ({
-				htype: HOOK_SUB,
+				htype: HOOK.SUB,
 				deps_comp: deps_comp_get(deps),
 				deps: deps || Array_empty,
 				hvalue: null_,
@@ -1436,7 +1493,7 @@ export const hook_sub = (getter, deps) => {
 			})
 		).slots[0] =
 		/** @type {TYPE_SLOT} */ ({
-			htype: HOOK_HEAD_SUB,
+			htype: HOOK.HEAD_SUB,
 			hparent: current_slots,
 			hslot: slot,
 		});
@@ -1473,7 +1530,7 @@ export const hook_sub = (getter, deps) => {
 	@return {!Array}
 */
 export const hook_map = (getter, list_data, deps) => {
-	DEBUG && assert_hook(HOOK_MAP, false_, deps);
+	DEBUG && assert_hook(HOOK.MAP, false_, deps);
 
 	let slot = null_;
 	let dirty = true_;
@@ -1541,7 +1598,7 @@ export const hook_map = (getter, list_data, deps) => {
 	if (!slot) {
 		current_slots[current_slots_index_before - 1] = slot =
 		/** @type {TYPE_SLOT} */ ({
-			htype: HOOK_MAP,
+			htype: HOOK.MAP,
 			deps_comp: deps_comp_get(deps),
 			deps: deps || Array_empty,
 			hvalue: [],
@@ -1582,7 +1639,7 @@ export const hook_map = (getter, list_data, deps) => {
 			VERBOSE && log('map item add: ' + key);
 
 			slot.items_map[key] = slots = [/** @type {TYPE_SLOT} */ ({
-				htype: HOOK_HEAD_MAP,
+				htype: HOOK.HEAD_MAP,
 				hparent: current_slots_before,
 				hslot: slot,
 				item_data: null_,
@@ -1638,6 +1695,7 @@ export const hook_map = (getter, list_data, deps) => {
 /**
 	umount all contained hooks
 	@param {TYPE_SLOT} slot
+	@noinline
 */
 const hook_map_unmount = slot => {
 	for (const key of slot.items_order)
@@ -1717,7 +1775,7 @@ export const hook_object_changes = object => {
 */
 export const hook_reducer = reducer => {
 	DEBUG && (
-		assert_hook(HOOK_REDUCEA, false_, null_),
+		assert_hook(HOOK.REDUCEA, false_, null_),
 		reducer &&
 		reducer.constructor !== Array_ &&
 			error('actions array required'),
@@ -1741,7 +1799,7 @@ export const hook_reducer = reducer => {
 	];
 	current_slots[current_slots_index++] =
 	/** @type {TYPE_SLOT} */ ({
-		htype: HOOK_REDUCEA,
+		htype: HOOK.REDUCEA,
 		hvalue: slot,
 	});
 	return slot;
@@ -1755,7 +1813,7 @@ export const hook_reducer = reducer => {
 */
 export const hook_reducer_f = (reducer, initializer) => {
 	DEBUG && (
-		assert_hook(HOOK_REDUCEF, false_, null_),
+		assert_hook(HOOK.REDUCEF, false_, null_),
 		typeof reducer !== 'function' &&
 			error('reducer function required'),
 		initializer &&
@@ -1783,7 +1841,7 @@ export const hook_reducer_f = (reducer, initializer) => {
 	];
 	current_slots[current_slots_index++] =
 	/** @type {TYPE_SLOT} */ ({
-		htype: HOOK_REDUCEF,
+		htype: HOOK.REDUCEF,
 		hvalue: slot,
 	});
 	return slot;
@@ -1806,8 +1864,12 @@ const hook_dom_common = attributes => {
 			key.charAt(0).toLowerCase() !== key.charAt(0) &&
 				error('capital prop: ' + key);
 
-			switch (key.charCodeAt(0)) {
-				case 70://F
+			switch (
+				LEGACY
+				?	key
+				:	key.charCodeAt(0)
+			) {
+				case (LEGACY ? 'F' : 70):
 					DEBUG && (
 						typeof attributes.F === 'object' &&
 						attributes.F ||
@@ -1825,14 +1887,14 @@ const hook_dom_common = attributes => {
 					VERBOSE && log('dom flags', dom.className.split(' '));
 
 					continue;
-				case 82://R
+				case (LEGACY ? 'R' : 82):
 					DEBUG &&
 					typeof attributes.R !== 'function' &&
 						error('invalid ref');
 
 					(attributes.R)(dom);
-				case 67://C
-				case 83://S
+				case (LEGACY ? 'C' : 67):
+				case (LEGACY ? 'S' : 83):
 					continue;
 				default:
 					DEBUG &&
@@ -2019,7 +2081,7 @@ export const init = body => {
 			dirty: true_,
 		}
 	).slots[0] = {
-		htype: HOOK_HEAD_INSTANCE,
+		htype: HOOK.HEAD_INSTANCE,
 		hinstance: current,
 	};
 	render_queue[0] = [current];
@@ -2329,3 +2391,210 @@ DEBUG && (
 		render_queue_next = []
 	)
 );
+
+
+/// POLYFILLS ///
+
+if (LEGACY) {
+	const Array_prototype = Array_.prototype;
+	const String_prototype = String.prototype;
+
+	performance_.now || (
+		performance_.now = function() {
+			return (
+				/** @type {{getTime: function():number}} */ (new (
+					/** @type {function(new:Date)} */ (performance_)
+				))
+			).getTime();
+		},
+
+		// toaster
+		Array_prototype.map || (
+			Array_prototype['map'] =
+			/**
+				@type {function(this:Array, function(*, number):*):!Array}
+			*/
+			(function(callback) {
+				for (
+					var result = [],
+						length = this.length,
+						index = 0;
+					index < length;
+					++index
+				) {
+					result.push(
+						callback(this[index], index)
+					);
+				}
+				return result;
+			}),
+			Array_prototype['filter'] =
+			/**
+				@type {function(this:Array, function(*, number):boolean):!Array}
+			*/
+			(function(callback) {
+				for (
+					var result = [],
+						length = this.length,
+						index = 0;
+					index < length;
+					++index
+				) {
+					callback(this[index], index) &&
+						result.push(this[index]);
+				}
+				return result;
+			}),
+			Array_prototype['indexOf'] =
+			/**
+				@type {function(this:Array, *, number=):number}
+			*/
+			(function(search, index) {
+				if (!index) {
+					index = 0;
+				}
+				for (
+					var length = this.length;
+					index < length;
+					++index
+				) {
+					if (this[index] === search) {
+						return index;
+					}
+				}
+				return -1;
+			}),
+			Array_prototype['fill'] =
+			/**
+				@type {function(this:Array, *):!Array}
+			*/
+			(function(value) {
+				for (
+					var length = this.length,
+						index = 0;
+					index < length;
+					++index
+				) {
+					this[index] = value;
+				}
+				return this;
+			}),
+
+			// steinzeit
+			Array_prototype.push || (
+				String_prototype['charAt'] =
+				/**
+					@type {function(this:string, number):string}
+				*/
+				(function(index) {
+					return this[index];
+				}),
+				String_prototype['substring'] =
+				/**
+					@type {function(this:string, number, number):string}
+				*/
+				(function(start, end) {
+					for (
+						var result = '';
+						start < end;
+						++start
+					) {
+						result += this[start];
+					}
+					return result;
+				}),
+				String_prototype['substr'] =
+				/**
+					@type {function(this:string, number):string}
+				*/
+				(function(start) {
+					return this.substring(start, this.length);
+				}),
+				String_prototype['indexOf'] =
+				/**
+					@type {function(this:string, string, number=):number}
+				*/
+				(function(search, index) {
+					search = search[0];
+					if (!index) {
+						index = 0;
+					}
+					for (
+						var length = this.length;
+						index < length;
+						++index
+					) {
+						if (this[index] === search) {
+							return index;
+						}
+					}
+					return -1;
+				}),
+				Array_prototype['push'] =
+				/**
+					@type {function(this:Array, *)}
+				*/
+				(function(item) {
+					this[this.length] = item;
+				}),
+				Array_prototype['join'] =
+				/**
+					@type {function(this:Array, string):string}
+				*/
+				(function(separator) {
+					var result = '',
+						length = this.length - 1,
+						index = 0;
+					while (index < length) {
+						result += this[index++] + separator;
+					}
+					if (index < length + 1) {
+						result += this[index];
+					}
+					return result;
+				}),
+				String_prototype['split'] =
+				/**
+					@type {function(this:string, string):!Array<string>}
+				*/
+				(function(separator) {
+					for (
+						var result = [],
+							length = this.length,
+							separator_length = separator.length,
+							index_head = 0,
+							index_tail = 0;
+						(index_tail = this.indexOf(separator, index_head)) >= 0;
+						index_head = index_tail + separator_length
+					) {
+						result.push(
+							this.substring(index_head, index_tail)
+						);
+					}
+					if (index_head < length) {
+						result.push(
+							this.substr(index_head)
+						);
+					}
+					return result;
+				})
+			)
+		)
+	);
+	window_.requestAnimationFrame || (
+		requestAnimationFrame =
+		window_.mozRequestAnimationFrame ||
+		(
+			window_.webkitCancelAnimationFrame &&
+			window_.webkitRequestAnimationFrame
+		) ||
+		function(callback) {
+			return setTimeout_(callback, 20);
+		},
+
+		cancelAnimationFrame =
+		window_.mozCancelAnimationFrame ||
+		window_.webkitCancelAnimationFrame ||
+		clearTimeout_
+	);
+}
