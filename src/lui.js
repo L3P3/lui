@@ -92,7 +92,7 @@ var TYPE_INSTANCE_CALL_OPTIONAL;
 		icall: TYPE_INSTANCE_CALL,
 		props_comp: ?TYPE_OBJ_COMP,
 		iparent: ?TYPE_INSTANCE,
-		level: number,
+		ilevel: number,
 		parent_index: number,
 		slots: !Array<TYPE_SLOT>,
 		childs: ?Array<?TYPE_INSTANCE>,
@@ -600,7 +600,7 @@ const instance_render = (dom_parent, dom_first) => {
 									object_comp_get(child_call.props)
 								),
 								iparent: instance,
-								level: instance.level + 1,
+								ilevel: instance.ilevel + 1,
 								parent_index: childs_index,
 								slots: [],
 								childs: null_,
@@ -778,7 +778,7 @@ const instance_render = (dom_parent, dom_first) => {
 						},
 						props_comp: null_,
 						iparent: instance,
-						level: instance.level + 1,
+						ilevel: instance.ilevel + 1,
 						parent_index: items_index,
 						slots: [],
 						childs: null_,
@@ -874,7 +874,7 @@ const instance_unmount = (instance, dom_parent) => {
 
 		(
 			!(
-				group = render_queue[index = instance.level]
+				group = render_queue[index = instance.ilevel]
 			) || (
 				index = group.indexOf(instance)
 			) < 0
@@ -1056,9 +1056,9 @@ const dirtify = slots => (
 		VERBOSE && log('dirtify ' + instance_name_get(slots)),
 
 		slots.dirty = true_,
-		render_queue[slots.level]
-		?	render_queue[slots.level].push(slots)
-		:	render_queue[slots.level] = [slots],
+		render_queue[slots.ilevel]
+		?	render_queue[slots.ilevel].push(slots)
+		:	render_queue[slots.ilevel] = [slots],
 
 		rerender_deferred ||
 			render()
@@ -1080,11 +1080,11 @@ export const hook_rerender = () => {
 		VERBOSE && log('hook_rerender ' + instance_name_get(/** @type {TYPE_INSTANCE} */ (instance))),
 
 		/** @type {TYPE_INSTANCE} */ (instance).dirty = true_,
-		render_queue_next[/** @type {TYPE_INSTANCE} */ (instance).level]
-		?	render_queue_next[/** @type {TYPE_INSTANCE} */ (instance).level].push(
+		render_queue_next[/** @type {TYPE_INSTANCE} */ (instance).ilevel]
+		?	render_queue_next[/** @type {TYPE_INSTANCE} */ (instance).ilevel].push(
 				/** @type {TYPE_INSTANCE} */ (instance)
 			)
-		:	render_queue_next[/** @type {TYPE_INSTANCE} */ (instance).level] = [
+		:	render_queue_next[/** @type {TYPE_INSTANCE} */ (instance).ilevel] = [
 				/** @type {TYPE_INSTANCE} */ (instance)
 			];
 	}
@@ -2072,7 +2072,7 @@ export const init = body => {
 			},
 			props_comp: null_,
 			iparent: null_,
-			level: 0,
+			ilevel: 0,
 			parent_index: 0,
 			slots: [],
 			childs: null_,
@@ -2450,9 +2450,7 @@ if (LEGACY) {
 				@type {function(this:Array, *, number=):number}
 			*/
 			(function(search, index) {
-				if (!index) {
-					index = 0;
-				}
+				index = index || 0;
 				for (
 					var length = this.length;
 					index < length;
@@ -2516,9 +2514,7 @@ if (LEGACY) {
 				*/
 				(function(search, index) {
 					search = search[0];
-					if (!index) {
-						index = 0;
-					}
+					index = index || 0;
 					for (
 						var length = this.length;
 						index < length;
@@ -2542,11 +2538,14 @@ if (LEGACY) {
 					@type {function(this:Array, string):string}
 				*/
 				(function(separator) {
-					var result = '',
-						length = this.length - 1,
-						index = 0;
-					while (index < length) {
-						result += this[index++] + separator;
+					for (
+						var result = '',
+							length = this.length - 1,
+							index = 0;
+						index < length;
+						++index
+					) {
+						result += this[index] + separator;
 					}
 					if (index < length + 1) {
 						result += this[index];
