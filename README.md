@@ -29,6 +29,8 @@ When I was introduced to [React](https://github.com/facebook/react), I liked it 
 
 [Text encryption toy](https://l3p3.de/dev/lui/crypto.html)
 
+[RequireJS](https://l3p3.de/dev/lui/rjs.html)
+
 ## Getting started
 
 Just download a demo file above and modify it as you like!
