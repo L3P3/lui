@@ -39,13 +39,45 @@ When you are developing your app, use `lui.dev.js` instead to get debugging stuf
 
 There are several ways to include lui into your project:
 
-### Load the latest standalone from my server
+### Load the latest standalone from a cdn
 
 When you want to automatically include the latest version, just add the following to your HTML file:
 
 ```html
 <script src="https://cdn.jsdelivr.net/gh/L3P3/lui@dist/lui.js"></script>
 ```
+
+### Include lui via RequireJS
+
+Normally, lui controls the entire page. But it is also possible to dynamically load lui and let it control just a part of the page.
+
+```js
+require.config({
+	map: {
+		'*': {
+			'lui': 'https://cdn.jsdelivr.net/gh/L3P3/lui@dist/lui.r.js'
+		}
+	}
+});
+```
+
+Use `lui.r.dev.js` when developing. And here is your widget's file:
+
+```js
+define(['lui'], function(lui) {
+	return function(root) {
+		lui.init(function() {
+			return [
+				null,
+				[
+					lui.node_dom('h1[innerText=Moin!]')
+				]
+			];
+		}, root);
+	};
+});
+```
+
 
 ### Bundle lui with your app
 
@@ -152,6 +184,8 @@ init(() => {
 ```
 
 This approach is neccessary since there is no `body` component to use.
+
+When loading the [RequireJS variant](#include-lui-via-requirejs), you need to specify the root element when calling `init`. All other lui variants just take the body element.
 
 ### JSX
 

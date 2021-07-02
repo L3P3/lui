@@ -1,3 +1,4 @@
+import {RJS} from './flags.js';
 import {
 	defer,
 	defer_end,
@@ -24,10 +25,10 @@ import {
 	node_dom,
 	node_map,
 	now,
-	window_
+	window_,
 } from './lui.js';
 
-window_['lui'] = {
+const lui = {
 	defer,
 	defer_end,
 	hook_assert,
@@ -52,5 +53,12 @@ window_['lui'] = {
 	node,
 	node_dom,
 	node_map,
-	now
+	now,
+};
+
+if (RJS) {
+	define(lui);
+}
+else {
+	window_['lui'] = lui;
 }

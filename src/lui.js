@@ -4,7 +4,12 @@
 	L3P3.de 2021
 */
 
-import {DEBUG, VERBOSE, LEGACY} from './flags.js';
+import {
+	DEBUG,
+	VERBOSE,
+	LEGACY,
+	RJS,
+} from './flags.js';
 
 
 /// COMPILATION ///
@@ -2005,10 +2010,11 @@ export const node_map = (component, list_data, props) => (
 )
 
 /**
-	mounts the body component
-	@param {function():!Array} body
+	mounts the root component
+	@param {function():!Array} root
+	@param {HTMLElement=} dom_c
 */
-export const init = body => {
+export const init = (root, dom_c) => {
 	VERBOSE && log('init');
 
 	DEBUG && (
@@ -2018,14 +2024,18 @@ export const init = body => {
 			render_queue_next.length
 		) &&
 			error('init called more than once'),
-		typeof body !== 'function' &&
-			error('init function requires body component')
+		typeof root !== 'function' &&
+			error('init function requires root component'),
+		RJS && (
+			dom_c ||
+				error('root element must be specified')
+		)
 	);
 
 	let result;//[props, childs]
 
-	const dom = document_.body;
-	dom.innerHTML = '';
+	const dom_d = document_.body;
+	(RJS ? dom_c : dom_d).innerHTML = '';
 
 	/**
 		@type {TYPE_COMPONENT}
@@ -2034,7 +2044,7 @@ export const init = body => {
 		DEBUG && (
 			(
 				!(
-					result = body()
+					result = root()
 				) ||
 				result.length !== 2
 			) && error('root component must return [props, childs]'),
@@ -2047,21 +2057,21 @@ export const init = body => {
 					result[0]
 				),
 				result[0].C &&
-					error('body childs must be in second return value')
+					error('root childs must be in second return value')
 			)
 		),
 		hook_dom_common(
 			(
 				DEBUG
 				?	result
-				:	result = body()
+				:	result = root()
 			)[0]
 		),
 		result[1]
 	);
 
 	DEBUG && (
-		component['name_'] = '$body'
+		component['name_'] = '$root'
 	);
 
 	(
@@ -2076,8 +2086,8 @@ export const init = body => {
 			parent_index: 0,
 			slots: [],
 			childs: null_,
-			dom,
-			dom_first: dom,
+			dom: /** @type {HTMLElement} */ (RJS ? dom_c : dom_d),
+			dom_first: /** @type {HTMLElement} */ (RJS ? dom_c : dom_d),
 			dirty: true_,
 		}
 	).slots[0] = {

@@ -20,21 +20,24 @@ const exec = cmd => (
 	)
 )
 
-function flags_set(debug, verbose, legacy) {
+function flags_set(debug, verbose, legacy, rjs) {
 	fs.writeFileSync(
 		'./src/flags.js',
 `export const DEBUG = ${debug};
 export const VERBOSE = ${verbose};
 export const LEGACY = ${legacy};
+export const RJS = ${rjs};
 `,
 		'utf8'
 	);
 }
 
-async function build(prod, legacy) {
-	flags_set(!prod, false, legacy);
+async function build(prod, legacy, rjs) {
+	flags_set(!prod, false, legacy, rjs);
 
 	const file = `./dist/lui${
+		rjs ? '.r' : ''
+	}${
 		prod ? '' : '.dev'
 	}${
 		legacy ? '.legacy' : ''
@@ -51,7 +54,11 @@ async function build(prod, legacy) {
 			'js ./src',
 			'js_output_file ' + file,
 			'language_in ECMASCRIPT_NEXT',
-			`language_out ECMASCRIPT${legacy ? '3' : '6_STRICT'}`,
+			`language_out ECMASCRIPT${
+				legacy ? '3'
+				: rjs ? '5_STRICT'
+				: '6_STRICT'
+			}`,
 			'module_resolution WEBPACK',
 			'rewrite_polyfills false',
 			'strict_mode_input',
@@ -61,14 +68,20 @@ async function build(prod, legacy) {
 		.join(' --')
 	))[2]);
 	
+	const wrap_fn = legacy || rjs;
+	
 	const code_js = (
 		(
 			fs.readFileSync(file, 'utf8')
 			.trim() + '%END%'
 		)
 		.replace('lui.js web frame work', 'lui.js web frame work ' + version)
-		.replace('*/\n', '*/\n{')
-		.replace(';%END%', '}')
+		.replace('*/\n',
+			wrap_fn ? '*/\n(function(){' : '*/\n{'
+		)
+		.replace(';%END%',
+			wrap_fn ? '})()' : '}'
+		)
 		//.split('\n').join('')
 	);
 
@@ -91,9 +104,13 @@ await exec('rm ./dist/lui.*');
 
 console.log(`build ${version}...`);
 
-await build(false, false);
-await build(true, false);
-await build(true, true);
+await build(false, false, false);
+await build(true, false, false);
+
+await build(true, true, false);
+
+await build(false, false, true);
+await build(true, false, true);
 
 console.log(`raw size: ${
 	fs.statSync('./dist/lui.js').size
@@ -121,5 +138,5 @@ if (
 })()
 .catch(console.log)
 .finally(() => {
-	flags_set(true, false, false);
+	flags_set(true, false, false, false);
 });

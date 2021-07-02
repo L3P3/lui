@@ -55,4 +55,14 @@ var TYPE_PROPS;
 		now
 	}}
 */
+var TYPE_LUI;
+
+/**
+	@type {TYPE_LUI}
+*/
 window.lui;
+
+/**
+	@param {TYPE_LUI} lui
+*/
+function define(lui) {}
