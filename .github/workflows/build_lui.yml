@@ -1,8 +1,17 @@
 # Builds prod and dev builds
 name: Build lui
 
-on: [push, pull_request]
-# TODO: only if version in package.json changed
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'package.json'
+  pull_request:
+    branches:
+      - master
+    paths:
+      - 'package.json'
 
 jobs:
   build:
