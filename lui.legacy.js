@@ -1,5 +1,5 @@
 function aa(a){var b=0;return function(){return b<a.length?{done:!1,value:a[b++]}:{done:!0}}}function f(a){var b="undefined"!=typeof Symbol&&Symbol.iterator&&a[Symbol.iterator];return b?b.call(a):{next:aa(a)}}function g(a){if(!(a instanceof Array)){a=f(a);for(var b,c=[];!(b=a.next()).done;)c.push(b.value);a=c}return a};/*
- lui.js web frame work 1.1.0
+ lui.js web frame work 1.1.1
  inspired by react and mithril
  L3P3.de 2021
 */
