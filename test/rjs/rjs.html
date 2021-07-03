@@ -1,0 +1,35 @@
+<!doctype html>
+<html>
+	<head>
+		<title>LUI+RequireJS</title>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js"></script>
+		<script>
+			require.config({
+				map: {
+					'*': {
+						'lui': '/dist/lui.r.dev.js'
+					}
+				}
+			});
+		</script>
+	</head>
+	<body>
+		<h1>Eine Testseite</h1>
+
+		<div id="widget1"></div>
+		<script>
+			require(['widget-uhr.js'], function(mount) {
+				mount(document.getElementById('widget1'));
+			});
+		</script>
+
+		<p>Und hier nochmal:</p>
+
+		<div id="widget2"></div>
+		<script>
+			require(['widget-uhr.js'], function(mount) {
+				mount(document.getElementById('widget2'));
+			});
+		</script>
+	</body>
+</html>

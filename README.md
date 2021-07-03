@@ -55,11 +55,11 @@ Normally, lui controls the entire page. But it is also possible to dynamically l
 
 ```js
 require.config({
-	map: {
-		'*': {
-			'lui': 'https://cdn.jsdelivr.net/gh/L3P3/lui@dist/lui.r.js'
-		}
-	}
+    map: {
+        '*': {
+            'lui': 'https://cdn.jsdelivr.net/gh/L3P3/lui@dist/lui.r.js'
+        }
+    }
 });
 ```
 
@@ -67,16 +67,16 @@ Use `lui.r.dev.js` when developing. And here is your widget's file:
 
 ```js
 define(['lui'], function(lui) {
-	return function(root) {
-		lui.init(function() {
-			return [
-				null,
-				[
-					lui.node_dom('h1[innerText=Moin!]')
-				]
-			];
-		}, root);
-	};
+    return function(root) {
+        lui.init(function() {
+            return [
+                null,
+                [
+                    lui.node_dom('h1[innerText=Moin!]')
+                ]
+            ];
+        }, root);
+    };
 });
 ```
 

@@ -2018,18 +2018,22 @@ export const init = (root, dom_c) => {
 	VERBOSE && log('init');
 
 	DEBUG && (
-		(
-			current ||
-			render_queue.length ||
-			render_queue_next.length
-		) &&
-			error('init called more than once'),
+		RJS
+		?	(
+				dom_c ||
+					error('no root element specified'),
+				dom_c.lui &&
+					error('root element already mounted'),
+				dom_c.lui = true_
+			)
+		:	(
+				current ||
+				render_queue.length ||
+				render_queue_next.length
+			) &&
+				error('init called more than once'),
 		typeof root !== 'function' &&
-			error('init function requires root component'),
-		RJS && (
-			dom_c ||
-				error('root element must be specified')
-		)
+			error('no init function specified')
 	);
 
 	let result;//[props, childs]
