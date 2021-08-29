@@ -6,14 +6,16 @@ When I was introduced to [React](https://github.com/facebook/react), I liked it 
 
 - About **6k** code size (~3k compressed)
 - **Stateful components** using [hooks](https://reactjs.org/docs/hooks-intro.html)
-- **Compatible** with ancient browsers
 - Optional **development mode**
-- **Animations** integrated
+- CSS-less **Animations** integrated
+- **Fast and efficient**
 - Conditional css classes on elements
-- Not terribly inefficient
-- Can be bundled together with your application
 - 0 dependencies
-- Production ready (at least the dynamic variant)
+- No toolchain neccessary
+- [RequireJS](https://requirejs.org) compatible
+- [Production ready](https://softwareengineering.stackexchange.com/questions/61726)
+- Compatible with down to 20th century browsers, basic polyfills included
+- Created and actively maintained by a [perfectionist](https://www.webdesignerdepot.com/2010/04/the-ups-and-downs-of-being-a-perfectionist)
 
 ## Demos
 

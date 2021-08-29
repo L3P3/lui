@@ -142,7 +142,7 @@ let current_slots_index = 0;
 let render_time = 0;
 
 /**
-	animation frame request (or null)
+	pending animation frame request or 0
 	@type {number}
 */
 let rerender_requested = 0;
@@ -512,6 +512,7 @@ const deps_comp_get = deps => (
 const instance_render = (dom_parent, dom_first) => {
 	const instance = /** @type {TYPE_INSTANCE} */ (current);
 	const dom_after = dom_first;
+	const ilevel = instance.ilevel + 1;
 	current_slots = instance.slots;
 	current_slots_index = 1;
 
@@ -605,7 +606,7 @@ const instance_render = (dom_parent, dom_first) => {
 									object_comp_get(child_call.props)
 								),
 								iparent: instance,
-								ilevel: instance.ilevel + 1,
+								ilevel,
 								parent_index: childs_index,
 								slots: [],
 								childs: null_,
@@ -700,6 +701,7 @@ const instance_render = (dom_parent, dom_first) => {
 		);
 
 		let items_index = list_data.length;
+		let props_changed = true_;
 
 		if(
 			hook_prev(items_index, items_index) + items_index <= 0
@@ -713,6 +715,7 @@ const instance_render = (dom_parent, dom_first) => {
 			items_index > 0 &&
 			list_data_index(list_data, items_map, items_order)
 		);
+		const indexes_removed = [];
 		DEBUG && (
 			items_index ||
 				hook_static()
@@ -720,7 +723,7 @@ const instance_render = (dom_parent, dom_first) => {
 
 		// rerender?
 		if (state.item_map) {
-			state.props_changed = (
+			props_changed = (
 				props !== null_ &&
 				state.props_comp(
 					props,
@@ -730,7 +733,7 @@ const instance_render = (dom_parent, dom_first) => {
 	
 			VERBOSE &&
 			props &&
-			state.props_changed &&
+			props_changed &&
 				log('props changed', object_diff(state.props_prev, props));
 
 			// remove items
@@ -757,10 +760,9 @@ const instance_render = (dom_parent, dom_first) => {
 			state.props_comp = (
 				state.props_prev = props
 			) && object_comp_get(props);
-			state.props_changed = true_;
 		}
 
-		// insert/reinsert all items
+		// for all items
 		const childs = instance.childs = new Array_(items_index);
 		while (items_index > 0) {
 			const key = items_order[--items_index];
@@ -783,7 +785,7 @@ const instance_render = (dom_parent, dom_first) => {
 						},
 						props_comp: null_,
 						iparent: instance,
-						ilevel: instance.ilevel + 1,
+						ilevel,
 						parent_index: items_index,
 						slots: [],
 						childs: null_,
@@ -808,13 +810,10 @@ const instance_render = (dom_parent, dom_first) => {
 					);
 			}
 			else {
-				if (child.parent_index !== items_index) {
-					instance_reinsert(child, dom_parent, dom_first);
-					child.parent_index = items_index;
-				}
+				instance_reinsert(child, dom_parent, dom_first);
 
 				if (
-					state.props_changed ||
+					props_changed ||
 					items_objects &&
 						state.item_comp(
 							items_map[key],
@@ -837,11 +836,12 @@ const instance_render = (dom_parent, dom_first) => {
 			}
 
 			(
-				childs[items_index] = child
+				childs[child.parent_index = items_index] = child
 			).dom_first && (
 				dom_first = child.dom_first
 			);
 		}
+
 		instance.dom_first =
 			dom_first !== dom_after
 			?	dom_first
