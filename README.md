@@ -71,12 +71,9 @@ Use `lui.r.dev.js` when developing. And here is your widget's file:
 define(['lui'], function(lui) {
     return function(root) {
         lui.init(function() {
-            return [
-                null,
-                [
-                    lui.node_dom('h1[innerText=Moin!]')
-                ]
-            ];
+            return [null, [
+                lui.node_dom('h1[innerText=Moin!]')
+            ]];
         }, root);
     };
 });
@@ -106,16 +103,13 @@ Here is a very simple component. It takes two props (one of which is optional) a
 ```js
 function ColoredText({
     color = 'red',
-    text
+    text,
 }) {
     return [
-        node_dom(
-            'span',
-            {
-                S: {color},
-                innerText: text
-            }
-        )
+        node_dom('span', {
+            S: {color},
+            innerText: text,
+        }),
     ];
 }
 ```
@@ -126,16 +120,13 @@ In the above example, we use the `span` [dom component](#dom-components). If you
 
 ```js
 function BlueText({
-    text
+    text,
 }) {
     return [
-        node(
-            ColoredText,
-            {
-                color: 'blue',
-                text
-            }
-        )
+        node(ColoredText, {
+            color: 'blue',
+            text,
+        }),
     ];
 }
 ```
@@ -176,14 +167,13 @@ What we pass to init is pretty much a component without incoming props, a differ
 
 ```js
 init(() => {
-    return [
-        {
-            S: {background: 'black'}
-        },
-        [
-            node(BlueText, {text: 'Hello, world!'})
-        ]
-    ];
+    return [{
+        S: {background: 'black'},
+    }, [
+        node(BlueText, {
+            text: 'Hello, world!',
+        }),
+    ]];
 });
 ```
 
@@ -197,7 +187,7 @@ If you are building your application code with [JSX](https://reactjs.org/docs/in
 
 ```js
 function YellowText({
-    text
+    text,
 }) {
     return (
         <span style="color: yellow">{text}</span>
@@ -262,19 +252,16 @@ When the component relies on some kind of condition or possibly unresolved promi
 
 ```js
 function UserName({
-    id
+    id,
 }) {
     const name = hook_async(user_name_get, [id]);
     hook_assert(name !== null);
     const NAME = name.toUppercase();
     return [
-        node_dom(
-            'span[className=user-name]',
-            {
-                innerText: NAME,
-                title: name
-            }
-        )
+        node_dom('span[className=user-name]', {
+            innerText: NAME,
+            title: name,
+        }),
     ];
 }
 ```
