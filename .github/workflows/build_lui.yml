@@ -3,13 +3,13 @@ name: Build lui
 
 on:
   push:
-    branches:
-      - master
+    branches-ignore:
+      - dist
     paths:
       - 'package.json'
   pull_request:
-    branches:
-      - master
+    branches-ignore:
+      - dist
     paths:
       - 'package.json'
 
