@@ -715,7 +715,6 @@ const instance_render = (dom_parent, dom_first) => {
 			items_index > 0 &&
 			list_data_index(list_data, items_map, items_order)
 		);
-		const indexes_removed = [];
 		DEBUG && (
 			items_index ||
 				hook_static()
