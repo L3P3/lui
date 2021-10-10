@@ -1,5 +1,5 @@
 'use strict';/*
- lui.js web frame work 1.1.2
+ lui.js web frame work 1.1.3
  inspired by react and mithril
  L3P3.de 2021
 */
