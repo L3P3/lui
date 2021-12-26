@@ -19,19 +19,19 @@ import {
 	@enum {number}
 */
 const HOOK = {
-	HEAD_INSTANCE: 0,
-	HEAD_MAP: 1,
-	HEAD_SUB: 2,
-	EFFECT: DEBUG ? 3 : 1,
-	ASYNC: DEBUG ? 4 : 2,
-	STATE: DEBUG ? 5 : 0,
-	STATIC: DEBUG ? 6 : 0,
-	MAP: DEBUG ? 7 : 3,
-	MEMO: DEBUG ? 8 : 0,
-	PREV: DEBUG ? 9 : 0,
-	REDUCEA: DEBUG ? 10 : 0,
-	REDUCEF: DEBUG ? 11 : 0,
-	SUB: DEBUG ? 12 : 4,
+	HEAD_INSTANCE: /** @type {number} */ ( VERBOSE ? 'HEAD_INSTANCE' : 0),
+	HEAD_MAP: /** @type {number} */ ( VERBOSE ? 'HEAD_MAP' : 1),
+	HEAD_SUB: /** @type {number} */ ( VERBOSE ? 'HEAD_SUB' : 2),
+	EFFECT: /** @type {number} */ ( VERBOSE ? 'EFFECT' : DEBUG ? 3 : 1),
+	ASYNC: /** @type {number} */ ( VERBOSE ? 'ASYNC' : DEBUG ? 4 : 2),
+	STATE: /** @type {number} */ ( VERBOSE ? 'STATE' : DEBUG ? 5 : 0),
+	STATIC: /** @type {number} */ ( VERBOSE ? 'STATIC' : DEBUG ? 6 : 0),
+	MAP: /** @type {number} */ ( VERBOSE ? 'MAP' : DEBUG ? 7 : 3),
+	MEMO: /** @type {number} */ ( VERBOSE ? 'MEMO' : DEBUG ? 8 : 0),
+	PREV: /** @type {number} */ ( VERBOSE ? 'PREV' : DEBUG ? 9 : 0),
+	REDUCEA: /** @type {number} */ ( VERBOSE ? 'REDUCEA' : DEBUG ? 10 : 0),
+	REDUCEF: /** @type {number} */ ( VERBOSE ? 'REDUCEF' : DEBUG ? 11 : 0),
+	SUB: /** @type {number} */ ( VERBOSE ? 'SUB' : DEBUG ? 12 : 4),
 }
 
 /**
@@ -258,6 +258,7 @@ const performance_ = (
 	tries getting a component name
 	@param {TYPE_INSTANCE} component
 	@return {string}
+	@noinline
 */
 const instance_name_get = ({icall: {component}}) => (
 	component === object_comp_get
@@ -270,6 +271,7 @@ const instance_name_get = ({icall: {component}}) => (
 /**
 	gets the current stack
 	@return {string}
+	@noinline
 */
 const stack_get = () => {
 	const stack = [];
@@ -311,22 +313,57 @@ const stack_get = () => {
 }
 
 /**
+	wrapper for reuse
+	@noinline
+*/
+const log_raw = (...args) => {
+	console.log(...args);
+}
+
+/**
 	prints message
 	@param {string} message
+	@noinline
 */
 const log = (message, ...items) => {
-	console.log('lui ' + stack_get() + ': ' + message, ...items);
+	log_raw('lui ' + stack_get() + ': ' + message, ...items);
 }
 
 /**
 	throws a lui error
 	@param {string} message
 	@throws {Error}
+	@noinline
 */
 const error = message => {
 	throw(
 		new Error('lui: ' + message)
 	);
+}
+
+/**
+	print callback error with cached stack
+	@noinline
+*/
+const callback_error = stack => {
+	log_raw('lui ' + stack + ': error in callback');
+};
+
+/**
+	catches and logs errors caught in callbacks
+	@param {Function} fn
+	@param {!Array} args
+	@param {string} stack
+	@noinline
+*/
+const callback_wrap = (fn, args, stack) => {
+	try {
+		return fn(...args);
+	}
+	catch (thrown) {
+		callback_error(stack);
+		throw thrown;
+	}
 }
 
 /**
@@ -527,7 +564,7 @@ const instance_render = (dom_parent, dom_first) => {
 		let child_calls = null_;
 
 		try {
-			child_calls = (instance.icall.component)(instance.icall.props);
+			child_calls = (0, instance.icall.component)(instance.icall.props);
 		}
 		catch (thrown) {
 			if (
@@ -1182,6 +1219,8 @@ export const hook_async = (getter, deps, fallback) => {
 	*/
 	let slot;
 
+	const stack = DEBUG ? stack_get() : '';
+
 	if (
 		(
 			current_slots_index < current_slots.length
@@ -1212,7 +1251,7 @@ export const hook_async = (getter, deps, fallback) => {
 		);
 
 		const current_slots_ = /** @type {TYPE_SLOTS} */ (current_slots);
-		getter(
+		const promise = getter(
 			...slot.deps
 		)
 		.then(value => (
@@ -1226,6 +1265,11 @@ export const hook_async = (getter, deps, fallback) => {
 				dirtify(current_slots_)
 			)
 		));
+		DEBUG &&
+			promise.catch(thrown => {
+				callback_error(stack);
+				throw thrown;
+			});
 	}
 
 	return slot.hvalue;
@@ -1365,6 +1409,17 @@ export const hook_prev = (value, initial) => (
 	@return {function():*}
 */
 export const hook_callback = (callback, deps) => {
+	const stack = (
+		DEBUG &&
+		current_slots_index >= current_slots.length
+		?	stack_get()
+		:	''
+	);
+
+	DEBUG &&
+	(!deps || !deps.length) &&
+		error('deps required, use hook_static instead');
+
 	const state = hook_static();
 
 	DEBUG &&
@@ -1375,7 +1430,9 @@ export const hook_callback = (callback, deps) => {
 	return (
 		state.callback || (
 			state.callback = (...args) => (
-				callback(...state.deps, ...args)
+				DEBUG
+				?	callback_wrap(callback, [...state.deps, ...args], stack)
+				:	callback(...state.deps, ...args)
 			)
 		)
 	);
@@ -1791,11 +1848,16 @@ export const hook_reducer = reducer => {
 		return /** @type {!Array} */ (current_slots[current_slots_index++].hvalue);
 
 	const current_slots_ = /** @type {TYPE_SLOTS} */ (current_slots);
+	const stack = DEBUG ? stack_get() : '';
 	const slot = [
-		reducer[0](null_),
+		(0, reducer[0])(null_),
 		(cmd, payload) => {
 			VERBOSE && log('reducer ' + instance_name_get(instance_current_get(current_slots_)) + ' -> #' + cmd, payload);
-			const value = reducer[cmd](slot[0], payload);
+			const value = (
+				DEBUG
+				?	callback_wrap(reducer[cmd], [slot[0], payload], stack)
+				:	(0, reducer[cmd])(slot[0], payload)
+			);
 			if (slot[0] === value) return;
 			slot[0] = value;
 			dirtify(current_slots_);
@@ -1829,6 +1891,7 @@ export const hook_reducer_f = (reducer, initializer) => {
 		return /** @type {!Array} */ (current_slots[current_slots_index++].hvalue);
 
 	const current_slots_ = /** @type {TYPE_SLOTS} */ (current_slots);
+	const stack = DEBUG ? stack_get() : '';
 	const slot = [
 		(
 			initializer
@@ -1837,7 +1900,11 @@ export const hook_reducer_f = (reducer, initializer) => {
 		),
 		payload => {
 			VERBOSE && log('reducer ' + instance_name_get(instance_current_get(current_slots_)), payload);
-			const value = reducer(slot[0], payload);
+			const value = (
+				DEBUG
+				?	callback_wrap(reducer, [slot[0], payload], stack)
+				:	reducer(slot[0], payload)
+			);
 			if (slot[0] === value) return;
 			slot[0] = value;
 			dirtify(current_slots_);
@@ -2123,6 +2190,10 @@ const render = () => {
 
 	render_time = performance_.now();
 
+	// in case there was a synchronous rerender after an asynchronous one was requested
+	rerender_requested &&
+		cancelAnimationFrame(rerender_requested);
+
 	rerender_deferred = true_;
 	rerender_requested = 0;
 
@@ -2257,19 +2328,19 @@ export const defer = () => (
 /**
 	render deferred changes now
 */
-export const defer_end = () => (
-	DEBUG && (
+export const defer_end = (
+	DEBUG
+	?	() => (
 		current &&
 			error('defer_end while rendering'),
 		rerender_deferred ||
-			error('nothing was deferred')
-	),
+			error('nothing was deferred'),
 
-	VERBOSE && log('rerendering rescheduled'),
+		VERBOSE && log('rerendering rectified now'),
 
-	cancelAnimationFrame(rerender_requested),
-
-	render()
+		render()
+	)
+	:	render
 )
 
 
@@ -2399,9 +2470,10 @@ const component_dom_get = descriptor => {
 DEBUG && (
 	window_.onerror = () => (
 		current &&
-			log('error'),
+			log('error in component'),
 		render_queue =
-		render_queue_next = []
+		render_queue_next = [],
+		false_
 	)
 );
 
