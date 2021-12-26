@@ -774,7 +774,11 @@ const instance_render = (dom_parent, dom_first) => {
 
 			// remove items
 			for (const key of state.items_order_prev) {
-				if (key in items_map) continue;
+				if (
+					LEGACY
+					?	items_map[key] !== undefined_
+					:	key in items_map
+				) continue;
 
 				VERBOSE && log('item remove: ' + key);
 				instance_unmount(state.item_map[key], dom_parent);
@@ -1681,7 +1685,11 @@ export const hook_map = (getter, list_data, deps) => {
 			slot.list_data = list_data;
 			// remove items
 			for (const key of slot.items_order) {
-				if (key in items_data_map) continue;
+				if (
+					LEGACY
+					?	items_data_map[key] !== undefined_
+					:	key in items_data_map
+				) continue;
 	
 				VERBOSE && log('map item remove: ' + key);
 				hooks_unmount(slot.items_map[key]);
@@ -2565,52 +2573,6 @@ if (LEGACY) {
 
 			// steinzeit
 			Array_prototype.push || (
-				String_prototype['charAt'] =
-				/**
-					@type {function(this:string, number):string}
-				*/
-				(function(index) {
-					return this[index];
-				}),
-				String_prototype['substring'] =
-				/**
-					@type {function(this:string, number, number):string}
-				*/
-				(function(start, end) {
-					for (
-						var result = '';
-						start < end;
-						++start
-					) {
-						result += this[start];
-					}
-					return result;
-				}),
-				String_prototype['substr'] =
-				/**
-					@type {function(this:string, number):string}
-				*/
-				(function(start) {
-					return this.substring(start, this.length);
-				}),
-				String_prototype['indexOf'] =
-				/**
-					@type {function(this:string, string, number=):number}
-				*/
-				(function(search, index) {
-					search = search[0];
-					index = index || 0;
-					for (
-						var length = this.length;
-						index < length;
-						++index
-					) {
-						if (this[index] === search) {
-							return index;
-						}
-					}
-					return -1;
-				}),
 				Array_prototype['push'] =
 				/**
 					@type {function(this:Array, *)}
@@ -2661,7 +2623,77 @@ if (LEGACY) {
 						);
 					}
 					return result;
-				})
+				}),
+				Function.prototype.apply =
+				/**
+					@type {function(this:Function, ...*):*}
+				*/
+				(function(this_, args) {
+					this_ = (
+						this_ == null
+						?	(window_.__ = this, window_)
+						:	(Object_.prototype.__ = this, this_)
+					);
+					switch (args ? args.length : 0) {
+						case 0: return this_.__();
+						case 1: return this_.__(args[0]);
+						case 2: return this_.__(args[0], args[1]);
+						case 3: return this_.__(args[0], args[1], args[2]);
+						case 4: return this_.__(args[0], args[1], args[2], args[3]);
+						case 5: return this_.__(args[0], args[1], args[2], args[3], args[4]);
+						default: return this_.__(args[0], args[1], args[2], args[3], args[4], args[5]);
+					}
+				}),
+
+				// vorzeit
+				String_prototype.charAt || (
+					String_prototype['charAt'] =
+					/**
+						@type {function(this:string, number):string}
+					*/
+					(function(index) {
+						return this[index];
+					}),
+					String_prototype['substring'] =
+					/**
+						@type {function(this:string, number, number):string}
+					*/
+					(function(start, end) {
+						for (
+							var result = '';
+							start < end;
+							++start
+						) {
+							result += this[start];
+						}
+						return result;
+					}),
+					String_prototype['substr'] =
+					/**
+						@type {function(this:string, number):string}
+					*/
+					(function(start) {
+						return this.substring(start, this.length);
+					}),
+					String_prototype['indexOf'] =
+					/**
+						@type {function(this:string, string, number=):number}
+					*/
+					(function(search, index) {
+						search = search[0];
+						index = index || 0;
+						for (
+							var length = this.length;
+							index < length;
+							++index
+						) {
+							if (this[index] === search) {
+								return index;
+							}
+						}
+						return -1;
+					})
+				)
 			)
 		)
 	);
