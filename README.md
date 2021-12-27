@@ -333,6 +333,8 @@ In case you want to support browsers down to Internet Explorer 5, you can use th
 
 Of course, your code still needs to have the most basic _syntax_, so no arrow functions, no `const` or `let`, no deconstructing, no trailing commas and so on. Transpilers like closure compiler with the target set to ES3 take care of most of that. But you can out of the box use _methods_ like `[].map`, `Object.assign` or `fn.apply()`. And yes, IE5 does not come with that! In order to not get a second set of polyfills from your transpiler, [set it up to not include them](https://github.com/google/closure-compiler/wiki/Polyfills).
 
+When using lui's polyfills, note that they are not complete or true to specification at all but just made to make lui itself work. Many methods are not included and some have some restrictions thay _may_ cause issues in unusual use cases. Polyfills already take up about 23% of the file so I want to keep them small, but pretty fast.
+
 See the [demo section](#demos) for examples.
 
 ## Contribution and Support

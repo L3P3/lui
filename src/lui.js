@@ -209,12 +209,13 @@ const Object_assign = /** @type {function(!Object, ...(?Object|void)):!Object} *
 			Object_.assign =
 			function(result) {
 				for (
-					var length = arguments.length,
+					var sources = arguments,
+						length = sources.length,
 						index = 0,
 						item, key;
 					++index < length;
 				) {
-					if (item = arguments[index])
+					if (item = sources[index])
 					for (key in item) {
 						result[key] = item[key];
 					}
@@ -245,7 +246,7 @@ const setTimeout_ = setTimeout;
 const clearTimeout_ = clearTimeout;
 const document_ = document;
 export const window_ = window;
-const performance_ = (
+const Date_ = (
 	LEGACY
 	?	Date
 	:	window_.performance || Date
@@ -2196,7 +2197,7 @@ const render = () => {
 	current_first = render_time <= 0;
 	VERBOSE && log('render ' + (current_first ? 'initial' : 'again'));
 
-	render_time = performance_.now();
+	render_time = Date_.now();
 
 	// in case there was a synchronous rerender after an asynchronous one was requested
 	rerender_requested &&
@@ -2488,265 +2489,276 @@ DEBUG && (
 
 /// POLYFILLS ///
 
-if (LEGACY) {
+if (LEGACY || RJS) {
 	const Array_prototype = Array_.prototype;
 	const String_prototype = String.prototype;
 
-	performance_.now || (
-		performance_.now = function() {
-			return (
-				/** @type {{getTime: function():number}} */ (new (
-					/** @type {function(new:Date)} */ (performance_)
-				))
-			).getTime();
-		},
 
-		// toaster
-		Array_prototype.map || (
-			Array_prototype['map'] =
-			/**
-				@type {function(this:Array, function(*, number):*):!Array}
-			*/
-			(function(callback) {
-				for (
-					var result = [],
-						length = this.length,
-						index = 0;
-					index < length;
-					++index
-				) {
-					result.push(
-						callback(this[index], index)
-					);
-				}
-				return result;
-			}),
-			Array_prototype['filter'] =
-			/**
-				@type {function(this:Array, function(*, number):boolean):!Array}
-			*/
-			(function(callback) {
-				for (
-					var result = [],
-						length = this.length,
-						index = 0;
-					index < length;
-					++index
-				) {
-					callback(this[index], index) &&
-						result.push(this[index]);
-				}
-				return result;
-			}),
-			Array_prototype['indexOf'] =
-			/**
-				@type {function(this:Array, *, number=):number}
-			*/
-			(function(search, index) {
-				index = index || 0;
-				for (
-					var length = this.length;
-					index < length;
-					++index
-				) {
-					if (this[index] === search) {
-						return index;
-					}
-				}
-				return -1;
-			}),
-			Array_prototype['fill'] =
-			/**
-				@type {function(this:Array, *):!Array}
-			*/
-			(function(value) {
-				for (
-					var length = this.length,
-						index = 0;
-					index < length;
-					++index
-				) {
-					this[index] = value;
-				}
-				return this;
-			}),
+	Array_prototype['fill'] || ( // chrome < 45 || ie
 
-			// steinzeit
-			Array_prototype.push || (
-				Array_prototype['push'] =
-				/**
-					@type {function(this:Array, *)}
-				*/
-				(function(item) {
-					this[this.length] = item;
-				}),
-				Array_prototype['concat'] =
-				/**
-					@type {function(this:Array, ...!Array):!Array}
-				*/
-				(function() {
-					for (
-						var args = arguments,
-							source = this,
-							result = [],
-							sources_length = args.length,
-							source_length = source.length,
-							sources_index = 0,
-							source_index = 0,
-							result_index = -1;
-						source_index < source_length;
-						++source_index
-					) {
-						result[++result_index] = source[source_index];
-					}
-					for (
-						;
-						sources_index < sources_length;
-						++sources_index
-					)
-					for (
-						source_length = (
-							source_index = 0,
-							source = args[sources_index]
-						).length;
-						source_index < source_length;
-						++source_index
-					) {
-						result[++result_index] = source[source_index];
-					}
-					return result;
-				}),
-				Array_prototype['join'] =
-				/**
-					@type {function(this:Array, string):string}
-				*/
-				(function(separator) {
-					for (
-						var result = '',
-							length = this.length - 1,
-							index = 0;
-						index < length;
-						++index
-					) {
-						result += this[index] + separator;
-					}
-					if (index < length + 1) {
-						result += this[index];
-					}
-					return result;
-				}),
-				String_prototype['split'] =
-				/**
-					@type {function(this:string, string):!Array<string>}
-				*/
-				(function(separator) {
-					for (
-						var result = [],
-							length = this.length,
-							separator_length = separator.length,
-							index_head = 0,
-							index_tail = 0;
-						(index_tail = this.indexOf(separator, index_head)) >= 0;
-						index_head = index_tail + separator_length
-					) {
-						result.push(
-							this.substring(index_head, index_tail)
-						);
-					}
-					if (index_head < length) {
-						result.push(
-							this.substr(index_head)
-						);
-					}
-					return result;
-				}),
-				Function.prototype['apply'] =
-				/**
-					@type {function(this:Function, ...*):*}
-				*/
-				(function(this_, args) {
-					this_ = (
-						this_ == null
-						?	(window_.__ = this, window_)
-						:	(Object_.prototype.__ = this, this_)
-					);
-					switch (args ? args.length : 0) {
-						case 0: return this_.__();
-						case 1: return this_.__(args[0]);
-						case 2: return this_.__(args[0], args[1]);
-						case 3: return this_.__(args[0], args[1], args[2]);
-						case 4: return this_.__(args[0], args[1], args[2], args[3]);
-						case 5: return this_.__(args[0], args[1], args[2], args[3], args[4]);
-						default: return this_.__(args[0], args[1], args[2], args[3], args[4], args[5]);
-					}
-				}),
+	Array_prototype['fill'] =
+	/**
+		@type {function(this:Array, *):!Array}
+	*/
+	(function(value) {
+		for (
+			var length = this.length,
+				index = 0;
+			index < length;
+			++index
+		) {
+			this[index] = value;
+		}
+		return this;
+	}),
 
-				// vorzeit
-				String_prototype.charAt || (
-					String_prototype['charAt'] =
-					/**
-						@type {function(this:string, number):string}
-					*/
-					(function(index) {
-						return this[index];
-					}),
-					String_prototype['substring'] =
-					/**
-						@type {function(this:string, number, number):string}
-					*/
-					(function(start, end) {
-						for (
-							var result = '';
-							start < end;
-							++start
-						) {
-							result += this[start];
-						}
-						return result;
-					}),
-					String_prototype['substr'] =
-					/**
-						@type {function(this:string, number):string}
-					*/
-					(function(start) {
-						return this.substring(start, this.length);
-					}),
-					String_prototype['indexOf'] =
-					/**
-						@type {function(this:string, string, number=):number}
-					*/
-					(function(search, index) {
-						search = search[0];
-						index = index || 0;
-						for (
-							var length = this.length;
-							index < length;
-							++index
-						) {
-							if (this[index] === search) {
-								return index;
-							}
-						}
-						return -1;
-					})
-				)
-			)
-		)
-	);
-	window_.requestAnimationFrame || (
-		requestAnimationFrame =
+
+	!LEGACY || window_.requestAnimationFrame || ( // chrome < 24 || ie < 10
+
+	requestAnimationFrame =
 		window_.mozRequestAnimationFrame ||
 		(
 			window_.webkitCancelAnimationFrame &&
 			window_.webkitRequestAnimationFrame
 		) ||
-		function(callback) {
-			return setTimeout_(callback, 20);
-		},
+		(callback => setTimeout_(callback, 20)),
 
-		cancelAnimationFrame =
+	cancelAnimationFrame =
 		window_.mozCancelAnimationFrame ||
 		window_.webkitCancelAnimationFrame ||
-		clearTimeout_
-	);
+		clearTimeout_,
+
+
+	Date_['now'] || ( // chrome < 5 || ie < 9
+
+	Date_['now'] = function() {
+		return (
+			/** @type {{getTime: function():number}} */ (new (
+				/** @type {function(new:Date)} */ (Date_)
+			))
+		).getTime();
+	},
+
+
+	Array_prototype['map'] || ( // ie < 9
+
+	Array_prototype['filter'] =
+	/**
+		@type {function(this:Array, function(*, number):boolean):!Array}
+	*/
+	(function(callback) {
+		for (
+			var result = [],
+				length = this.length,
+				result_index = -1,
+				index = 0;
+			index < length;
+			++index
+		) {
+			callback(this[index], index) &&
+				(result[++result_index] = this[index]);
+		}
+		return result;
+	}),
+
+	Array_prototype['indexOf'] =
+	/**
+		@type {function(this:Array, *, number=):number}
+	*/
+	(function(search, index) {
+		index = index || 0;
+		for (
+			var length = this.length;
+			index < length;
+			++index
+		) {
+			if (this[index] === search) {
+				return index;
+			}
+		}
+		return -1;
+	}),
+
+	Array_prototype['map'] =
+	/**
+		@type {function(this:Array, function(*, number):*):!Array}
+	*/
+	(function(callback) {
+		for (
+			var result = [],
+				length = this.length,
+				index = 0;
+			index < length;
+			++index
+		) {
+			result[index] = callback(this[index], index);
+		}
+		return result;
+	}),
+
+
+	Array_prototype['push'] || ( // ie < 6
+
+	Array_prototype['push'] =
+	/**
+		@type {function(this:Array, *)}
+	*/
+	(function(item) {
+		this[this.length] = item;
+	}),
+
+	Function.prototype['apply'] =
+	/**
+		@type {function(this:Function, ...*):*}
+	*/
+	(function(this_, args) {
+		this_ == null
+		?	(window_['_'] = this, this_ = window_)
+		:	(Object_.prototype['_'] = this);
+		switch (args ? args.length : 0) {
+			case 0: return this_['_']();
+			case 1: return this_['_'](args[0]);
+			case 2: return this_['_'](args[0], args[1]);
+			case 3: return this_['_'](args[0], args[1], args[2]);
+			case 4: return this_['_'](args[0], args[1], args[2], args[3]);
+			case 5: return this_['_'](args[0], args[1], args[2], args[3], args[4]);
+			default: return this_['_'](args[0], args[1], args[2], args[3], args[4], args[5]);
+		}
+	}),
+
+
+	Array_prototype['join'] || ( // ie < 5
+
+	Array_prototype['concat'] =
+	/**
+		@type {function(this:Array, ...!Array):!Array}
+	*/
+	(function() {
+		for (
+			var args = arguments,
+				source = this,
+				result = [],
+				sources_length = args.length,
+				source_length = source.length,
+				sources_index = 0,
+				source_index = 0,
+				result_index = -1;
+			source_index < source_length;
+			++source_index
+		) {
+			result[++result_index] = source[source_index];
+		}
+		for (
+			;
+			sources_index < sources_length;
+			++sources_index
+		)
+		for (
+			source_length = (
+				source_index = 0,
+				source = args[sources_index]
+			).length;
+			source_index < source_length;
+			++source_index
+		) {
+			result[++result_index] = source[source_index];
+		}
+		return result;
+	}),
+
+	Array_prototype['join'] =
+	/**
+		@type {function(this:Array, string):string}
+	*/
+	(function(separator) {
+		for (
+			var result = '',
+				length = this.length - 1,
+				index = 0;
+			index < length;
+			++index
+		) {
+			result += this[index] + separator;
+		}
+		if (index < length + 1) {
+			result += this[index];
+		}
+		return result;
+	}),
+
+	String_prototype['charAt'] =
+	/**
+		@type {function(this:string, number):string}
+	*/
+	(function(index) {
+		return this[index];
+	}),
+
+	String_prototype['indexOf'] =
+	/**
+		@type {function(this:string, string, number=):number}
+	*/
+	(function(search, index) {
+		search = search[0];
+		index = index || 0;
+		for (
+			var length = this.length;
+			index < length;
+			++index
+		) {
+			if (this[index] === search) {
+				return index;
+			}
+		}
+		return -1;
+	}),
+
+	String_prototype['split'] =
+	/**
+		@type {function(this:string, string):!Array<string>}
+	*/
+	(function(separator) {
+		for (
+			var result = [],
+				length = this.length,
+				separator_length = separator.length,
+				result_index = -1,
+				index_head = 0,
+				index_tail = 0;
+			(index_tail = this.indexOf(separator, index_head)) >= 0;
+			index_head = index_tail + separator_length
+		) {
+			result[++result_index] =
+				this.substring(index_head, index_tail);
+		}
+		if (index_head < length) {
+			result[++result_index] = this.substr(index_head);
+		}
+		return result;
+	}),
+
+	String_prototype['substr'] =
+	/**
+		@type {function(this:string, number):string}
+	*/
+	(function(start) {
+		return this.substring(start, this.length);
+	}),
+
+	String_prototype['substring'] =
+	/**
+		@type {function(this:string, number, number):string}
+	*/
+	(function(start, end) {
+		for (
+			var result = '';
+			start < end;
+			++start
+		) {
+			result += this[start];
+		}
+		return result;
+	})
+
+	))))));
 }
