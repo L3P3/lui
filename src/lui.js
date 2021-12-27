@@ -2580,6 +2580,42 @@ if (LEGACY) {
 				(function(item) {
 					this[this.length] = item;
 				}),
+				Array_prototype['concat'] =
+				/**
+					@type {function(this:Array, ...!Array):!Array}
+				*/
+				(function() {
+					for (
+						var args = arguments,
+							source = this,
+							result = [],
+							sources_length = args.length,
+							source_length = source.length,
+							sources_index = 0,
+							source_index = 0,
+							result_index = -1;
+						source_index < source_length;
+						++source_index
+					) {
+						result[++result_index] = source[source_index];
+					}
+					for (
+						;
+						sources_index < sources_length;
+						++sources_index
+					)
+					for (
+						source_length = (
+							source_index = 0,
+							source = args[sources_index]
+						).length;
+						source_index < source_length;
+						++source_index
+					) {
+						result[++result_index] = source[source_index];
+					}
+					return result;
+				}),
 				Array_prototype['join'] =
 				/**
 					@type {function(this:Array, string):string}
@@ -2624,7 +2660,7 @@ if (LEGACY) {
 					}
 					return result;
 				}),
-				Function.prototype.apply =
+				Function.prototype['apply'] =
 				/**
 					@type {function(this:Function, ...*):*}
 				*/
