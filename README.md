@@ -14,14 +14,14 @@ When I was introduced to [React](https://github.com/facebook/react), I liked it 
 - No toolchain neccessary
 - [RequireJS](https://requirejs.org) compatible
 - [Production ready](https://softwareengineering.stackexchange.com/questions/61726)
-- Compatible with down to 20th century browsers, basic polyfills included
+- Compatible with down to [20th century browsers](https://youtu.be/97GrGEZiIWY), basic polyfills included
 - Created and actively maintained by a [perfectionist](https://www.webdesignerdepot.com/2010/04/the-ups-and-downs-of-being-a-perfectionist)
 
 ## Demos
 
 [Small demonstation app](https://l3p3.de/dev/lui/demo.html)
 
-[TODO app](https://l3p3.de/dev/lui/todo.html), [ancient browsers variant](http://l3p3.de/dev/lui/todo-legacy.html)
+[TODO app](https://l3p3.de/dev/lui/todo.html), [variant for old browsers](http://l3p3.de/dev/lui/todo-legacy.html)
 
 [Animated sidebar](https://l3p3.de/dev/lui/app.html)
 
@@ -33,66 +33,33 @@ When I was introduced to [React](https://github.com/facebook/react), I liked it 
 
 [RequireJS](https://l3p3.de/dev/lui/rjs.html)
 
+[Clock for MS Windows](http://l3p3.de/dev/lui/lui-uhr.hta)
+
 ## Getting started
 
 Just download a demo file above and modify it as you like!
 
-When you are developing your app, use `lui.dev.js` instead to get debugging stuff enabled.
+When you are developing your app, use `lui.dev.js` instead to get fancy error detection enabled.
 
-## How to get lui
+## How to include lui
 
-There are several ways to include lui into your project:
-
-### Load the latest standalone from a cdn
-
-When you want to automatically include the latest version, just add the following to your HTML file:
+When you want to automatically include the latest version, just add the following line to your HTML file:
 
 ```html
 <script src="https://cdn.jsdelivr.net/gh/L3P3/lui@dist/lui.js"></script>
 ```
 
-### Include lui via RequireJS
+When doing so, you might want to get type information in your code editor. Just copy `lui.js` and `lui.d.ts` from [here](https://github.com/L3P3/prog/tree/master/src/etc) into your project and import from the `js` file into your modules.
 
-Normally, lui controls the entire page. But it is also possible to dynamically load lui and let it control just a part of the page.
-
-```js
-require.config({
-    map: {
-        '*': {
-            'lui': 'https://cdn.jsdelivr.net/gh/L3P3/lui@dist/lui.r.js'
-        }
-    }
-});
-```
-
-Use `lui.r.dev.js` when developing. And here is your widget's file:
-
-```js
-define(['lui'], function(lui) {
-    return function(root) {
-        lui.init(function() {
-            return [null, [
-                lui.node_dom('h1[innerText=Moin!]')
-            ]];
-        }, root);
-    };
-});
-```
-
-
-### Bundle lui with your app
-
-You can simply run `npm install https://github.com/l3p3/lui` to install it. Later, when lui ist complete enough, I may add it to npm as well.
-
-When bundling for production, you should make sure to set `DEBUG` to `false` in `node_modules/lui/src/flags.js`. If that is not done, the result will be bigger and slower.
-
-Please do NOT try to use the uncompiled `src/lui.js` in production!
+I recommend loading scripts with `type="module"` added to the tags so they load asynchronously and [do not block page loading](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Modules). And make sure the above snippet comes before where lui is used.
 
 ## API
 
 When using the standalone file mentioned above, that script file registers a global `lui` object containing all functions mentioned here.
 
-If you bundle lui together with your app, you can access these functions by a simple `import` statement.
+When you transpile/bundle your app, you should use a wrapper as explained [above](#how-to-include-lui).
+
+If you want to bundle lui itself with your app, you can access these functions by a simple `import {...} from 'lui'` statement. Learn more [here](#bundle-lui-with-your-app).
 
 ### Components
 
@@ -318,6 +285,56 @@ Function | Description
 `node_map(Component, data[], props{})` | When you want to add a component n times for each entry of an array, this is the (proper) way to go. If the array items are objects, the [keys](https://reactjs.org/docs/lists-and-keys.html) are directly taken from an `id` property.
 `now():number` | The _relative_ point of time of the latest rerendering call. Do not use this as persistent time reference but just inside of run time. Useful for custom animations.
 
+## Alternative ways to use lui
+
+Maybe you want to use lui in a more special case. No problem!
+
+### Bundle lui with your app
+
+You can simply run `npm install https://github.com/l3p3/lui` to install it. Later, when lui ist complete enough, I may add it to npm as well.
+
+When bundling for production, you should make sure to automatically set `DEBUG` to `false` in `node_modules/lui/src/flags.js`. If that is not done, the result will be bigger and slower.
+
+Please do NOT try to use the uncompiled `src/lui.js` in production! It is written specifically for being compiled.
+
+### Include lui via RequireJS
+
+Normally, lui controls the entire page. But it is also possible to dynamically load lui and let it control just a part of the page. This is useful if you work on a big project like Magento and want to use lui.
+
+```js
+require.config({
+    map: {
+        '*': {
+            'lui': 'https://cdn.jsdelivr.net/gh/L3P3/lui@dist/lui.r.js'
+        }
+    }
+});
+```
+
+Use `lui.r.dev.js` when developing. And here is your widget's file:
+
+```js
+define(['lui'], function(lui) {
+    return function(root) {
+        lui.init(function() {
+            return [null, [
+                lui.node_dom('h1[innerText=Moin!]')
+            ]];
+        }, root);
+    };
+});
+```
+
+This variant supports _slightly_ older browsers.
+
+### Legacy variant
+
+In case you want to support browsers down to Internet Explorer 5, you can use the legacy variant `lui.legacy.js`. It has many tiny polyfills included so you do not need to care about that stuff.
+
+Of course, your code still needs to have the most basic _syntax_, so no arrow functions, no `const` or `let`, no deconstructing, no trailing commas and so on. Transpilers like closure compiler with the target set to ES3 take care of most of that. But you can out of the box use _methods_ like `[].map`, `Object.assign` or `fn.apply()`. And yes, IE5 does not come with that! In order to not get a second set of polyfills from your transpiler, [set it up to not include them](https://github.com/google/closure-compiler/wiki/Polyfills).
+
+See the [demo section](#demos) for examples.
+
 ## Contribution and Support
 
-I am quite sure that no one wants to know anything of this project but if you have ideas or some other kind of feedback, feel free to open an issue or write me a mail.
+I am quite sure that no one wants to know anything of this project but if you have ideas or some other kind of feedback, feel free to open an issue, pull request or write me a mail.
