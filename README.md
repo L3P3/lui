@@ -21,7 +21,7 @@ When I was introduced to [React](https://github.com/facebook/react), I liked it 
 
 [Small demonstation app](https://l3p3.de/dev/lui/demo.html)
 
-[TODO app](https://l3p3.de/dev/lui/todo.html), [variant for old browsers](http://l3p3.de/dev/lui/todo-legacy.html)
+[TODO app](http://l3p3.de/dev/lui/todo-legacy.html), [simpler variant](https://l3p3.de/dev/lui/todo.html)
 
 [Animated sidebar](https://l3p3.de/dev/lui/app.html)
 
