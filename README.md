@@ -116,9 +116,10 @@ Props are directly mapped to dom attributes, except these 4 special props:
 prop | Description
 --- | ---
 `C: Array<node>` | The nodes that should come into it. Instead of as a prop, you can pass this array as the third argument to the `node` function.
+`D: Object<string, *>` | `element.dataset` mapping, to set `data-` attributes.
 `F: Object<string, boolean>` | An object of applied css classes. Each key with a `true` value will be applied. Others not.
 `R: function(HTMLElement)` | This function is given the instance's dom element after it is created.
-`S: Object<string, string>` | Pretty much the same as element.style, keys are the css properties, values their values.
+`S: Object<string, string>` | `element.style` mapping.
 
 ### Virtual components
 
