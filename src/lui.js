@@ -200,6 +200,7 @@ const null_ = current;
 const undefined_ = void 0;
 const true_ = current_first;
 const false_ = !current_first;
+const regexp_uppercase = /[A-Z]/g;
 const Array_ = Array;
 const Object_ = Object;
 const Object_assign = /** @type {function(!Object, ...(?Object|void)):!Object} */ (
@@ -1974,6 +1975,7 @@ const hook_dom_common = attributes => {
 
 					(attributes.R)(dom);
 				case (LEGACY ? 'C' : 67):
+				case (LEGACY ? 'D' : 68):
 				case (LEGACY ? 'S' : 83):
 					continue;
 				default:
@@ -1985,6 +1987,20 @@ const hook_dom_common = attributes => {
 
 					dom[key] = attributes[key];
 			}
+		}
+
+		DEBUG &&
+			assert_hook_equal(!attributes.D, 'dataset presence');
+		if (attributes.D)
+		for (const key of hook_object_changes(attributes.D)) {
+			VERBOSE && log('dom data ' + key + '=' + attributes.D[key]);
+			if (LEGACY || RJS)
+				dom.setAttribute(
+					'data-' + key.replace(regexp_uppercase, '-$&').toLowerCase(),
+					attributes.D[key]
+				);
+			else
+				dom.dataset[key] = attributes.D[key];
 		}
 
 		DEBUG &&

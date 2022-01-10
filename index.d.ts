@@ -31,6 +31,10 @@ declare namespace lui {
 	*/
 	interface Attrs extends Omit<Partial<HTMLElement>, 'style'> {
 		/**
+			dataset properties and their values
+		*/
+		D?: { [key: string]: any },
+		/**
 			CSS classes and their conditions
 		*/
 		F?: { [key: string]: boolean },
