@@ -71,6 +71,7 @@ async function build(prod, legacy, rjs) {
 	const wrap_fn = legacy || rjs;
 	
 	const code_js = (
+		"'use strict';" +
 		(
 			fs.readFileSync(file, 'utf8')
 			.trim() + '%END%'
