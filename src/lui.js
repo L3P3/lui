@@ -103,7 +103,7 @@ var TYPE_INSTANCE_CALL_OPTIONAL;
 		childs: ?Array<?TYPE_INSTANCE>,
 		dom: ?HTMLElement,
 		dom_first: ?HTMLElement,
-		dirty: boolean
+		dirty: boolean,
 	}}
 */
 var TYPE_INSTANCE;
@@ -742,7 +742,7 @@ const instance_render = (dom_parent, dom_first) => {
 		let items_index = list_data.length;
 		let props_changed = true_;
 
-		if(
+		if (
 			hook_prev(items_index, items_index) + items_index <= 0
 		) return;
 
@@ -762,7 +762,7 @@ const instance_render = (dom_parent, dom_first) => {
 		// rerender?
 		if (state.item_map) {
 			props_changed = (
-				props !== null_ &&
+				props &&
 				state.props_comp(
 					props,
 					state.props_prev
@@ -852,7 +852,13 @@ const instance_render = (dom_parent, dom_first) => {
 					);
 			}
 			else {
-				instance_reinsert(child, dom_parent, dom_first);
+				// TODO this algorithm still sucks
+				if (
+					dom_first.previousSibling !== instance_dom_last_get(child)
+				) {
+					VERBOSE && log('instance_reinsert ' + instance_name_get(child));
+					instance_reinsert(child, dom_parent, dom_first);
+				}
 
 				if (
 					props_changed ||
@@ -1030,6 +1036,33 @@ const list_data_index = (list_data, items_map, items_order) => {
 
 	return items_objects;
 }
+
+/**
+	gets last node of an instance (only an ugly workaround!)
+	@param {TYPE_INSTANCE} instance
+	@return {?HTMLElement}
+*/
+const instance_dom_last_get = instance => {
+	if (instance.dom) return instance.dom;
+	let instance_childs;
+	let i = (
+		(instance_childs = instance.childs)
+		?	instance_childs.length
+		:	0
+	);
+	let itm, itm_dom;
+	while (i > 0) {
+		if (
+			(
+				itm_dom = instance_childs[--i]
+			) &&
+			(
+				itm = instance_dom_last_get(itm_dom)
+			)
+		) return itm;
+	}
+	return null_;
+};
 
 /**
 	reinsert all dom nodes of an instance
@@ -1997,10 +2030,10 @@ const hook_dom_common = attributes => {
 			if (LEGACY || RJS)
 				dom.setAttribute(
 					'data-' + key.replace(regexp_uppercase, '-$&').toLowerCase(),
-					attributes.D[key]
+					/** @type {string} */ (attributes.D[key])
 				);
 			else
-				dom.dataset[key] = attributes.D[key];
+				dom.dataset[key] = /** @type {string} */ (attributes.D[key]);
 		}
 
 		DEBUG &&
@@ -2628,7 +2661,7 @@ if (LEGACY || RJS) {
 		@type {function(this:Function, ...*):*}
 	*/
 	(function(this_, args) {
-		this_ == null
+		this_ == null_
 		?	(window_['_'] = this, this_ = window_)
 		:	(Object_.prototype['_'] = this);
 		switch (args ? args.length : 0) {
