@@ -1,7 +1,7 @@
 /**
 	@preserve lui.js web frame work
 	inspired by react and mithril
-	L3P3.de 2021
+	L3P3.de 2022
 */
 
 import {
@@ -853,8 +853,10 @@ const instance_render = (dom_parent, dom_first) => {
 			}
 			else {
 				// TODO this algorithm still sucks
+				const dom_last = instance_dom_last_get(child);
 				if (
-					dom_first.previousSibling !== instance_dom_last_get(child)
+					dom_last &&
+					dom_last.nextSibling !== dom_first
 				) {
 					VERBOSE && log('instance_reinsert ' + instance_name_get(child));
 					instance_reinsert(child, dom_parent, dom_first);
