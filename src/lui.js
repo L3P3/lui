@@ -858,7 +858,7 @@ const instance_render = (dom_parent, dom_first) => {
 					dom_last &&
 					dom_last.nextSibling !== dom_first
 				) {
-					VERBOSE && log('instance_reinsert ' + instance_name_get(child));
+					VERBOSE && log('instance_reinsert ' + key);
 					instance_reinsert(child, dom_parent, dom_first);
 				}
 
