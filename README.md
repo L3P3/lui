@@ -4,10 +4,10 @@ When I was introduced to [React](https://github.com/facebook/react), I liked it 
 
 ## Features
 
-- About **6k** code size (~3k compressed)
+- About **5k** code size (<3k compressed)
 - **Stateful components** using [hooks](https://reactjs.org/docs/hooks-intro.html)
 - Optional **development mode**
-- CSS-less **Animations** integrated
+- CSS-less **Animations** possible
 - **Fast and efficient**
 - Conditional css classes on elements
 - 0 dependencies
@@ -258,33 +258,35 @@ When `someEvent` is called, lui will rerender only once instead of twice. The re
 
 For the exact signatures, see [the typescript definition file](index.d.ts)! You should somehow integrate it into your project anyway, so your IDE will show you the types automatically.
 
-Function | Description
---- | ---
-`defer()` | Disables synchronous rerenders until the next frame.
-`defer_end()` | Enables synchronous rerenders again and rectifies deferred updates.
-`hook_assert(boolean)` | When the condition is falsy, rendering of the current component is interrupted. May be used for error handling or anything else.
-`hook_async((...deps)=>Promise<T>, deps[], fallback):T` | If you need to wait for some data until it is available, use this instead of `hook_memo`. As long as the promise is pending, `fallback` is returned. If no fallback is given, either `null` or the latest value is returned.
-`hook_callback(function, deps[]):function` | Returns a function that never changes. It passes all arguments down to the given function after the `deps`. Use this when you need to pass a callback as props that needs `deps`. If that callback is independent of the current component (has no `deps`), move the callback out of the component.
-`hook_delay(msecs):boolean` | Turns `true` after the specified delay.
-`hook_dom(descriptor, props{}):element` | Alternative to a single `node_dom` child. Returned childs will be wrapped by this element. Must not be skipped or called twice per component.
-`hook_effect((...deps)=>destroy, deps[])` | Run the given function once and every time an `deps` item changes. That function _may_ return another function that gets called before the effect appears again or when the component gets unmounted.
-`hook_first():boolean` | This just tells you if this is the first time the component is being rendered.
-`hook_map((item, ...deps)=>T, items[], deps[]):T[]` | Like `hook_sub` but for each data item as in `node_map`.
-`hook_memo((...deps)=>T, deps[]):T` | When you need to do some data transformation, put your transformation code inside this hook and it only gets called when a `deps` entry changes.
-`hook_object_changes(object):keys[]` | This gives you a list of properties that changed since the last rendering.
-`hook_prev(current, initial):prev` | If you want to compare something to its version from the previous rendering, use this. At first rendering, `initial` is returned.
-`hook_reducer(functions[]):[value, dispatch()]` | If you use a state that has some logic with it, use this.
-`hook_reducer_f(reducer(), initializer()):[value, dispatch()]` | This is a bit _simpler_ than the array approach above.
-`hook_rerender()` | When this is called, this component will be rendered again next frame, only intended for _animations_.
-`hook_state(initial):[value, setter(), getter()]` | A simple component state. The first argument is the _initial_ value.
-`hook_static(initial):initial` | This is a much cheaper version of `hook_memo`: What you put in it the first time will _always_ come out of it.
-`hook_sub((...deps)=>T, deps[]):T` | Like `hook_memo` but the getter function may be swapped and it may contain hooks.
-`hook_transition(target, msecs):current` | When `target` changes, the output number will smoothly pass to the new target, taking the specified time for that transition.
-`init(Body)` | This mounts the body once, you give it the so-to-say body component. But unlinke actual components, you return the props for the body element and its content. So `Body` looks like this: `()=>[body_props{}, body_content: node[]]`
-`node(Component, props{}, childs[]):node` | This is how you add child components. If the added component accepts childs (`C` prop), you can pass that as the third argument as an array of nodes.
-`node_dom(descriptor', attrs{}, childs[]):node` | When you want to add dom components, use this function. It is very similar to `node` but needs a descriptor instead.
-`node_map(Component, data[], props{})` | When you want to add a component n times for each entry of an array, this is the (proper) way to go. If the array items are objects, the [keys](https://reactjs.org/docs/lists-and-keys.html) are directly taken from an `id` property.
-`now():number` | The _relative_ point of time of the latest rerendering call. Do not use this as persistent time reference but just inside of run time. Useful for custom animations.
+The third column says if that function is included in the core variant `lui.js` or if you need to use the extended variant `luix.js`. (Only needed when using the [script tag method](#how-to-include-lui) above.)
+
+Function | Description | V
+--- | --- | ---
+`defer()` | Disables synchronous rerenders until the next frame. | C
+`defer_end()` | Enables synchronous rerenders again and rectifies deferred updates. | C
+`hook_assert(boolean)` | When the condition is falsy, rendering of the current component is interrupted. May be used for error handling or anything else. | C
+`hook_async((...deps)=>Promise<T>, deps[], fallback):T` | If you need to wait for some data until it is available, use this instead of `hook_memo`. As long as the promise is pending, `fallback` is returned. If no fallback is given, either `null` or the latest value is returned. | C
+`hook_callback(function, deps[]):function` | Returns a function that never changes. It passes all arguments down to the given function after the `deps`. Use this when you need to pass a callback as props that needs `deps`. If that callback is independent of the current component (has no `deps`), move the callback out of the component. | E
+`hook_delay(msecs):boolean` | Turns `true` after the specified delay. | E
+`hook_dom(descriptor, props{}):element` | Alternative to a single `node_dom` child. Returned childs will be wrapped by this element. Must not be skipped or called twice per component. | C
+`hook_effect((...deps)=>destroy, deps[])` | Run the given function once and every time an `deps` item changes. That function _may_ return another function that gets called before the effect appears again or when the component gets unmounted. | C
+`hook_first():boolean` | This just tells you if this is the first time the component is being rendered. | C
+`hook_map((item, ...deps)=>T, items[], deps[]):T[]` | Like `hook_sub` but for each data item as in `node_map`. | E
+`hook_memo((...deps)=>T, deps[]):T` | When you need to do some data transformation, put your transformation code inside this hook and it only gets called when a `deps` entry changes. | C
+`hook_object_changes(object):keys[]` | This gives you a list of properties that changed since the last rendering. | E
+`hook_prev(current, initial):prev` | If you want to compare something to its version from the previous rendering, use this. At first rendering, `initial` is returned. | C
+`hook_reducer(functions[]):[value, dispatch()]` | If you use a state that has some logic with it, use this. | C
+`hook_reducer_f(reducer(), initializer()):[value, dispatch()]` | This is a bit _simpler_ than the array approach above. | C
+`hook_rerender()` | When this is called, this component will be rendered again next frame, only intended for _animations_. | C
+`hook_state(initial):[value, setter(), getter()]` | A simple component state. The first argument is the _initial_ value. | C
+`hook_static(initial):initial` | This is a much cheaper version of `hook_memo`: What you put in it the first time will _always_ come out of it. | C
+`hook_sub((...deps)=>T, deps[]):T` | Like `hook_memo` but the getter function may be swapped and it may contain hooks. | E
+`hook_transition(target, msecs):current` | When `target` changes, the output number will smoothly pass to the new target, taking the specified time for that transition. | E
+`init(Body)` | This mounts the body once, you give it the so-to-say body component. But unlinke actual components, you return the props for the body element and its content. So `Body` looks like this: `()=>[body_props{}, body_content: node[]]` | C
+`node(Component, props{}, childs[]):node` | This is how you add child components. If the added component accepts childs (`C` prop), you can pass that as the third argument as an array of nodes. | C
+`node_dom(descriptor', attrs{}, childs[]):node` | When you want to add dom components, use this function. It is very similar to `node` but needs a descriptor instead. | C
+`node_map(Component, data[], props{})` | When you want to add a component n times for each entry of an array, this is the (proper) way to go. If the array items are objects, the [keys](https://reactjs.org/docs/lists-and-keys.html) are directly taken from an `id` property. | C
+`now():number` | The _relative_ point of time of the latest rerendering call. Do not use this as persistent time reference but just inside of run time. Useful for custom animations. | C
 
 ## Alternative ways to use lui
 

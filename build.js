@@ -20,22 +20,25 @@ const exec = cmd => (
 	)
 )
 
-function flags_set(debug, verbose, legacy, rjs) {
+function flags_set(debug, verbose, legacy, rjs, extended) {
 	fs.writeFileSync(
 		'./src/flags.js',
 `export const DEBUG = ${debug};
 export const VERBOSE = ${verbose};
 export const LEGACY = ${legacy};
 export const RJS = ${rjs};
+export const EXTENDED = ${extended};
 `,
 		'utf8'
 	);
 }
 
-async function build(prod, legacy, rjs) {
-	flags_set(!prod, false, legacy, rjs);
+async function build(prod, legacy, rjs, extended) {
+	flags_set(!prod, false, legacy, rjs, extended);
 
 	const file = `./dist/lui${
+		extended ? 'x' : ''
+	}${
 		rjs ? '.r' : ''
 	}${
 		prod ? '' : '.dev'
@@ -101,17 +104,17 @@ if(
 }
 
 await exec('mkdir -p ./dist');
-await exec('rm ./dist/lui.*');
+await exec('rm ./dist/lui*');
 
 console.log(`build ${version}...`);
 
-await build(false, false, false);
-await build(true, false, false);
+for (const extended of [false, true]) {
+	for (const prod of [false, true])
+	for (const rjs of [false, true])
+		await build(prod, false, rjs, extended);
 
-await build(true, true, false);
-
-await build(false, false, true);
-await build(true, false, true);
+	await build(true, true, false, extended);
+}
 
 console.log(`raw size: ${
 	fs.statSync('./dist/lui.js').size
@@ -124,7 +127,7 @@ if (
 	try {
 		console.log('compress...');
 	
-		console.log((await exec('zopfli --i1000 ./dist/lui.*'))[2]);
+		console.log((await exec('zopfli --i1000 ./dist/lui*'))[2]);
 	
 		console.log(`compressed size: ${
 			fs.statSync('./dist/lui.js.gz').size
@@ -133,11 +136,11 @@ if (
 	catch (error) {}
 
 	console.log('deploy...');
-	await exec('mv ./dist/lui.* /media/Archiv/Anbieter/node/rtjscomp/public/shr/');
+	await exec('cp ./dist/lui* /media/Archiv/Anbieter/www/shr/');
 }
 
 })()
 .catch(console.log)
 .finally(() => {
-	flags_set(true, false, false, false);
+	flags_set(true, false, false, false, false);
 });
