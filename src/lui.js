@@ -6,9 +6,9 @@
 
 import {
 	DEBUG,
-	VERBOSE,
 	LEGACY,
 	RJS,
+	VERBOSE,
 } from './flags.js';
 
 
@@ -191,6 +191,12 @@ const object_comp_functions = {};
 	@type {Array<TYPE_DEPS_COMP>}
 */
 const deps_comp_functions = [];
+
+/**
+	empty object for empty props
+	@type {Object}
+*/
+const object_empty = {};
 
 
 /// ALIAS ///
@@ -566,7 +572,9 @@ const instance_render = (dom_parent, dom_first) => {
 		let child_calls = null_;
 
 		try {
-			child_calls = (0, instance.icall.component)(instance.icall.props);
+			child_calls = (0, instance.icall.component)(
+				instance.icall.props || object_empty
+			);
 		}
 		catch (thrown) {
 			if (
