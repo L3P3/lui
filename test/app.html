@@ -60,17 +60,18 @@
 		</style>
 	</head>
 	<body>
-		<script src=../dist/lui.js></script>
+		<script src=../dist/luix.dev.js></script>
 		<script>
 			const {
-				node,
-				node_dom,
+				hook_dom,
 				hook_effect,
 				hook_memo,
-				hook_reducer_f,
+				hook_model,
 				hook_state,
 				hook_transition,
-				init
+				init,
+				node,
+				node_dom,
 			} = lui;
 			
 			const f_false = () => false;
@@ -86,47 +87,48 @@
 				return ref_effect_destroy;
 			}
 			
-			const hook_cursor_reducer = (prev, event) => {
-				switch (event.type) {
-					case 'mouseover':
-					case 'mousedown':
-					case 'touchstart':
-						return true;
-					case 'mouseout':
-					case 'mouseup':
-					case 'touchend':
-						return false;
-					default:
-						return prev;
-				}
+			const hook_cursor_model = {
+				init: f_false,
+				handler: (state, event) => {
+					switch (event.type) {
+						case 'mouseover':
+						case 'mousedown':
+						case 'touchstart':
+							return true;
+						case 'mouseout':
+						case 'mouseup':
+						case 'touchend':
+							return false;
+						default:
+							return state;
+					}
+				},
 			}
 			const hook_cursor = () => (
-				hook_reducer_f(
-					hook_cursor_reducer,
-					f_false
-				)
+				hook_model(hook_cursor_model)
 			)
 			
-			const hook_toggle_reducer = prev => !prev;
-			const hook_toggle = () => (
-				hook_reducer_f(
-					hook_toggle_reducer,
-					f_false
-				)
-			)
+			const hook_toggle_model = {
+				init: f_false,
+				toggle: state => !state,
+			}
+			const hook_toggle = () => {
+				const [value, {toggle}] = hook_model(hook_toggle_model);
+				return [value, toggle];
+			}
 			
 			// SIDEBAR
 			const sidebar_ref_memo = opened_set => ({
 				open: () => {
 					opened_set(true);
-				}
+				},
 			})
 			
 			const Sidebar = ({
 				C,
 				R,
 				delay = 100,
-				width = 300
+				width = 300,
 			}) => {
 				const [opened, opened_set] = hook_state(false);
 				const opened_ratio = hook_transition(
@@ -134,41 +136,32 @@
 					delay
 				);
 				
-				hook_effect(
-					ref_effect,
-					[
-						R,
-						hook_memo(
-							sidebar_ref_memo,
-							[opened_set]
-						)
-					]
-				);
+				hook_effect(ref_effect, [
+					R,
+					hook_memo(
+						sidebar_ref_memo,
+						[opened_set]
+					),
+				]);
 				
 				if (opened_ratio === 0) return null;
 				
 				return [
-					node_dom(
-						'div[className=sd]',
-						{
-							S: {
-								opacity: opened_ratio * .5
-							},
-							onclick: () => {
-								opened_set(false);
-							}
-						}
-					),
-					node_dom(
-						'div[className=sb]',
-						{
-							C,
-							S: {
-								left: (opened_ratio * width - width) + 'px',
-								width: width + 'px'
-							}
-						}
-					)
+					node_dom('div[className=sd]', {
+						S: {
+							opacity: opened_ratio * .5,
+						},
+						onclick: () => {
+							opened_set(false);
+						},
+					}),
+					node_dom('div[className=sb]', {
+						C,
+						S: {
+							left: (opened_ratio * width - width) + 'px',
+							width: width + 'px',
+						},
+					}),
 				];
 			}
 			
@@ -176,85 +169,68 @@
 			const SidebarButton = ({
 				action,
 				enabled = true,
-				label
+				label,
 			}) => {
-				const [active, active_handler] = hook_cursor();
+				const [active, {handler: active_handler}] = hook_cursor();
 				const active_handler_e = (
 					enabled
 					?	active_handler
 					:	null
 				);
-				return [
-					node_dom(
-						'div',
-						{
-							F: {
-								sbb: true,
-								a: active,
-								d: !enabled
-							},
-							//onmouseover: handler,
-							//onmouseout: handler,
-							onmousedown: active_handler_e,
-							onmouseup: active_handler_e,
-							ontouchstart: active_handler_e,
-							ontouchend: active_handler_e,
-							onclick: (
-								enabled
-								?	action
-								:	null
-							),
-							innerText: label
-						}
-					)
-				];
+				hook_dom('div', {
+					F: {
+						sbb: true,
+						a: active,
+						d: !enabled,
+					},
+					//onmouseover: handler,
+					//onmouseout: handler,
+					onmousedown: active_handler_e,
+					onmouseup: active_handler_e,
+					ontouchstart: active_handler_e,
+					ontouchend: active_handler_e,
+					onclick: (
+						enabled
+						?	action
+						:	null
+					),
+					innerText: label,
+				});
+				return null;
 			}
 			
 			// SIDEBAR (+CONTENT)
 			const MySidebar = ({
 				R,
 				delay,
-				width
+				width,
 			}) => {
 				const [blu, blu_toggle] = hook_toggle();
 				const [fu, fu_toggle] = hook_toggle();
 				return [
-					node(
-						Sidebar,
-						{
-							R,
-							delay,
-							width
-						},
-						[
-							node_dom('h1[innerText=Tolle Seitenleiste!]'),
-							node(
-								SidebarButton,
-								{
-									label: 'Blah',
-									action: blu_toggle
-								}
-							),
-							blu &&
-							node(
-								SidebarButton,
-								{
-									label: 'Blubb',
-									action: fu_toggle
-								}
-							),
-							node(
-								SidebarButton,
-								{
-									label: 'Fuuu',
-									action: () => {
-										alert('Moooin!');
-									},
-									enabled: fu
-								}
-							)
-						]
-					)
+					node(Sidebar, {
+						R,
+						delay,
+						width,
+					}, [
+						node_dom('h1[innerText=Tolle Seitenleiste!]'),
+						node(SidebarButton, {
+							label: 'Blah',
+							action: blu_toggle,
+						}),
+						blu &&
+						node(SidebarButton, {
+							label: 'Blubb',
+							action: fu_toggle,
+						}),
+						node(SidebarButton, {
+							label: 'Fuuu',
+							action: () => {
+								alert('Moooin!');
+							},
+							enabled: fu,
+						}),
+					]),
 				];
 			};
 			
@@ -264,82 +240,43 @@
 				const [width, width_set] = hook_state(300);
 				const [delay, delay_set] = hook_state(100);
 				
-				return [
-					null,
-					[
-						node_dom('h1[innerText=Moin!]'),
-						node_dom(
-							'table',
-							null,
-							[
-								node_dom(
-									'tr',
-									null,
-									[
-										node_dom('td[innerText=Breite: ]'),
-										node_dom(
-											'td',
-											null,
-											[
-												node_dom(
-													'input[type=range][min=0][max=500]',
-													{
-														value: width,
-														onchange: event => {
-															width_set(Number(event.target.value));
-														}
-													}
-												)
-											]
-										)
-									]
-								),
-								node_dom(
-									'tr',
-									null,
-									[
-										node_dom('td[innerText=Dauer: ]'),
-										node_dom(
-											'td',
-											null,
-											[
-												node_dom(
-													'input[type=range][min=0][max=1000]',
-													{
-														value: delay,
-														onchange: event => {
-															delay_set(Number(event.target.value));
-														}
-													}
-												)
-											]
-										)
-									]
-								)
-							]
-						),
-						node_dom(
-							'p',
-							null,
-							[
-								node_dom(
-									'button[innerText=Seitenleiste öffnen]',
-									{
-										onclick: sidebar && sidebar.open
-									}
-								)
-							]
-						),
-						node(
-							MySidebar,
-							{
-								R: sidebar_set,
-								delay,
-								width
-							}
-						)
-					]
-				];
+				return [null, [
+					node_dom('h1[innerText=Moin!]'),
+					node_dom('table', null, [
+						node_dom('tr', null, [
+							node_dom('td[innerText=Breite: ]'),
+							node_dom('td', null, [
+								node_dom('input[type=range][min=0][max=500]', {
+									value: width,
+									onchange: event => {
+										width_set(Number(event.target.value));
+									},
+								}),
+							]),
+						]),
+						node_dom('tr', null, [
+							node_dom('td[innerText=Dauer: ]'),
+							node_dom('td', null, [
+								node_dom('input[type=range][min=0][max=1000]', {
+									value: delay,
+									onchange: event => {
+										delay_set(Number(event.target.value));
+									},
+								}),
+							]),
+						]),
+					]),
+					node_dom('p', null, [
+						node_dom('button[innerText=Seitenleiste öffnen]', {
+							onclick: sidebar && sidebar.open,
+						}),
+					]),
+					node(MySidebar, {
+						R: sidebar_set,
+						delay,
+						width,
+					}),
+				]];
 			});
 		</script>
 	</body>

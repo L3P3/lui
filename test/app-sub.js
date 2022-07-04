@@ -3,8 +3,8 @@ import {
 	hook_effect,
 	hook_first,
 	hook_map,
+	hook_model,
 	hook_prev,
-	hook_reducer_f,
 	hook_rerender,
 	hook_state,
 	hook_static,
@@ -25,17 +25,20 @@ const hook_count_effect = step => (
 	)
 )
 const hook_count = () => {
-	const [value, step] = hook_reducer_f(
-		value => ++value,
-		() => 0
-	);
+	const [value, {step}] = hook_model({
+		init: () => 0,
+		step: value => ++value,
+	});
 	hook_effect(hook_count_effect, [step]);
 	return value;
 }
 
 init(() => {
 	const [getter, getter_set] = hook_state(() => 'Initial');
-	const [foo, foo_toggle] = hook_reducer_f(prev => !prev, () => false);
+	const [foo, {foo_toggle}] = hook_model({
+		init: () => false,
+		foo_toggle: prev => !prev,
+	});
 
 	return [null, [
 		node_dom('h1', {

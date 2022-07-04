@@ -43,15 +43,17 @@ When you are developing your app, use `lui.dev.js` instead to get fancy error de
 
 ## How to include lui
 
-When you want to automatically include the latest version, just add the following line to your HTML file:
+Just add the following line to your HTML file:
 
 ```html
-<script src="https://cdn.jsdelivr.net/gh/L3P3/lui@dist/lui.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/L3P3/lui@v1.3.x/lui.js"></script>
 ```
 
 When doing so, you might want to get type information in your code editor. Just copy `lui.js` and `lui.d.ts` from [here](https://github.com/L3P3/prog/tree/master/src/etc) into your project and import from the `js` file into your modules.
 
 I recommend loading scripts with `type="module"` added to the tags so they load asynchronously and [do not block page loading](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Modules). And make sure the above snippet comes before where lui is used.
+
+Note that the url contains `v1.3.x` for a reason. If you use `dist` instead, you will always get the latest version but that could introduce breaking changes in its api which would break your app. Better upgrade manually after making sure that api changes are covered within your app.
 
 ## API
 
@@ -192,10 +194,9 @@ lui | React
 `hook_first` | -
 `hook_map` | -
 `hook_memo` | [useMemo](https://reactjs.org/docs/hooks-reference.html#usememo)
+`hook_model` | [useReducer](https://reactjs.org/docs/hooks-reference.html#usereducer)
 `hook_object_changes` | -
 `hook_prev` | -
-`hook_reducer` | -
-`hook_reducer_f` | [useReducer](https://reactjs.org/docs/hooks-reference.html#usereducer)
 `hook_rerender` | -
 `hook_state` | [useState](https://reactjs.org/docs/hooks-reference.html#usestate)
 `hook_static` | [useRef](https://reactjs.org/docs/hooks-reference.html#useref)
@@ -273,10 +274,9 @@ Function | Description | V
 `hook_first():boolean` | This just tells you if this is the first time the component is being rendered. | C
 `hook_map((item, ...deps)=>T, items[], deps[]):T[]` | Like `hook_sub` but for each data item as in `node_map`. | E
 `hook_memo((...deps)=>T, deps[]):T` | When you need to do some data transformation, put your transformation code inside this hook and it only gets called when a `deps` entry changes. | C
+`hook_model({init, ...}):[value, {...}]` | If you use a state that has some logic with it, use this. This replaces `hook_reducer`. | C
 `hook_object_changes(object):keys[]` | This gives you a list of properties that changed since the last rendering. | E
 `hook_prev(current, initial):prev` | If you want to compare something to its version from the previous rendering, use this. At first rendering, `initial` is returned. | C
-`hook_reducer(functions[]):[value, dispatch()]` | If you use a state that has some logic with it, use this. | C
-`hook_reducer_f(reducer(), initializer()):[value, dispatch()]` | This is a bit _simpler_ than the array approach above. | C
 `hook_rerender()` | When this is called, this component will be rendered again next frame, only intended for _animations_. | C
 `hook_state(initial):[value, setter(), getter()]` | A simple component state. The first argument is the _initial_ value. | C
 `hook_static(initial):initial` | This is a much cheaper version of `hook_memo`: What you put in it the first time will _always_ come out of it. | C

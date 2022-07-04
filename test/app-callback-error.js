@@ -2,12 +2,11 @@ import {
 	hook_async,
 	hook_callback,
 	hook_effect,
-	hook_reducer,
-	hook_reducer_f,
+	hook_model,
 	init,
 } from '../src/lui.js';
 
-const test = Number(prompt('Select test:\nasync, callback, reducer, reducer_f', 0));
+const test = Number(prompt('Select test:\nasync, callback, model', 0));
 
 init(() => {
 	if (test === 0) {
@@ -29,26 +28,15 @@ init(() => {
 	}
 
 	if (test === 2) {
-		const [_, dispatch] = hook_reducer([
-			() => null,
-			() => {
+		const [_, {callback}] = hook_model({
+			init: () => null,
+			callback: () => {
 				window.gibtsnicht();
 			},
-		]);
-		hook_effect(() => {
-			setTimeout(() => {
-				dispatch(1);
-			}, 1e3);
-		});
-	}
-
-	if (test === 3) {
-		const [_, dispatch] = hook_reducer_f(() => {
-			window.gibtsnicht();
 		});
 		hook_effect(() => {
 			setTimeout(() => {
-				dispatch();
+				callback();
 			}, 1e3);
 		});
 	}

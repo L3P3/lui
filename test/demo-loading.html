@@ -39,8 +39,8 @@
 				now,
 				hook_delay,
 				hook_effect,
+				hook_model,
 				hook_prev,
-				hook_reducer_f,
 				hook_rerender,
 				hook_static,
 				hook_transition
@@ -125,10 +125,10 @@
 			// Wurzelkomponente
 			init(() => {
 				const loading = !hook_delay(5e3);
-				const [wanted, onclick] = hook_reducer_f(
-					state => !state,
-					() => false
-				);
+				const [wanted, {onclick}] = hook_model({
+					init: () => false,
+					onclick: state => !state,
+				});
 				const busy = loading || wanted;
 				return [
 					{

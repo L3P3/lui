@@ -29,9 +29,8 @@ const HOOK = {
 	MAP: /** @type {number} */ ( VERBOSE ? 'MAP' : DEBUG ? 7 : 3),
 	MEMO: /** @type {number} */ ( VERBOSE ? 'MEMO' : DEBUG ? 8 : 0),
 	PREV: /** @type {number} */ ( VERBOSE ? 'PREV' : DEBUG ? 9 : 0),
-	REDUCEA: /** @type {number} */ ( VERBOSE ? 'REDUCEA' : DEBUG ? 10 : 0),
-	REDUCEF: /** @type {number} */ ( VERBOSE ? 'REDUCEF' : DEBUG ? 11 : 0),
-	SUB: /** @type {number} */ ( VERBOSE ? 'SUB' : DEBUG ? 12 : 4),
+	MODEL: /** @type {number} */ ( VERBOSE ? 'MODEL' : DEBUG ? 10 : 0),
+	SUB: /** @type {number} */ ( VERBOSE ? 'SUB' : DEBUG ? 11 : 4),
 }
 
 /**
@@ -1883,18 +1882,17 @@ export const hook_object_changes = object => {
 }
 
 /**
-	get persistent state with custom reducer list
-	@param {!Array<function(...?):*>} reducer
+	get persistent state with custom mutations
+	@param {Object<string, function(...?):*>} mutations
 	@return {!Array}
 */
-export const hook_reducer = reducer => {
+export const hook_model = mutations => {
 	DEBUG && (
-		assert_hook(HOOK.REDUCEA, false_, null_),
-		reducer &&
-		reducer.constructor !== Array_ &&
-			error('actions array required'),
-		typeof reducer === 'function' &&
-			error('array required, use hook_reducer_f instead')
+		assert_hook(HOOK.MODEL, false_, null_),
+		typeof mutations !== 'object' &&
+			error('mutations object required'),
+		typeof mutations['init'] !== 'function' &&
+			error('init mutation required for initial value')
 	);
 
 	if (current_slots_index < current_slots.length)
@@ -1903,69 +1901,26 @@ export const hook_reducer = reducer => {
 	const current_slots_ = /** @type {TYPE_SLOTS} */ (current_slots);
 	const stack = DEBUG ? stack_get() : '';
 	const slot = [
-		(0, reducer[0])(null_),
-		(cmd, payload) => {
-			VERBOSE && log('reducer ' + instance_name_get(instance_current_get(current_slots_)) + ' -> #' + cmd, payload);
+		(0, mutations['init'])(null_),
+		{},
+	];
+	for (const key of Object_keys(mutations)) {
+		slot[1][key] = payload => {
+			VERBOSE && log('model ' + instance_name_get(instance_current_get(current_slots_)) + ' -> #' + key, payload);
 			const value = (
 				DEBUG
-				?	callback_wrap(reducer[cmd], [slot[0], payload], stack)
-				:	(0, reducer[cmd])(slot[0], payload)
+				?	callback_wrap(mutations[key], [slot[0], payload], stack + ' -> #' + key)
+				:	(0, mutations[key])(slot[0], payload)
 			);
-			if (slot[0] === value) return;
-			slot[0] = value;
-			dirtify(current_slots_);
-		},
-	];
+			slot[0] !== value && (
+				slot[0] = value,
+				dirtify(current_slots_)
+			)
+		};
+	}
 	current_slots[current_slots_index++] =
 	/** @type {TYPE_SLOT} */ ({
-		htype: HOOK.REDUCEA,
-		hvalue: slot,
-	});
-	return slot;
-}
-
-/**
-	get persitent state with custom reducer function
-	@param {function(*, *):*} reducer
-	@param {function():*} initializer
-	@return {!Array}
-*/
-export const hook_reducer_f = (reducer, initializer) => {
-	DEBUG && (
-		assert_hook(HOOK.REDUCEF, false_, null_),
-		typeof reducer !== 'function' &&
-			error('reducer function required'),
-		initializer &&
-		typeof initializer !== 'function' &&
-			error('initializer must be a function')
-	);
-
-	if (current_slots_index < current_slots.length)
-		return /** @type {!Array} */ (current_slots[current_slots_index++].hvalue);
-
-	const current_slots_ = /** @type {TYPE_SLOTS} */ (current_slots);
-	const stack = DEBUG ? stack_get() : '';
-	const slot = [
-		(
-			initializer
-			?	initializer()
-			:	null_
-		),
-		payload => {
-			VERBOSE && log('reducer ' + instance_name_get(instance_current_get(current_slots_)), payload);
-			const value = (
-				DEBUG
-				?	callback_wrap(reducer, [slot[0], payload], stack)
-				:	reducer(slot[0], payload)
-			);
-			if (slot[0] === value) return;
-			slot[0] = value;
-			dirtify(current_slots_);
-		},
-	];
-	current_slots[current_slots_index++] =
-	/** @type {TYPE_SLOT} */ ({
-		htype: HOOK.REDUCEF,
+		htype: HOOK.MODEL,
 		hvalue: slot,
 	});
 	return slot;

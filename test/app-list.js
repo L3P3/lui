@@ -1,23 +1,19 @@
 import {
 	hook_dom,
 	hook_memo,
-	hook_reducer,
+	hook_model,
 	init,
 	node_dom,
 	node_map
 } from '../src/lui.js';
 
-const ACTION_SWAP = 1;
-
-const actions = [
-	// RESET
-	() => (
+const actions = {
+	init: () => (
 		new Array(6).fill(null)
 		.map((_, i) => 'item_' + i)
 	),
 
-	// SWAP
-	state => [
+	swap: state => [
 		state[0],
 		state[4],
 		state[2],
@@ -25,7 +21,7 @@ const actions = [
 		state[1],
 		state[5],
 	],
-];
+};
 
 const ListItem = ({
 	I,
@@ -35,7 +31,7 @@ const ListItem = ({
 );
 
 init(() => {
-	const [list, dispatch] = hook_reducer(actions);
+	const [list, {swap}] = hook_model(actions);
 
 	return [
 		null,
@@ -43,9 +39,7 @@ init(() => {
 			hook_memo(() => (
 				node_dom('div', null, [
 					node_dom('button[innerText=swap]', {
-						onclick: () => {
-							dispatch(ACTION_SWAP);
-						},
+						onclick: swap,
 					}),
 				])
 			)),

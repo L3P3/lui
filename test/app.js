@@ -2,7 +2,7 @@ import {
 	init,
 	hook_dom,
 	hook_effect,
-	hook_reducer_f,
+	hook_model,
 	hook_state,
 	hook_static,
 	hook_transition,
@@ -44,20 +44,21 @@ function Bar({
 
 const localStorage_ = window.localStorage;
 
-const dark_reducer = prev => !prev;
-
-const dark_init = () => (
-	localStorage_
-	?	localStorage_.getItem('dark') === '1'
-	:	false
-);
-
-const dark_save = dark => {
-	localStorage_ &&
-	localStorage_.setItem(
-		'dark',
-		+dark
-	)
+const model_dark = {
+	init: () => (
+		localStorage_
+		?	localStorage_.getItem('dark') === '1'
+		:	false
+	),
+	toggle: state => !state,
+	save: state => (
+		localStorage_ &&
+		localStorage_.setItem(
+			'dark',
+			+state
+		),
+		state
+	),
 };
 
 const colors = (
@@ -76,9 +77,9 @@ const colors_reversed = (
 );
 
 init(() => {
-	const [dark, dark_toggle] = hook_reducer_f(dark_reducer, dark_init);
+	const [dark, dark_m] = hook_model(model_dark);
 
-	hook_effect(dark_save, [dark]);
+	hook_effect(dark_m.save, [dark]);
 
 	const [red, red_set] = hook_state(false);
 
@@ -110,7 +111,7 @@ init(() => {
 								dark ? 'Hel' : 'Dunke'
 							}l machen!`,
 
-							onclick: dark_toggle,
+							onclick: dark_m.toggle,
 							onmouseover: hook_static(() => {
 								red_set(true);
 							}),
