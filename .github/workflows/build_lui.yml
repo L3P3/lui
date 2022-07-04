@@ -29,11 +29,14 @@ jobs:
           sudo npm i -g google-closure-compiler
       - name: Build lui
         run: npm run-script build
-      - name: Commit artifacts
+      - name: Commit artifacts and purge cache
         if: github.ref == 'refs/heads/master'
         run: |
           export LUIVERSION=$(echo "console.log(require('./package.json').version)" | node)
+          export LUIVERSION_MINOR=$(echo "d=require('./package.json').version.split('.');d.pop();d.push('x');console.log(d.join('.'))" | node)
           mv dist /tmp/lui-dist
+          git tag -f "v$LUIVERSION"
+          git push -f --tags
           git fetch
           git checkout dist
           mv /tmp/lui-dist/* ./
@@ -42,7 +45,7 @@ jobs:
           git add .
           git diff-index --quiet HEAD || git commit -m "v$LUIVERSION"
           git push
-      - name: Clear cache
-        if: github.ref == 'refs/heads/master'
-        run: |
+          git tag -f "v$LUIVERSION_MINOR"
+          git push -f --tags
           for i in *.js; do curl -s "https://purge.jsdelivr.net/gh/L3P3/lui@dist/$i" > /dev/null; done
+          for i in *.js; do curl -s "https://purge.jsdelivr.net/gh/L3P3/lui@v$LUIVERSION_MINOR/$i" > /dev/null; done
