@@ -12,6 +12,7 @@ on:
       - dist
     paths:
       - 'package.json'
+  workflow_dispatch:
 
 jobs:
   build:
