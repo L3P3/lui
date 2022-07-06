@@ -173,7 +173,7 @@ Instead of using object oriented syntax like `this.number = 42;` (or `this.setNu
 
 **Stateful hooks** are identified by their _calling order_ per instance. Keep that order by never placing a hook in an `if`, a loop or a `switch` body – unless their condition, item order or key will stay the same per instance.
 
-**Stateless hooks** (`hook_assert`, `hook_first` and `hook_rerender`) may be called anywhere in your component.
+**Stateless hooks** (`hook_assert` and `hook_rerender`) may be called anywhere in your component.
 
 Using any hook in a **callback** is probably a very bad idea.
 
@@ -191,7 +191,6 @@ lui | React
 `hook_delay` | -
 `hook_dom` | -
 `hook_effect` | [useEffect](https://reactjs.org/docs/hooks-reference.html#useeffect)
-`hook_first` | -
 `hook_map` | -
 `hook_memo` | [useMemo](https://reactjs.org/docs/hooks-reference.html#usememo)
 `hook_model` | [useReducer](https://reactjs.org/docs/hooks-reference.html#usereducer)
@@ -271,7 +270,6 @@ Function | Description | V
 `hook_delay(msecs):boolean` | Turns `true` after the specified delay. | E
 `hook_dom(descriptor, props{}):element` | Alternative to a single `node_dom` child. Returned childs will be wrapped by this element. Must not be skipped or called twice per component. | C
 `hook_effect((...deps)=>destroy, deps[])` | Run the given function once and every time an `deps` item changes. That function _may_ return another function that gets called before the effect appears again or when the component gets unmounted. | C
-`hook_first():boolean` | This just tells you if this is the first time the component is being rendered. | C
 `hook_map((item, ...deps)=>T, items[], deps[]):T[]` | Like `hook_sub` but for each data item as in `node_map`. | E
 `hook_memo((...deps)=>T, deps[]):T` | When you need to do some data transformation, put your transformation code inside this hook and it only gets called when a `deps` entry changes. | C
 `hook_model({init, ...}):[value, {...}]` | If you use a state that has some logic with it, use this. This replaces `hook_reducer`. | C

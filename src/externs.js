@@ -42,7 +42,6 @@ var TYPE_PROPS;
 		hook_delay,
 		hook_dom,
 		hook_effect,
-		hook_first,
 		hook_map,
 		hook_memo,
 		hook_model,

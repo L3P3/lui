@@ -1180,15 +1180,6 @@ export const hook_rerender = () => {
 }
 
 /**
-	get if this is the first instance_render call
-	@return {boolean}
-*/
-export const hook_first = () => (
-	DEBUG && assert_hook(null_, false_, null_),
-	current_first
-)
-
-/**
 	interrupts if condition is not met
 	@param {boolean=} condition
 */

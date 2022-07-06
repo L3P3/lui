@@ -1,7 +1,6 @@
 import {
 	init,
 	hook_effect,
-	hook_first,
 	hook_map,
 	hook_model,
 	hook_prev,
@@ -12,6 +11,14 @@ import {
 	node_dom,
 	now
 } from '../src/lui.js';
+
+const hook_first = () => {
+	let first = false;
+	hook_effect(() => {
+		first = true;
+	});
+	return first;
+};
 
 const effect_life = item => (
 	console.log('effect mount', item),

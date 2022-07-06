@@ -8,7 +8,6 @@ export const hook_callback = lui_.hook_callback;
 export const hook_delay = lui_.hook_delay;
 export const hook_dom = lui_.hook_dom;
 export const hook_effect = lui_.hook_effect;
-export const hook_first = lui_.hook_first;
 export const hook_map = lui_.hook_map;
 export const hook_memo = lui_.hook_memo;
 export const hook_model = lui_.hook_model;
