@@ -108,6 +108,8 @@ await exec('rm ./dist/lui*');
 
 console.log(`build ${version}...`);
 
+//await build(true, false, false, false);
+
 for (const extended of [false, true]) {
 	for (const prod of [false, true])
 	for (const rjs of [false, true])
@@ -142,5 +144,5 @@ if (
 })()
 .catch(console.log)
 .finally(() => {
-	flags_set(true, false, false, false, false);
+	flags_set(true, false, false, false, true);
 });

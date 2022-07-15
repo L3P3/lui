@@ -4,7 +4,7 @@ When I was introduced to [React](https://github.com/facebook/react), I liked it 
 
 ## Features
 
-- About **5k** code size (<3k compressed)
+- Less than **5k** code size (<3k compressed)
 - **Stateful components** using [hooks](https://reactjs.org/docs/hooks-intro.html)
 - Optional **development mode**
 - CSS-less **Animations** possible

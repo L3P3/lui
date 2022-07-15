@@ -6,6 +6,7 @@
 
 import {
 	DEBUG,
+	EXTENDED,
 	LEGACY,
 	RJS,
 	VERBOSE,
@@ -191,16 +192,11 @@ const object_comp_functions = {};
 */
 const deps_comp_functions = [];
 
-/**
-	empty object for empty props
-	@type {Object}
-*/
-const object_empty = {};
-
 
 /// ALIAS ///
 
 const Array_empty = [];
+const Object_empty = {};
 const null_ = current;
 const undefined_ = void 0;
 const true_ = current_first;
@@ -572,7 +568,7 @@ const instance_render = (dom_parent, dom_first) => {
 
 		try {
 			child_calls = (0, instance.icall.component)(
-				instance.icall.props || object_empty
+				instance.icall.props || Object_empty
 			);
 		}
 		catch (thrown) {
@@ -971,10 +967,12 @@ const hooks_unmount = slots => {
 			slot.deps = Array_empty;
 			break;
 		case HOOK.MAP:
-			hook_map_unmount(slot);
+			EXTENDED &&
+				hook_map_unmount(slot);
 			break;
 		case HOOK.SUB:
-			hooks_unmount(slot.slots);
+			EXTENDED &&
+				hooks_unmount(slot.slots);
 		default:
 	}
 }
