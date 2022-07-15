@@ -1,9 +1,9 @@
 'use strict';function aa(a){var b=0;return function(){return b<a.length?{done:!1,value:a[b++]}:{done:!0}}}function e(a){var b="undefined"!=typeof Symbol&&Symbol.iterator&&a[Symbol.iterator];return b?b.call(a):{next:aa(a)}}function g(a){if(!(a instanceof Array)){a=e(a);for(var b,c=[];!(b=a.next()).done;)c.push(b.value);a=c}return a}function h(){for(var a=Number(this),b=[],c=a;c<arguments.length;c++)b[c-a]=arguments[c];return b};/*
- lui.js web frame work 1.3.1
+ lui.js web frame work 1.3.2
  inspired by react and mithril
  L3P3.de 2022
 */
-(function(){var k=null,q=!k,t=k,u=0,v=0,w=0,z=q,A=[],D=[],E={},ba={},ca={},da=[],ea={},F=[],G=k,H=q,J=!q,fa=/[A-Z]/g,K=Array,ha=Object,ia=ha.assign,L=ha.keys,ja=document,ka=window,la=ka.performance||Date;function ma(a){a=a.s.A;return a===M?"list":a.name_||a.name||"?"}
+(function(){var k=null,q=!k,t=k,u=0,v=0,w=0,z=q,A=[],D=[],E={},ba={},ca={},da=[],F=[],ea={},G=k,H=q,J=!q,fa=/[A-Z]/g,K=Array,ha=Object,ia=ha.assign,L=ha.keys,ja=document,ka=window,la=ka.performance||Date;function ma(a){a=a.s.A;return a===M?"list":a.name_||a.name||"?"}
 function N(){var a=[],b=t,c=G;if(b){for(a.unshift("$"+(u-1));0!==b[0].j;)a.unshift(1===b[0].j?"hook_map["+("object"===typeof b[0].L?b[0].L.id:b[0].L)+"]":"hook_sub"),b=b[0].X;b=b[0].V}for(;b;)a.unshift(ma(b)+(c?":"+c:"")),c=b.T,b=b.K;return a.join("/")||"-"}function na(){console.log.apply(console,g(h.apply(0,arguments)))}function oa(a){var b=h.apply(1,arguments);na.apply(null,["lui "+N()+": "+a].concat(g(b)))}function O(a){throw Error("lui: "+a);}
 function pa(a){na("lui "+a+": error in callback")}function ra(a,b,c){try{return a.apply(null,g(b))}catch(d){throw pa(c),d;}}function sa(a,b){a===b||a&&b&&JSON.stringify(L(a))===JSON.stringify(L(b))||O("object keys mismatch")}
 function P(a,b,c){t||O("hook called outside of hook context");c&&(c.constructor!==K&&O("deps must be in an array"),0===c.length&&O("deps must not be empty"));b&&0!==t[0].j&&O("hook called outside of component rendering");a!==G&&u<t.length&&(t[u].j!==a&&O("inconsistent hook order"),t[u].h&&ua(t[u].h,c))}function Q(a,b){P(G,J,G);a!==R(a,a)&&O(b+" changed between renderings")}function ua(a,b){b?a.length!==b.length&&O("deps length changed"):0<a.length&&O("deps presence changed")}
