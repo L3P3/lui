@@ -306,7 +306,7 @@ Normally, lui controls the entire page. But it is also possible to dynamically l
 require.config({
     map: {
         '*': {
-            'lui': 'https://cdn.jsdelivr.net/gh/L3P3/lui@dist/lui.r.js'
+            'lui': 'https://cdn.jsdelivr.net/gh/L3P3/lui@v1.3.x/lui.r.js'
         }
     }
 });
