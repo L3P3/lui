@@ -36,7 +36,7 @@ export const EXTENDED = ${extended};
 async function build(prod, legacy, rjs, extended) {
 	flags_set(!prod, false, legacy, rjs, extended);
 
-	const file = `./dist/lui${
+	const filename = `lui${
 		extended ? 'x' : ''
 	}${
 		rjs ? '.r' : ''
@@ -45,8 +45,9 @@ async function build(prod, legacy, rjs, extended) {
 	}${
 		legacy ? '.legacy' : ''
 	}.js`;
+	const file = './dist/' + filename;
 
-	console.log((await exec(
+	const stderr = (await exec(
 		'google-closure-compiler --' +
 		[
 			'assume_function_wrapper',
@@ -69,14 +70,18 @@ async function build(prod, legacy, rjs, extended) {
 			'warning_level VERBOSE'
 		]
 		.join(' --')
-	))[2]);
+	))[2].trim();
+	if (stderr) {
+		console.log(stderr);
+		process.exit(1);
+	}
 	
 	const wrap_fn = legacy || rjs;
 	
 	const code_js = (
 		"'use strict';" +
 		(
-			fs.readFileSync(file, 'utf8')
+			fs.readFileSync(file, 'ascii')
 			.trim() + '%END%'
 		)
 		.replace('lui.js web frame work', 'lui.js web frame work ' + version)
@@ -89,7 +94,29 @@ async function build(prod, legacy, rjs, extended) {
 		//.split('\n').join('')
 	);
 
-	fs.writeFileSync(file, code_js, 'utf8');
+	fs.writeFileSync(file, code_js, 'ascii');
+
+	let size_before = parseInt(
+		(
+			await exec(`git cat-file -s origin/dist:${filename}`)
+		)[1]
+	);
+	if (isNaN(size_before)) size_before = 0;
+
+	let diff = String(code_js.length - size_before);
+	if (diff === '0') diff = '';
+	else {
+		if (!diff.startsWith('-')) diff = ' +' + diff;
+		else diff = ' ' + diff;
+	}
+
+	console.log(`${
+		filename.padEnd(14, ' ')
+	} ${
+		String(code_js.length).padStart(5, ' ')
+	}${
+		diff
+	}`);
 }
 
 (async () => {
@@ -104,7 +131,8 @@ if(
 }
 
 await exec('mkdir -p ./dist');
-await exec('rm ./dist/lui*');
+//await exec('rm ./dist/*.old.js;rename.ul .js .old.js ./dist/*.js');
+await exec('rm ./dist/*');
 
 console.log(`build ${version}...`);
 
@@ -118,22 +146,20 @@ for (const extended of [false, true]) {
 	await build(true, true, false, extended);
 }
 
-console.log(`raw size: ${
-	fs.statSync('./dist/lui.js').size
-} bytes`);
-
 if (
 	flags.includes('d') &&
 	hostname() === 'l3p3-rk5'
 ) {
 	try {
 		console.log('compress...');
-	
+
 		console.log((await exec('zopfli --i1000 ./dist/lui*'))[2]);
-	
-		console.log(`compressed size: ${
+
+		console.log(`compression: ${
+			fs.statSync('./dist/lui.js').size
+		} -> ${
 			fs.statSync('./dist/lui.js.gz').size
-		} bytes`);
+		}`);
 	}
 	catch (error) {}
 
