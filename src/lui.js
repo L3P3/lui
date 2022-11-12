@@ -82,7 +82,7 @@ var TYPE_COMPONENT;
 /**
 	@typedef {{
 		component: TYPE_COMPONENT,
-		props: ?TYPE_PROPS
+		props: ?TYPE_PROPS,
 	}}
 */
 var TYPE_INSTANCE_CALL;
@@ -244,6 +244,22 @@ const Object_keys = /** @type {function(!Object):!Array<string>} */ (
 	)
 	:	Object_.keys
 );
+const Object_freeze = /** @type {function(!Object):!Object} */ (
+	DEBUG && !RJS && !LEGACY
+	?	Object_.freeze
+	: DEBUG
+	?	Object_.freeze || (object => object)
+	:	null_
+);
+const Object_isFrozen = /** @type {function(*):boolean} */ (
+	DEBUG && !RJS && !LEGACY
+	?	Object_.isFrozen
+	: DEBUG
+	?	Object_.isFrozen || (value =>
+			value === null || typeof value !== 'object'
+		)
+	:	null_
+);
 const setTimeout_ = setTimeout;
 const clearTimeout_ = clearTimeout;
 const document_ = document;
@@ -256,6 +272,26 @@ const Date_ = (
 
 
 /// DEBUGGING ///
+
+/**
+	checks model state, prevents changes
+	@type {function(*)}
+	@noinline
+*/
+const state_check = state => (
+	state === undefined_ &&
+		error('model state must not contain undefined, missing return?'),
+	Object_isFrozen(state) || (
+		state = /** @type {!Object} */ (state),
+		Object_freeze(state).constructor !== Array_&& (
+			state.constructor !== Object_ &&
+				error('model state must not contain shit like ' + state.constructor.name),
+			state = Object_.values(state)
+		),
+		state = /** @type {!Array} */ (state),
+		state.forEach(state_check)
+	)
+)
 
 /**
 	tries getting a component name
@@ -350,6 +386,7 @@ const error = message => {
 */
 const callback_error = stack => {
 	log_raw('lui ' + stack + ': error in callback');
+	current = null_;
 };
 
 /**
@@ -1878,11 +1915,12 @@ export const hook_object_changes = object => {
 export const hook_model = mutations => {
 	DEBUG && (
 		assert_hook(HOOK.MODEL, false_, null_),
-		typeof mutations !== 'object' &&
+		(typeof mutations !== 'object' || !mutations) &&
 			error('mutations object required'),
 		typeof mutations['init'] !== 'function' &&
 			error('init mutation required for initial value')
 	);
+	mutations = /** @type{!Object} */ (mutations);
 
 	if (current_slots_index < current_slots.length)
 		return /** @type {!Array} */ (current_slots[current_slots_index++].hvalue);
@@ -1890,9 +1928,13 @@ export const hook_model = mutations => {
 	const current_slots_ = /** @type {TYPE_SLOTS} */ (current_slots);
 	const stack = DEBUG ? stack_get() : '';
 	const slot = [
-		(0, mutations['init'])(null_),
+		DEBUG
+		?	callback_wrap(mutations['init'], [null_], stack + ' -> #init')
+		:	(0, mutations['init'])(null_),
 		{},
 	];
+	DEBUG &&
+		callback_wrap(state_check, [slot[0]], stack + ' -> #init');
 	for (const key of Object_keys(mutations)) {
 		slot[1][key] = payload => {
 			VERBOSE && log('model ' + instance_name_get(instance_current_get(current_slots_)) + ' -> #' + key, payload);
@@ -1902,6 +1944,8 @@ export const hook_model = mutations => {
 				:	(0, mutations[key])(slot[0], payload)
 			);
 			slot[0] !== value && (
+				DEBUG &&
+					callback_wrap(state_check, [value], stack + ' -> #' + key),
 				slot[0] = value,
 				dirtify(current_slots_)
 			)
