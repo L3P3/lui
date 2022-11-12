@@ -81,7 +81,7 @@ var TYPE_COMPONENT;
 
 /**
 	@typedef {{
-		component: TYPE_COMPONENT,
+		component_: TYPE_COMPONENT,
 		props: ?TYPE_PROPS,
 	}}
 */
@@ -295,15 +295,15 @@ const state_check = state => (
 
 /**
 	tries getting a component name
-	@param {TYPE_INSTANCE} component
+	@param {TYPE_INSTANCE} component_
 	@return {string}
 	@noinline
 */
-const instance_name_get = ({icall: {component}}) => (
-	component === object_comp_get
+const instance_name_get = ({icall: {component_}}) => (
+	component_ === object_comp_get
 	?	'list'
-	:	component['name_'] ||
-		component.name ||
+	:	component_['name_'] ||
+		component_.name ||
 		'?'
 )
 
@@ -423,11 +423,11 @@ const assert_keys = (a, b) => {
 /**
 	ensures hook rules
 	@param {?HOOK} type
-	@param {boolean} component only allowed directly in components
+	@param {boolean} component_ only allowed directly in components
 	@param {?Array|void} deps
 	@noinline
 */
-const assert_hook = (type, component, deps) => {
+const assert_hook = (type, component_, deps) => {
 	current_slots ||
 		error('hook called outside of hook context');
 
@@ -440,7 +440,7 @@ const assert_hook = (type, component, deps) => {
 
 	current_slots = /** @type {!Array<TYPE_SLOT>} */ (current_slots);
 
-	component &&
+	component_ &&
 	current_slots[0].htype !== HOOK.HEAD_INSTANCE &&
 		error('hook called outside of component rendering');
 
@@ -597,14 +597,14 @@ const instance_render = (dom_parent, dom_first) => {
 	instance.dirty = false_;
 
 	// not node_map?
-	if (instance.icall.component !== object_comp_get) {
+	if (instance.icall.component_ !== object_comp_get) {
 		/**
 			@type {Array<TYPE_INSTANCE_CALL_OPTIONAL>}
 		*/
 		let child_calls = null_;
 
 		try {
-			child_calls = (0, instance.icall.component)(
+			child_calls = (0, instance.icall.component_)(
 				instance.icall.props || Object_empty
 			);
 		}
@@ -670,7 +670,7 @@ const instance_render = (dom_parent, dom_first) => {
 
 					DEBUG &&
 					child &&
-					child.icall.component !== child_call.component &&
+					child.icall.component_ !== child_call.component_ &&
 						error('child component changed at ' + childs_index);
 
 					if (
@@ -761,7 +761,7 @@ const instance_render = (dom_parent, dom_first) => {
 	// node_map?
 	else {
 		const {
-			component,
+			component_,
 			list_data,
 			props,
 		} = instance.icall.props;
@@ -775,7 +775,7 @@ const instance_render = (dom_parent, dom_first) => {
 				error('list_data must be an array'),
 			typeof props !== 'object' &&
 				error('props must be an object'),
-			assert_hook_equal(component, 'item component'),
+			assert_hook_equal(component_, 'item component'),
 			assert_hook_equal(props && Object_keys(props).join(','), 'common props')
 		);
 
@@ -858,7 +858,7 @@ const instance_render = (dom_parent, dom_first) => {
 				(
 					state.item_map[key] = current = child = {
 						icall: {
-							component,
+							component_,
 							props: (
 								Object_assign({
 									I: items_map[key],
@@ -2079,21 +2079,21 @@ export const hook_dom = (descriptor, attributes) => (
 
 /**
 	use a component with props and childs
-	@param {TYPE_COMPONENT} component
+	@param {TYPE_COMPONENT} component_
 	@param {?TYPE_PROPS=} props
 	@param {Array<TYPE_INSTANCE_CALL_OPTIONAL>=} childs
 	@return {TYPE_INSTANCE_CALL}
 */
-export const node = (component, props, childs) => (
+export const node = (component_, props, childs) => (
 	DEBUG && (
-		typeof component === 'string' &&
+		typeof component_ === 'string' &&
 			error('component expected, use node_dom instead'),
 		childs &&
 		childs.constructor !== Array_ &&
 			error('invalid childs type')
 	),
 	{
-		component,
+		component_,
 		props: (
 			props
 			?	(
@@ -2115,16 +2115,16 @@ export const node = (component, props, childs) => (
 
 /**
 	create/use a component with props for each list item
-	@param {TYPE_COMPONENT} component
+	@param {TYPE_COMPONENT} component_
 	@param {TYPE_LIST} list_data
 	@param {TYPE_PROPS=} props
 	@return {TYPE_INSTANCE_CALL}
 */
-export const node_map = (component, list_data, props) => (
+export const node_map = (component_, list_data, props) => (
 	node(
 		/** @type {TYPE_COMPONENT} */ (object_comp_get),
 		{
-			component,
+			component_,
 			list_data,
 			props: props || null_
 		}
@@ -2166,7 +2166,7 @@ export const init = (root, dom_c) => {
 	/**
 		@type {TYPE_COMPONENT}
 	*/
-	const component = () => (
+	const component_ = () => (
 		DEBUG && (
 			(
 				!(
@@ -2197,13 +2197,13 @@ export const init = (root, dom_c) => {
 	);
 
 	DEBUG && (
-		component['name_'] = '$root'
+		component_['name_'] = '$root'
 	);
 
 	(
 		current = {
 			icall: {
-				component,
+				component_,
 				props: null_,
 			},
 			props_comp: null_,

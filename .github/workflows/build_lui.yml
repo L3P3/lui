@@ -29,7 +29,9 @@ jobs:
         run: |
           sudo npm i -g google-closure-compiler
       - name: Build lui
-        run: npm run-script build
+        run: |
+          git fetch origin dist
+          npm run-script build
       - name: Commit artifacts and purge cache
         if: github.ref == 'refs/heads/master'
         run: |
@@ -38,7 +40,6 @@ jobs:
           mv dist /tmp/lui-dist
           git tag -f "v$LUIVERSION"
           git push -f --tags
-          git fetch
           git checkout dist
           mv /tmp/lui-dist/* ./
           git config user.name github-actions
