@@ -808,7 +808,7 @@ const instance_render = (dom_parent, dom_first) => {
 					state.props_prev
 				)
 			);
-	
+
 			VERBOSE &&
 			props &&
 			props_changed &&
@@ -1274,7 +1274,7 @@ export const hook_effect = (effect, deps) => {
 	current_slots[current_slots_index].unmount &&
 	current_slots[current_slots_index].unmount.then &&
 		error('effect function must be synchronous');
-	
+
 	++current_slots_index;
 }
 
@@ -1728,7 +1728,7 @@ export const hook_map = (getter, list_data, deps) => {
 	DEBUG &&
 	list_data.length === 0 &&
 		hook_static();
-	
+
 	// initial?
 	if (!slot) {
 		current_slots[current_slots_index_before - 1] = slot =
@@ -1760,7 +1760,7 @@ export const hook_map = (getter, list_data, deps) => {
 					?	items_data_map[key] !== undefined_
 					:	key in items_data_map
 				) continue;
-	
+
 				VERBOSE && log('map item remove: ' + key);
 				hooks_unmount(slot.items_map[key]);
 				delete slot.items_map[key];
@@ -2009,15 +2009,14 @@ const hook_dom_common = attributes => {
 				case (LEGACY ? 'D' : 68):
 				case (LEGACY ? 'S' : 83):
 					continue;
-				default:
-					DEBUG &&
-					key.charCodeAt(0) < 97 &&
-						error('invalid prop: ' + key);
-
-					VERBOSE && log('dom prop ' + key, attributes[key]);
-
-					dom[key] = attributes[key];
 			}
+			DEBUG &&
+			key.charCodeAt(0) < 97 &&
+				error('invalid prop: ' + key);
+
+			VERBOSE && log('dom prop ' + key, attributes[key]);
+
+			dom[key] = attributes[key];
 		}
 
 		DEBUG &&
@@ -2316,7 +2315,7 @@ const render = () => {
 						dom_parent,
 						dom_after
 					);
-					
+
 					if (instance.dom_first !== dom_first)//TODO it better
 					while (
 						!(
@@ -2430,10 +2429,10 @@ const dom_get = descriptor => {
 		const index_sqb = descriptor.indexOf('[');
 		const tag = (
 			index_sqb < 0
-			?	descriptor.substr(0)
-			:	descriptor.substr(0, index_sqb)
+			?	descriptor
+			:	descriptor.substring(0, index_sqb)
 		);
-	
+
 		DEBUG && (
 			tag.length === 0 ||
 			tag !== tag.toLowerCase() ||
@@ -2442,16 +2441,16 @@ const dom_get = descriptor => {
 			tag.includes('.')
 		) &&
 			error('dom: invalid tag');
-	
+
 		dom_cache[descriptor] = dom = /** @type {HTMLElement} */ (
 			document_.createElement(tag)
 		);
-	
+
 		if (index_sqb > 0) {
 			DEBUG &&
 			!descriptor.endsWith(']') &&
 				error('dom: ] missing');
-	
+
 			for (
 				const sqbi of
 				descriptor
@@ -2464,26 +2463,26 @@ const dom_get = descriptor => {
 				DEBUG &&
 				!sqbi &&
 					error('dom: empty attribute');
-	
+
 				DEBUG &&
 				(
 					sqbi.includes('[') ||
 					sqbi.includes(']')
 				) &&
 					error('dom: attributes screwed up');
-	
+
 				const eqi = sqbi.indexOf('=');
-	
+
 				DEBUG &&
 				sqbi.includes(' ') && (
 					eqi < 0 ||
 					sqbi.indexOf(' ') < eqi
 				) &&
 					error('dom: space in attribute name');
-	
+
 				eqi > 0
 				?	dom[
-						sqbi.substr(0, eqi)
+						sqbi.substring(0, eqi)
 					] =
 						sqbi.substr(eqi + 1)
 				:	dom[sqbi] = true_;
@@ -2608,6 +2607,45 @@ if (LEGACY || RJS) {
 		return result;
 	}),
 
+	Array_prototype['find'] =
+	/**
+	 * @type {function(this:Array, function(*, number):boolean):*}
+	*/
+	(function(callback) {
+		var index = this.findIndex(callback);
+		if (index >= 0) {
+			return this[index];
+		}
+	}),
+
+	Array_prototype['findIndex'] =
+	Array_prototype['forEach'] =
+	/**
+		@type {function(this:Array, function(*, number):boolean):number}
+	*/
+	(function(callback) {
+		for (
+			var length = this.length,
+				index = 0;
+			index < length;
+			++index
+		) {
+			if (callback(this[index], index)) {
+				return index;
+			}
+		}
+		return -1;
+	}),
+
+	Array_prototype['includes'] =
+	String_prototype['includes'] =
+	/**
+		@type {function(this:(Array|String), *):boolean}
+	*/
+	(function(value) {
+		return this.indexOf(value) >= 0;
+	}),
+
 	Array_prototype['indexOf'] =
 	/**
 		@type {function(this:Array, *, number=):number}
@@ -2641,6 +2679,14 @@ if (LEGACY || RJS) {
 			result[index] = callback(this[index], index);
 		}
 		return result;
+	}),
+
+	Array_prototype['some'] =
+	/**
+		@type {function(this:Array, function(*, number):boolean):boolean}
+	*/
+	(function(callback) {
+		return this.findIndex(callback) >= 0;
 	}),
 
 
