@@ -1936,12 +1936,12 @@ export const hook_model = mutations => {
 	DEBUG &&
 		callback_wrap(state_check, [slot[0]], stack + ' -> #init');
 	for (const key of Object_keys(mutations)) {
-		slot[1][key] = payload => {
-			VERBOSE && log('model ' + instance_name_get(instance_current_get(current_slots_)) + ' -> #' + key, payload);
+		slot[1][key] = (...args) => {
+			VERBOSE && log('model ' + instance_name_get(instance_current_get(current_slots_)) + ' -> #' + key, args);
 			const value = (
 				DEBUG
-				?	callback_wrap(mutations[key], [slot[0], payload], stack + ' -> #' + key)
-				:	(0, mutations[key])(slot[0], payload)
+				?	callback_wrap(mutations[key], [slot[0], ...args], stack + ' -> #' + key)
+				:	(0, mutations[key])(slot[0], ...args)
 			);
 			slot[0] !== value && (
 				DEBUG &&
