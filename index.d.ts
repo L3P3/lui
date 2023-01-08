@@ -4,6 +4,12 @@
 	@author L3P3 <dev@l3p3.de>
 */
 
+/*
+	Obtain the parameters of a function type in a tuple, skipping the first parameter
+	source: https://stackoverflow.com/revisions/67605309/1
+*/
+type ParametersExceptFirst<F> = F extends (arg0: any, ...rest: infer R) => any ? R : never;
+
 declare namespace lui {
 	/**
 		Data mapped to a child instance's `I` prop
@@ -122,9 +128,9 @@ declare namespace lui {
 	*/
 	export function hook_model<T, U extends {
 		init: () => T,
-		[key: string]: (current?: T, arg?: any) => T
+		[key: string]: (current?: T, ...args: any) => T
 	}>(mutations: U): [value: T, methods: {
-		[method in keyof U]: (arg?: Parameters<U[method]>[1]) => void
+		[method in keyof U]: (...args: ParametersExceptFirst<U[method]>) => void
 	}];
 
 	/**
