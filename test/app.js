@@ -1,41 +1,39 @@
 import {
-	init,
 	hook_dom,
 	hook_effect,
 	hook_model,
 	hook_state,
 	hook_static,
 	hook_transition,
+	init,
 	node_dom,
-	node_map
+	node_map,
 } from '../src/lui.js';
 
 /// BAR ///
 
 function Bar({
-	I: color
+	I: color,
 }) {
 	const [expanded, expanded_set] = hook_state(false);
 
-	hook_dom(
-		'div',
-		{
-			S: {
-				width: hook_transition(
-					expanded ? 500 : 50,
-					1e3
-				) + 'px',
-				height: '10px',
-				background: color
-			},
-			onmouseover: hook_static(() => {
-				expanded_set(true);
-			}),
-			onmouseout: hook_static(() => {
-				expanded_set(false);
-			})
-		}
-	);
+	hook_dom('div', {
+		S: {
+			width: hook_transition(
+				expanded ? 500 : 50,
+				1e3
+			) + 'px',
+			height: '10px',
+			background: color,
+		},
+		onmouseover: hook_static(() => {
+			expanded_set(true);
+		}),
+		onmouseout: hook_static(() => {
+			expanded_set(false);
+		})
+	});
+
 	return null;
 }
 
@@ -83,49 +81,35 @@ init(() => {
 
 	const [red, red_set] = hook_state(false);
 
-	return [
-		{
-			F: {
-				dark,
-				red
-			}
+	return [{
+		F: {
+			dark,
+			red,
 		},
-		[
-			node_dom('h1[innerText=Hallo, Welt!]'),
-			node_dom(
-				'p',
-				{
-					innerText: `Dies ist eine ${
-						dark ? 'dunk' : 'hel'
-					}le Beispielseite!`
-				}
-			),
-			node_dom(
-				'p',
-				null,
-				[
-					node_dom(
-						'button[title=Ein Knopf zum Drücken]',
-						{
-							innerText: `${
-								dark ? 'Hel' : 'Dunke'
-							}l machen!`,
-
-							onclick: dark_m.toggle,
-							onmouseover: hook_static(() => {
-								red_set(true);
-							}),
-							onmouseout: hook_static(() => {
-								red_set(false);
-							})
-						}
-					)
-				]
-			),
-			node_map(
-				Bar,
-				dark ? colors : colors_reversed
-			)
-		]
-	];
+	}, [
+		node_dom('h1[innerText=Hallo, Welt!]'),
+		node_dom('p', {
+			innerText: `Dies ist eine ${
+				dark ? 'dunk' : 'hel'
+			}le Beispielseite!`,
+		}),
+		node_dom('p', null, [
+			node_dom('button[title=Ein Knopf zum Drücken]', {
+				innerText: `${
+					dark ? 'Hel' : 'Dunke'
+				}l machen!`,
+				onclick: dark_m.toggle,
+				onmouseover: hook_static(() => {
+					red_set(true);
+				}),
+				onmouseout: hook_static(() => {
+					red_set(false);
+				}),
+			}),
+		]),
+		node_map(
+			Bar,
+			dark ? colors : colors_reversed
+		),
+	]];
 });

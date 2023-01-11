@@ -26,27 +26,25 @@ const actions = {
 const ListItem = ({
 	I,
 }) => (
-	hook_dom('p', {innerText: I}), null
+	hook_dom('p', {innerText: I}),
+	null
 	//[node_dom('p', {innerText: I})]
 );
 
 init(() => {
 	const [list, {swap}] = hook_model(actions);
 
-	return [
-		null,
-		[
-			hook_memo(() => (
-				node_dom('div', null, [
-					node_dom('button[innerText=swap]', {
-						onclick: swap,
-					}),
-				])
-			)),
-			node_map(
-				ListItem,
-				list
-			),
-		]
-	];
+	return [null, [
+		hook_memo(() => (
+			node_dom('div', null, [
+				node_dom('button[innerText=swap]', {
+					onclick: swap,
+				}),
+			])
+		)),
+		node_map(
+			ListItem,
+			list
+		),
+	]];
 });

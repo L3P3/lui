@@ -1,5 +1,4 @@
 import {
-	init,
 	hook_effect,
 	hook_map,
 	hook_model,
@@ -8,8 +7,9 @@ import {
 	hook_state,
 	hook_static,
 	hook_sub,
+	init,
 	node_dom,
-	now
+	now,
 } from '../src/lui.js';
 
 const hook_first = () => {
@@ -50,7 +50,7 @@ init(() => {
 	return [null, [
 		node_dom('h1', {
 			innerText: hook_sub(getter, [foo]),
-			onclick: foo_toggle
+			onclick: foo_toggle,
 		}),
 		node_dom('p', {
 			innerText: 'hook_effect (see log)',
@@ -61,7 +61,7 @@ init(() => {
 					hook_effect(effect_life);
 				}));
 				return foo ? now() : 'Zeit?';
-			}))
+			})),
 		}),
 		node_dom('p', {
 			innerText: 'hook_map',
@@ -81,7 +81,7 @@ init(() => {
 					[foo]
 				);
 				return results.join(', ');
-			}))
+			})),
 		}),
 		node_dom('p', {
 			innerText: 'hook_rerender',
@@ -89,19 +89,19 @@ init(() => {
 				//updating from inside
 				foo && hook_rerender();
 				return foo ? now() : 'Zeit?';
-			}))
+			})),
 		}),
 		node_dom('p', {
 			innerText: 'hook_first',
 			onclick: hook_static(() => getter_set(() => {
 				return hook_first() ? 'Erstens' : 'Nicht erstens';
-			}))
+			})),
 		}),
 		node_dom('p', {
 			innerText: 'hook_static, hook_prev',
 			onclick: hook_static(() => getter_set(foo => {
 				return `Initial: ${hook_static(foo)} Vorher: ${hook_prev(foo)} Jetzt: ${foo}`;
-			}))
-		})
+			})),
+		}),
 	]];
 });

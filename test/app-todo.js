@@ -16,7 +16,7 @@ let todo_id_counter = 0;
 const todos_mutations = {
 	init: () => {
 		const list = JSON.parse(
-			window.localStorage !== undefined &&
+			window.localStorage != null &&
 			localStorage.getItem('todos') ||
 			'[]'
 		);
@@ -24,7 +24,7 @@ const todos_mutations = {
 			(n, item) => (
 				item.id > n
 				?	item.id
-				: n
+				:	n
 			),
 			0
 		);
@@ -63,11 +63,9 @@ const TodoForm = ({
 		node_dom('input[name=todo_new]', {
 			value,
 
-			onkeyup: hook_static(
-				(event) => {
-					value_set(event.target.value);
-				}
-			),
+			onkeyup: hook_static(event => {
+				value_set(event.target.value);
+			}),
 		}),
 		node_dom('button[innerText=add]', {
 			disabled: !value,
@@ -75,12 +73,10 @@ const TodoForm = ({
 		node_dom('button[innerText=reset]', {
 			disabled: todo_list_empty,
 
-			onclick: hook_static(
-				() => {
-					todo_cmd.reset();
-					return false;
-				}
-			),
+			onclick: hook_static(() => (
+				todo_cmd.reset(),
+				false
+			)),
 		}),
 	];
 };
@@ -94,11 +90,9 @@ const TodoListItem = ({
 			innerText: item.text,
 		}),
 		node_dom('button[innerText=remove]', {
-			onclick: hook_static(
-				() => {
-					todo_cmd.rem(item.id);
-				}
-			),
+			onclick: hook_static(() => {
+				todo_cmd.rem(item.id);
+			}),
 		}),
 	]
 );
@@ -119,13 +113,10 @@ init(() => {
 
 	return [null, [
 		node_dom('h1[innerText=TODO list in lui]'),
-		node(
-			TodoForm,
-			{
-				todo_list_empty: todo_list.length === 0,
-				todo_cmd,
-			}
-		),
+		node(TodoForm, {
+			todo_list_empty: todo_list.length === 0,
+			todo_cmd,
+		}),
 		node_dom('hr'),
 		todo_list.length === 0 &&
 		node_dom('p[innerHTML=<i>nothing there</i>]'),

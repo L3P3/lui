@@ -1,9 +1,9 @@
 import {
 	hook_model,
 	hook_state,
+	init,
 	node,
 	node_dom,
-	init,
 } from '../src/lui.js';
 
 const cases = {

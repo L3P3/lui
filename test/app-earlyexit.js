@@ -1,44 +1,35 @@
 import {
-	init,
 	hook_assert,
 	hook_state,
+	init,
 	node,
-	node_dom
+	node_dom,
 } from '../src/lui.js';
 
 function inner({
-	on
+	on,
 }) {
 	//if (!on) return null;
 	hook_assert(on);
 
 	return [
 		null,
-		node_dom('p[innerText=Test]')
+		node_dom('p[innerText=Test]'),
 	];
 }
 
 init(() => {
 	const [on, on_set] = hook_state(false);
 
-	return [
-		null,
-		[
-			node_dom('h1[innerText=Hallo, Welt!]'),
-			node(inner, {on}),
-			node_dom(
-				'p', null,
-				[
-					node_dom(
-						'button[innerText=Toggle]',
-						{
-							onclick: () => {
-								on_set(!on);
-							}
-						}
-					)
-				]
-			)
-		]
-	];
+	return [null, [
+		node_dom('h1[innerText=Hallo, Welt!]'),
+		node(inner, {on}),
+		node_dom('p', null, [
+			node_dom('button[innerText=Toggle]', {
+				onclick: () => {
+					on_set(!on);
+				},
+			}),
+		]),
+	]];
 });

@@ -75,9 +75,9 @@ async function build(prod, legacy, rjs, extended) {
 		console.log(stderr);
 		process.exit(1);
 	}
-	
+
 	const wrap_fn = legacy || rjs;
-	
+
 	const code_js = (
 		"'use strict';" +
 		(

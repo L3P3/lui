@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
 	<head>
 		<meta charset=UTF-8>
@@ -11,7 +11,7 @@
 			body {
 				margin: 0;
 				height: 100%;
-				
+
 				font-family: sans-serif;
 				background: #333;
 				color: #ddd;
@@ -73,20 +73,20 @@
 				node,
 				node_dom,
 			} = lui;
-			
+
 			const f_false = () => false;
-			
+
 			const ref_effect_destroy = R => {
 				R(null);
 			}
 			const ref_effect = (R, ref) => {
 				if (!R) return;
-				
+
 				R(ref);
-				
+
 				return ref_effect_destroy;
 			}
-			
+
 			const hook_cursor_model = {
 				init: f_false,
 				handler: (state, event) => {
@@ -107,7 +107,7 @@
 			const hook_cursor = () => (
 				hook_model(hook_cursor_model)
 			)
-			
+
 			const hook_toggle_model = {
 				init: f_false,
 				toggle: state => !state,
@@ -116,14 +116,14 @@
 				const [value, {toggle}] = hook_model(hook_toggle_model);
 				return [value, toggle];
 			}
-			
+
 			// SIDEBAR
 			const sidebar_ref_memo = opened_set => ({
 				open: () => {
 					opened_set(true);
 				},
 			})
-			
+
 			const Sidebar = ({
 				C,
 				R,
@@ -135,7 +135,7 @@
 					opened ? 1 : 0,
 					delay
 				);
-				
+
 				hook_effect(ref_effect, [
 					R,
 					hook_memo(
@@ -143,9 +143,9 @@
 						[opened_set]
 					),
 				]);
-				
+
 				if (opened_ratio === 0) return null;
-				
+
 				return [
 					node_dom('div[className=sd]', {
 						S: {
@@ -164,7 +164,7 @@
 					}),
 				];
 			}
-			
+
 			// SIDEBAR BUTTON
 			const SidebarButton = ({
 				action,
@@ -198,7 +198,7 @@
 				});
 				return null;
 			}
-			
+
 			// SIDEBAR (+CONTENT)
 			const MySidebar = ({
 				R,
@@ -233,13 +233,13 @@
 					]),
 				];
 			};
-			
+
 			// ROOT
 			init(() => {
 				const [sidebar, sidebar_set] = hook_state(null);
 				const [width, width_set] = hook_state(300);
 				const [delay, delay_set] = hook_state(100);
-				
+
 				return [null, [
 					node_dom('h1[innerText=Moin!]'),
 					node_dom('table', null, [

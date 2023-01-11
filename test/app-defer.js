@@ -3,8 +3,8 @@ import {
 	defer_end,
 	hook_state,
 	hook_static,
+	init,
 	node_dom,
-	init
 } from '../src/lui.js';
 
 init(() => {
@@ -16,14 +16,14 @@ init(() => {
 
 	return [null, [
 		node_dom('h1', {
-			innerText: a + b + c
+			innerText: a + b + c,
 		}),
 		node_dom('p[innerText=ABC, sync]', hook_static({
 			onclick: () => {
 				a_set('A');
 				b_set('B');
 				c_set('C');
-			}
+			},
 		})),
 		node_dom('p[innerText=abc, defer]', hook_static({
 			onclick: () => {
@@ -31,7 +31,7 @@ init(() => {
 				a_set('a');
 				b_set('b');
 				c_set('c');
-			}
+			},
 		})),
 		node_dom('p[innerText=abc, defer+end]', hook_static({
 			onclick: () => {
@@ -40,7 +40,7 @@ init(() => {
 				b_set('b');
 				c_set('c');
 				defer_end();
-			}
-		}))
+			},
+		})),
 	]];
 });

@@ -12,6 +12,7 @@ let counter = 0;
 
 init(() => {
 	hook_rerender();
+
 	++counter;
 	hook_effect(() => {
 		setInterval(() => {
@@ -19,6 +20,7 @@ init(() => {
 			counter = 0;
 		}, 1e3);
 	});
+
 	return [null, [
 		node(Child),
 	]];
@@ -26,10 +28,12 @@ init(() => {
 
 function Child() {
 	const [_, state_set] = hook_state(0);
+
 	hook_effect(() => {
 		setTimeout(() => {
 			state_set(1);
 		}, 0);
 	});
+
 	return null;
 }
