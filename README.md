@@ -288,7 +288,7 @@ function someEvent(value) {
 }
 ```
 
-When `someEvent` is called, lui will rerender only once instead of twice. The rendering will happen at the next frame. When you need it to happen instantly, call `defer_end` after your state mutations.
+When `someEvent` is called, lui will rerender only once instead of twice. The rendering will happen at the next frame. When you need it to happen instantly, call `defer_end` after your state mutations. See [React's article](https://react.dev/learn/queueing-a-series-of-state-updates) about merged/batched updates.
 
 ### Full API
 
