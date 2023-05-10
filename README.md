@@ -65,7 +65,7 @@ If you want to bundle lui itself with your app, you can access these functions b
 
 ### Components
 
-A component is a function which takes props and returns a list of its child components. By recursion, you can build up a dom tree in a very flexible way. I also recommend reading [React's explaination](https://react.dev/learn/passing-props-to-a-component).
+A component is a function which takes props and returns a list of its child components. By recursion, you can build up a dom tree in a very flexible way. I also recommend reading [React's explaination](https://react.dev/learn/your-first-component).
 
 Here is a very simple component. It takes two props (one of which is optional) and it contains just one node.
 
