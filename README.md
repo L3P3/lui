@@ -5,7 +5,7 @@ When I was introduced to [React](https://github.com/facebook/react), I liked it 
 ## Features
 
 - Less than **5k** code size (<3k compressed)
-- **Stateful components** using [hooks](https://reactjs.org/docs/hooks-intro.html)
+- **Stateful components** using [hooks](https://react.dev/reference/react)
 - Optional **development mode**
 - CSS-less **Animations** possible
 - **Fast and efficient**
@@ -65,7 +65,7 @@ If you want to bundle lui itself with your app, you can access these functions b
 
 ### Components
 
-A component is a function which takes props and returns a list of its child components. By recursion, you can build up a dom tree in a very flexible way. I also recommend reading [React's explaination](https://reactjs.org/docs/components-and-props.html).
+A component is a function which takes props and returns a list of its child components. By recursion, you can build up a dom tree in a very flexible way. I also recommend reading [React's explaination](https://react.dev/learn/passing-props-to-a-component).
 
 Here is a very simple component. It takes two props (one of which is optional) and it contains just one node.
 
@@ -153,7 +153,7 @@ When loading the [RequireJS variant](#include-lui-via-requirejs), you need to sp
 
 ### JSX
 
-If you are building your application code with [JSX](https://reactjs.org/docs/introducing-jsx.html) support, you _could_ theoretically write components like this:
+If you are building your application code with [JSX](https://react.dev/learn/writing-markup-with-jsx) support, you _could_ theoretically write components like this:
 
 ```js
 function YellowText({
@@ -179,7 +179,7 @@ Using any hook in a **callback** is probably a very bad idea.
 
 ### Comparision with React's Hooks
 
-I highly recommend [React's documentation about hooks](https://reactjs.org/docs/hooks-intro.html) since their concept is very similar.
+I highly recommend [React's documentation about hooks](https://react.dev/reference/react) since their concept is very similar.
 
 But while some hooks also exist in React, some do not. And on the other hand, I never used some hooks so I did not implement them. Please note that there are differences in behaviour. For example, in lui deps actually _are_ passed as arguments while in React, they are not.
 
@@ -187,20 +187,28 @@ lui | React
 --- | ---
 `hook_assert` | -
 `hook_async` | -
-`hook_callback` | [useCallback](https://reactjs.org/docs/hooks-reference.html#usecallback)
+`hook_callback` | [useCallback](https://react.dev/reference/react/useCallback)
 `hook_delay` | -
 `hook_dom` | -
-`hook_effect` | [useEffect](https://reactjs.org/docs/hooks-reference.html#useeffect)
+`hook_effect` | [useEffect](https://react.dev/reference/react/useEffect)
 `hook_map` | -
-`hook_memo` | [useMemo](https://reactjs.org/docs/hooks-reference.html#usememo)
-`hook_model` | [useReducer](https://reactjs.org/docs/hooks-reference.html#usereducer)
+`hook_memo` | [useMemo](https://react.dev/reference/react/useMemo)
+`hook_model` | [useReducer](https://react.dev/reference/react/useReducer)
 `hook_object_changes` | -
 `hook_prev` | -
 `hook_rerender` | -
-`hook_state` | [useState](https://reactjs.org/docs/hooks-reference.html#usestate)
-`hook_static` | [useRef](https://reactjs.org/docs/hooks-reference.html#useref)
+`hook_state` | [useState](https://react.dev/reference/react/useState)
+`hook_static` | [useRef](https://react.dev/reference/react/useRef)
 `hook_sub` | -
 `hook_transition` | -
+
+### State machine
+
+For more complex component/app states than simple primitives like `number` or `boolean`, I highly recommend to use a model, together with transformations. If you already know Redux, then yes, it is just like Redux. If not, [see here](https://redux.js.org/introduction/core-concepts).
+
+To have a state machine in lui, use `hook_model`. To this hook, you pass a set of transformation functions. All of them get the current state and return the new state, no modifications of the current state are allowed in order to allow for efficient change detection. Keep in mind that these transformations must be [pure functions](https://en.wikipedia.org/wiki/Pure_function), so no side effects are allowed. Their only effects/changes appear in their return value!
+
+For examples, look into the examples or into [this nice app](https://github.com/LFF5644/site-Wecker/blob/master/app.js#L51).
 
 ### Callbacks
 
@@ -283,7 +291,7 @@ Function | Description | V
 `init(Body)` | This mounts the body once, you give it the so-to-say body component. But unlinke actual components, you return the props for the body element and its content. So `Body` looks like this: `()=>[body_props{}, body_content: node[]]` | C
 `node(Component, props{}, childs[]):node` | This is how you add child components. If the added component accepts childs (`C` prop), you can pass that as the third argument as an array of nodes. | C
 `node_dom(descriptor', attrs{}, childs[]):node` | When you want to add dom components, use this function. It is very similar to `node` but needs a descriptor instead. | C
-`node_map(Component, data[], props{})` | When you want to add a component n times for each entry of an array, this is the (proper) way to go. If the array items are objects, the [keys](https://reactjs.org/docs/lists-and-keys.html) are directly taken from an `id` property. | C
+`node_map(Component, data[], props{})` | When you want to add a component n times for each entry of an array, this is the (proper) way to go. If the array items are objects, the [keys](https://react.dev/learn/rendering-lists#keeping-list-items-in-order-with-key) are directly taken from an `id` property. | C
 `now():number` | The _relative_ point of time of the latest rerendering call. Do not use this as persistent time reference but just inside of run time. Useful for custom animations. | C
 
 ## Alternative ways to use lui
