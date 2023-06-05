@@ -2133,34 +2133,24 @@ export const node_map = (component_, list_data, props) => (
 /**
 	mounts the root component
 	@param {function():!Array} root
-	@param {HTMLElement=} dom_c
+	@param {HTMLElement=} dom
 */
-export const init = (root, dom_c) => {
+export const init = (root, dom = document_.body) => {
 	VERBOSE && log('init');
 
 	DEBUG && (
-		RJS
-		?	(
-				dom_c ||
-					error('no root element specified'),
-				dom_c.lui &&
-					error('root element already mounted'),
-				dom_c.lui = true_
-			)
-		:	(
-				current ||
-				render_queue.length ||
-				render_queue_next.length
-			) &&
-				error('init called more than once'),
 		typeof root !== 'function' &&
-			error('no init function specified')
+			error('no init function specified'),
+		dom instanceof HTMLElement ||
+			error('invalid root element'),
+		dom._lui_used &&
+			error('root element already mounted'),
+		dom._lui_used = 1
 	);
 
 	let result;//[props, childs]
 
-	const dom_d = document_.body;
-	(RJS ? dom_c : dom_d).innerHTML = '';
+	dom.innerHTML = '';
 
 	/**
 		@type {TYPE_COMPONENT}
@@ -2211,8 +2201,8 @@ export const init = (root, dom_c) => {
 			parent_index: 0,
 			slots: [],
 			childs: null_,
-			dom: /** @type {HTMLElement} */ (RJS ? dom_c : dom_d),
-			dom_first: /** @type {HTMLElement} */ (RJS ? dom_c : dom_d),
+			dom: /** @type {HTMLElement} */ (dom),
+			dom_first: /** @type {HTMLElement} */ (dom),
 			dirty: true_,
 		}
 	).slots[0] = {

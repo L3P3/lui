@@ -174,9 +174,9 @@ declare namespace lui {
 	export function hook_transition(target: number, msecs: number): number;
 
 	/**
-		Mounts root component on document's body
+		Mounts root component on document's body or whatever root element specified
 	*/
-	export function init(body: () => [bodyProps: Attrs | null, bodyContent: LuiNodeList]): void;
+	export function init(root: () => [bodyProps: Attrs | null, bodyContent: LuiNodeList], dom?: HTMLElement): void;
 
 	/**
 		Component instantiation

@@ -149,7 +149,7 @@ init(() => {
 
 This approach is neccessary since there is no `body` component to use.
 
-When loading the [RequireJS variant](#include-lui-via-requirejs), you need to specify the root element when calling `init`. All other lui variants just take the body element.
+By default, the body is used as the root element. You can also specify another one as the second argument to `init`.
 
 ### DOM templates
 
@@ -331,9 +331,9 @@ Function | Description | V
 `hook_static(initial):initial` | This is a much cheaper version of `hook_memo`: What you put in it the first time will _always_ come out of it. | C
 `hook_sub((...deps)=>T, deps[]):T` | Like `hook_memo` but the getter function may be swapped and it may contain hooks. | E
 `hook_transition(target, msecs):current` | When `target` changes, the output number will smoothly pass to the new target, taking the specified time for that transition. | E
-`init(Body)` | This mounts the body once, you give it the so-to-say body component. But unlinke actual components, you return the props for the body element and its content. So `Body` looks like this: `()=>[body_props{}, body_content: node[]]` | C
+`init(RootComponent, root_element)` | This mounts the body (or root_element) once, you give it the so-to-say body component. But unlinke actual components, you return the props for the body element and its content. So `Body` looks like this: `()=>[body_props{}, body_content: node[]]` | C
 `node(Component, props{}, childs[]):node` | This is how you add child components. If the added component accepts childs (`C` prop), you can pass that as the third argument as an array of nodes. | C
-`node_dom(descriptor', attrs{}, childs[]):node` | When you want to add dom components, use this function. It is very similar to `node` but needs a descriptor instead. | C
+`node_dom('descriptor', attrs{}, childs[]):node` | When you want to add dom components, use this function. It is very similar to `node` but needs a descriptor instead. | C
 `node_map(Component, data[], props{})` | When you want to add a component n times for each entry of an array, this is the (proper) way to go. If the array items are objects, the [keys](https://react.dev/learn/rendering-lists#keeping-list-items-in-order-with-key) are directly taken from an `id` property. | C
 `now():number` | The _relative_ point of time of the latest rerendering call. Do not use this as persistent time reference but just inside of run time. Useful for custom animations. | C
 
