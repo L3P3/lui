@@ -2426,6 +2426,10 @@ const dom_get = descriptor => {
 	if (!dom) {
 		VERBOSE && log('dom create ' + descriptor);
 
+		DEBUG &&
+		descriptor.startsWith('#') &&
+			error('dom: unknown handle');
+
 		const index_sqb = descriptor.indexOf('[');
 		const tag = (
 			index_sqb < 0
@@ -2493,11 +2497,56 @@ const dom_get = descriptor => {
 }
 
 /**
+	registers a dom template
+	@param {string} handle
+	@param {string} descriptor
+	@param {?TYPE_PROPS=} attributes
+*/
+export const dom_define = (handle, descriptor, attributes) => {
+	DEBUG &&
+	dom_cache['#' + handle] &&
+		error('dom_define: handle exists');
+
+	let dom = dom_get(descriptor);
+	if (attributes) {
+		DEBUG &&
+		attributes && (
+			attributes.C &&
+				error('dom_define cannot have childs'),
+			attributes.R &&
+				error('dom_define cannot have a ref')
+		);
+
+		dom = dom.cloneNode(true_);
+		if (attributes.D) {
+			Object_assign(dom.dataset, attributes.D);
+			delete attributes.D;
+		}
+		if (attributes.S) {
+			Object_assign(dom.style, attributes.S);
+			delete attributes.S;
+		}
+		Object_assign(
+			dom,
+			attributes
+		);
+	}
+	dom_cache['#' + handle] = dom;
+}
+
+/**
 	returns dom component for descriptor
 	@param {string} descriptor
 	@return {TYPE_COMPONENT}
 */
 const component_dom_get = descriptor => {
+	DEBUG &&
+	(
+		!descriptor ||
+		typeof descriptor !== 'string'
+	) &&
+		error('dom: descriptor string expected');
+
 	let component = component_dom_cache[descriptor];
 	if (!component) {
 		const dom = dom_get(descriptor);

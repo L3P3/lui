@@ -84,6 +84,11 @@ declare namespace lui {
 	export function defer_end(): void;
 
 	/**
+		Define a dom element for later use, like a template
+	*/
+	export function dom_define(handle: string, descriptor: DomDescriptor, attrs?: Attrs): void;
+
+	/**
 		Conditionally interrupt the instance's rendering process
 	*/
 	export function hook_assert(condition: boolean): void;

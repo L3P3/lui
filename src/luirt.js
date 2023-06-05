@@ -5,6 +5,7 @@ import {
 import {
 	defer,
 	defer_end,
+	dom_define,
 	hook_assert,
 	hook_async,
 	hook_callback,
@@ -34,6 +35,7 @@ const lui = (
 	?	{
 		defer,
 		defer_end,
+		dom_define,
 		hook_assert,
 		hook_async,
 		hook_callback,
@@ -60,6 +62,7 @@ const lui = (
 	:	{
 		defer,
 		defer_end,
+		dom_define,
 		hook_assert,
 		hook_async,
 		hook_dom,

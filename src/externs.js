@@ -36,6 +36,7 @@ var TYPE_PROPS;
 	@typedef {{
 		defer,
 		defer_end,
+		dom_define,
 		hook_assert,
 		hook_async,
 		hook_callback,

@@ -151,6 +151,20 @@ This approach is neccessary since there is no `body` component to use.
 
 When loading the [RequireJS variant](#include-lui-via-requirejs), you need to specify the root element when calling `init`. All other lui variants just take the body element.
 
+### DOM templates
+
+Instead of defining all the dom elements in your components, you can define them once and then use them as templates. This is especially useful for elements that have many/long attributes. Reference them by their handle, prefixed with `#`.
+
+```js
+dom_define('my-button', 'button[disabled]');
+
+...
+
+node_dom('#my-button', {
+    innerText: 'Try to click me!',
+});
+```
+
 ### JSX
 
 If you are building your application code with [JSX](https://react.dev/learn/writing-markup-with-jsx) support, you _could_ theoretically write components like this:
@@ -300,6 +314,7 @@ Function | Description | V
 --- | --- | ---
 `defer()` | Disables synchronous rerenders until the next frame. | C
 `defer_end()` | Enables synchronous rerenders again and rectifies deferred updates. | C
+`dom_define(handle, descriptor, props{})` | Defines a [dom template](#dom-templates). | C
 `hook_assert(boolean)` | When the condition is falsy, rendering of the current component is interrupted. May be used for error handling or anything else. | C
 `hook_async((...deps)=>Promise<T>, deps[], fallback):T` | If you need to wait for some data until it is available, use this instead of `hook_memo`. As long as the promise is pending, `fallback` is returned. If no fallback is given, either `null` or the latest value is returned. | C
 `hook_callback(function, deps[]):function` | Returns a function that never changes. It passes all arguments down to the given function after the `deps`. Use this when you need to pass a callback as props that needs `deps`. If that callback is independent of the current component (has no `deps`), move the callback out of the component. | E
