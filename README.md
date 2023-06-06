@@ -16,7 +16,7 @@ When I was introduced to [React](https://github.com/facebook/react), I liked it 
 - [Production ready](https://softwareengineering.stackexchange.com/questions/61726)
 - Compatible with down to [20th century browsers](https://youtu.be/97GrGEZiIWY), basic polyfills included
 - Created and actively maintained by a [perfectionist](https://www.webdesignerdepot.com/2010/04/the-ups-and-downs-of-being-a-perfectionist)
-- ... and more (see [API](#api)
+- ... and more (see [API](#api))
 
 ## Demos
 
