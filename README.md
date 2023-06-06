@@ -4,18 +4,19 @@ When I was introduced to [React](https://github.com/facebook/react), I liked it 
 
 ## Features
 
-- Less than **5k** code size (<3k compressed)
+- Less than **3k** gzip size (about 5k raw)
 - **Stateful components** using [hooks](https://react.dev/reference/react)
 - Optional **development mode**
 - CSS-less **Animations** possible
-- **Fast and efficient**
-- Conditional css classes on elements
+- **Fast and efficient**, [benchmark](https://krausest.github.io/js-framework-benchmark/current.html)
 - 0 dependencies
 - No toolchain neccessary
+- [TypeScript](https://www.typescriptlang.org) compatible
 - [RequireJS](https://requirejs.org) compatible
 - [Production ready](https://softwareengineering.stackexchange.com/questions/61726)
 - Compatible with down to [20th century browsers](https://youtu.be/97GrGEZiIWY), basic polyfills included
 - Created and actively maintained by a [perfectionist](https://www.webdesignerdepot.com/2010/04/the-ups-and-downs-of-being-a-perfectionist)
+- ... and more (see [API](#api)
 
 ## Demos
 

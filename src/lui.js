@@ -1,7 +1,7 @@
 /**
 	@preserve lui.js web frame work
 	inspired by react and mithril
-	L3P3.de 2022
+	L3P3.de 2023
 */
 
 import {
