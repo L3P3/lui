@@ -1,8 +1,8 @@
 'use strict';function aa(a){var b=0;return function(){return b<a.length?{done:!1,value:a[b++]}:{done:!0}}}function e(a){var b="undefined"!=typeof Symbol&&Symbol.iterator&&a[Symbol.iterator];if(b)return b.call(a);if("number"==typeof a.length)return{next:aa(a)};throw Error(String(a)+" is not an iterable or ArrayLike");}function f(a){if(!(a instanceof Array)){a=e(a);for(var b,c=[];!(b=a.next()).done;)c.push(b.value);a=c}return a}
 function h(){for(var a=Number(this),b=[],c=a;c<arguments.length;c++)b[c-a]=arguments[c];return b};/*
- lui.js web frame work 1.4.0
+ lui.js web frame work 1.4.1
  inspired by react and mithril
- L3P3.de 2022
+ L3P3.de 2023
 */
 (function(){var l=null,n=!l,w=l,z=0,A=0,B=0,C=n,D=[],E=[],F={},ba={},ca={},da=[],G=[],ea={},H=l,J=n,K=!n,fa=/[A-Z]/g,L=Array,M=Object,N=M.assign,O=M.keys,ha=M.freeze||function(a){return a},ia=M.isFrozen||function(a){return null===a||"object"!==typeof a},ja=document,ka=window,la=ka.performance||Date;
 function ma(a){return void 0===a&&P("model state must not contain undefined, missing return?"),ia(a)||(ha(a).constructor!==L&&(a.constructor!==M&&P("model state must not contain shit like "+a.constructor.name),a=M.values(a)),a.forEach(ma))}function na(a){a=a.s.v;return a===Q?"list":a.name_||a.name||"?"}

@@ -1,8 +1,8 @@
 'use strict';function aa(a){var b=0;return function(){return b<a.length?{done:!1,value:a[b++]}:{done:!0}}}function g(a){var b="undefined"!=typeof Symbol&&Symbol.iterator&&a[Symbol.iterator];if(b)return b.call(a);if("number"==typeof a.length)return{next:aa(a)};throw Error(String(a)+" is not an iterable or ArrayLike");}function k(a){if(!(a instanceof Array)){a=g(a);for(var b,c=[];!(b=a.next()).done;)c.push(b.value);a=c}return a}
 function ba(){for(var a=Number(this),b=[],c=a;c<arguments.length;c++)b[c-a]=arguments[c];return b};/*
- lui.js web frame work 1.4.0
+ lui.js web frame work 1.4.1
  inspired by react and mithril
- L3P3.de 2022
+ L3P3.de 2023
 */
 (function(){var m=null,q=!m,u=m,v=0,x=0,z=0,A=q,B=[],C=[],D={},ca={},da={},ea=[],E=[],fa={},F=m,G=q,H=!q,ha=/[A-Z]/g,I=Array,J=Object,K=J.assign||(J.assign=function(a){for(var b=arguments,c=b.length,d=0,f,e;++d<c;)if(f=b[d])for(e in f)a[e]=f[e];return a}),L=J.keys||(J.keys=function(a){var b=[],c;for(c in a)b.push(c);return b}),ia=setTimeout,ja=clearTimeout,ka=document,M=window,P=Date;function ma(a){return new Function("a","b","return a!==b&&("+a.join("||")+")")}
 function Q(a){var b=(a=L(a)).join(",");return da[b]||(da[b]=ma(a.map(function(c){return"a."+c+"!==b."+c})))}function na(a,b){return a===b?E:L(a).filter(function(c){return a[c]!==b[c]})}function R(a){return a?ea[a.length]||(ea[a.length]=ma(a.map(function(b,c){return"a["+c+"]!==b["+c+"]"}))):F}
