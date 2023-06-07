@@ -61,11 +61,12 @@ async function build(prod, legacy, rjs, extended) {
 			`language_out ECMASCRIPT${
 				legacy ? '3'
 				: rjs ? '5_STRICT'
-				: '6_STRICT'
+				: '_2020'
 			}`,
+			'strict_mode_input',
+			'emit_use_strict',
 			'module_resolution WEBPACK',
 			'rewrite_polyfills false',
-			'strict_mode_input',
 			'use_types_for_optimization',
 			'warning_level VERBOSE'
 		]
@@ -79,7 +80,6 @@ async function build(prod, legacy, rjs, extended) {
 	const wrap_fn = legacy || rjs;
 
 	const code_js = (
-		"'use strict';" +
 		(
 			fs.readFileSync(file, 'ascii')
 			.trim() + '%END%'

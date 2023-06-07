@@ -949,9 +949,11 @@ const instance_unmount = (instance, dom_parent) => {
 
 	dom_parent &&
 	instance.dom && (
-		dom_parent.removeChild(
-			instance.dom
-		),
+		!LEGACY && !RJS
+		?	instance.dom.remove()
+		:	dom_parent.removeChild(
+				instance.dom
+			),
 		dom_parent = null_
 	);
 
@@ -2350,9 +2352,7 @@ const render = () => {
 */
 const rerender_request = () => (
 	VERBOSE && log('animation frame requested'),
-	rerender_requested || (
-		rerender_requested = requestAnimationFrame(render)
-	)
+	rerender_requested ||= requestAnimationFrame(render)
 )
 
 /**
