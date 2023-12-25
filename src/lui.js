@@ -157,13 +157,13 @@ let rerender_deferred = current_first;
 	instances that should be rerendered in this frame
 	@type {!Array<Array<TYPE_INSTANCE>>}
 */
-let render_queue = [];
+let render_queue = [[]];
 
 /**
 	instances that should be rerendered in the next frame
 	@type {!Array<Array<TYPE_INSTANCE>>}
 */
-let render_queue_next = [];
+let render_queue_next = [[]];
 
 
 /// MAPS ///
@@ -314,10 +314,12 @@ const instance_name_get = ({icall: {component_}}) => (
 */
 const stack_get = () => {
 	const stack = [];
-	let item = current_slots;
+	let item = EXTENDED ? current_slots : current;
 	let index = null_;
-	if (item) {
-		stack.unshift('$' + (current_slots_index - 1));
+	if (!EXTENDED && current) stack[0] = '$' + current_slots_index;
+	if (EXTENDED && current_slots) {
+		stack[0] = '$' + (current_slots_index - 1);
+		item = /** @type {TYPE_SLOTS} */ (item);
 		while (item[0].htype !== HOOK.HEAD_INSTANCE) {
 			stack.unshift(
 				item[0].htype === HOOK.HEAD_MAP
@@ -337,7 +339,7 @@ const stack_get = () => {
 		stack.unshift(
 			instance_name_get(item) +
 			(
-				index
+				index !== null_
 				?	':' + index
 				:	''
 			)
@@ -440,6 +442,7 @@ const assert_hook = (type, component_, deps) => {
 
 	current_slots = /** @type {!Array<TYPE_SLOT>} */ (current_slots);
 
+	EXTENDED &&
 	component_ &&
 	current_slots[0].htype !== HOOK.HEAD_INSTANCE &&
 		error('hook called outside of component rendering');
@@ -591,7 +594,7 @@ const instance_render = (dom_parent, dom_first) => {
 	const dom_after = dom_first;
 	const ilevel = instance.ilevel + 1;
 	current_slots = instance.slots;
-	current_slots_index = 1;
+	current_slots_index = EXTENDED ? 1 : 0;
 
 	VERBOSE && log('instance_render ' + (current_first ? 'initial' : 'again'));
 	instance.dirty = false_;
@@ -677,23 +680,22 @@ const instance_render = (dom_parent, dom_first) => {
 						current_first =
 						!child
 					) {
-						(
-							instance_childs[childs_index] = current = child = {
-								icall: child_call,
-								props_comp: (
-									child_call.props &&
-									object_comp_get(child_call.props)
-								),
-								iparent: instance,
-								ilevel,
-								parent_index: childs_index,
-								slots: [],
-								childs: null_,
-								dom: null_,
-								dom_first: null_,
-								dirty: false_,
-							}
-						).slots[0] = {
+						instance_childs[childs_index] = current = child = {
+							icall: child_call,
+							props_comp: (
+								child_call.props &&
+								object_comp_get(child_call.props)
+							),
+							iparent: instance,
+							ilevel,
+							parent_index: childs_index,
+							slots: [],
+							childs: null_,
+							dom: null_,
+							dom_first: null_,
+							dirty: false_,
+						};
+						if (EXTENDED) current.slots[0] = {
 							htype: HOOK.HEAD_INSTANCE,
 							hinstance: child,
 						};
@@ -855,27 +857,26 @@ const instance_render = (dom_parent, dom_first) => {
 			) {
 				VERBOSE && log('item add: ' + key);
 
-				(
-					state.item_map[key] = current = child = {
-						icall: {
-							component_,
-							props: (
-								Object_assign({
-									I: items_map[key],
-								}, props)
-							),
-						},
-						props_comp: null_,
-						iparent: instance,
-						ilevel,
-						parent_index: items_index,
-						slots: [],
-						childs: null_,
-						dom: null_,
-						dom_first: null_,
-						dirty: false_,
-					}
-				).slots[0] = {
+				state.item_map[key] = current = child = {
+					icall: {
+						component_,
+						props: (
+							Object_assign({
+								I: items_map[key],
+							}, props)
+						),
+					},
+					props_comp: null_,
+					iparent: instance,
+					ilevel,
+					parent_index: items_index,
+					slots: [],
+					childs: null_,
+					dom: null_,
+					dom_first: null_,
+					dirty: false_,
+				};
+				if (EXTENDED) current.slots[0] = {
 					htype: HOOK.HEAD_INSTANCE,
 					hinstance: child,
 				};
@@ -914,7 +915,7 @@ const instance_render = (dom_parent, dom_first) => {
 						current = child
 					).icall.props = (
 						Object_assign({
-							I: items_map[key]
+							I: items_map[key],
 						}, props)
 					);
 
@@ -1119,8 +1120,7 @@ const instance_dom_last_get = instance => {
 */
 const instance_reinsert = (instance, dom_parent, dom_first) => {
 	if (instance.dom) {
-		dom_parent.insertBefore(instance.dom, dom_first);
-		return instance.dom;
+		return /** @type {HTMLElement} */ (dom_parent.insertBefore(instance.dom, dom_first));
 	}
 	if (instance.dom_first) {
 		let childs_index = instance.childs.length;
@@ -1170,21 +1170,25 @@ const dirtup = slots => {
 	request rerendering for subs and instance
 	@param {TYPE_SLOTS|?TYPE_INSTANCE} slots
 */
-const dirtify = slots => (
+const dirtify_slots = slots => (
 	(
 		slots = dirtup(/** @type {TYPE_SLOTS} */ (slots))
 	) &&
-	!(
-		/** @type {TYPE_INSTANCE} */ (slots)
-	).dirty && (
-		slots = /** @type {TYPE_INSTANCE} */ (slots),
+	dirtify_instance(/** @type {TYPE_INSTANCE} */ (slots))
+)
 
-		VERBOSE && log('dirtify ' + instance_name_get(slots)),
+/**
+	request rerendering for instance
+	@param {TYPE_INSTANCE} instance
+*/
+const dirtify_instance = instance => (
+	!instance.dirty && (
+		VERBOSE && log('dirtify ' + instance_name_get(instance)),
 
-		slots.dirty = true_,
-		render_queue[slots.ilevel]
-		?	render_queue[slots.ilevel].push(slots)
-		:	render_queue[slots.ilevel] = [slots],
+		instance.dirty = true_,
+		render_queue[instance.ilevel]
+		?	render_queue[instance.ilevel].push(instance)
+		:	render_queue[instance.ilevel] = [instance],
 
 		rerender_deferred ||
 			render()
@@ -1200,9 +1204,9 @@ const dirtify = slots => (
 export const hook_rerender = () => {
 	DEBUG && assert_hook(null_, false_, null_);
 
-	const instance = dirtup(/** @type {TYPE_SLOTS} */ (current_slots));
+	const instance = EXTENDED ? dirtup(/** @type {TYPE_SLOTS} */ (current_slots)) : current;
 
-	if (instance) {
+	if (!EXTENDED || instance) {
 		VERBOSE && log('hook_rerender ' + instance_name_get(/** @type {TYPE_INSTANCE} */ (instance))),
 
 		/** @type {TYPE_INSTANCE} */ (instance).dirty = true_,
@@ -1326,19 +1330,22 @@ export const hook_async = (getter, deps, fallback) => {
 			slot.hvalue = fallback
 		);
 
+		const current_ = /** @type {TYPE_INSTANCE} */ (current);
 		const current_slots_ = /** @type {TYPE_SLOTS} */ (current_slots);
 		const promise = getter(
 			...slot.deps
 		)
 		.then(value => (
-			VERBOSE && log('async end ' + instance_name_get(instance_current_get(current_slots_)), value),
+			VERBOSE && log('async end ' + instance_name_get(
+				EXTENDED ? instance_current_get(current_slots_) : current_
+			), value),
 
 			(
 				slot.hvalue !== value &&
 				slot.deps === deps
 			) && (
 				slot.hvalue = value,
-				dirtify(current_slots_)
+				EXTENDED ? dirtify_slots(current_slots_) : dirtify_instance(current_)
 			)
 		));
 		DEBUG &&
@@ -1363,15 +1370,18 @@ export const hook_state = initial => {
 		return /** @type {!Array} */ (current_slots[current_slots_index++].hvalue);
 	}
 
+	const current_ = /** @type {TYPE_INSTANCE} */ (current);
 	const current_slots_ = /** @type {TYPE_SLOTS} */ (current_slots);
 	const slot = [
 		initial,
 		value => {
-			VERBOSE && log('state set ' + instance_name_get(instance_current_get(current_slots_)), value);
+			VERBOSE && log('state set ' + instance_name_get(
+				EXTENDED ? instance_current_get(current_slots_) : current_
+			), value);
 
 			slot[0] !== value && (
 				slot[0] = value,
-				dirtify(current_slots_)
+				EXTENDED ? dirtify_slots(current_slots_) : dirtify_instance(current_)
 			);
 		},
 		() => slot[0]
@@ -1927,6 +1937,7 @@ export const hook_model = mutations => {
 	if (current_slots_index < current_slots.length)
 		return /** @type {!Array} */ (current_slots[current_slots_index++].hvalue);
 
+	const current_ = /** @type {TYPE_INSTANCE} */ (current);
 	const current_slots_ = /** @type {TYPE_SLOTS} */ (current_slots);
 	const stack = DEBUG ? stack_get() : '';
 	const slot = [
@@ -1939,7 +1950,9 @@ export const hook_model = mutations => {
 		callback_wrap(state_check, [slot[0]], stack + ' -> #init');
 	for (const key of Object_keys(mutations)) {
 		slot[1][key] = (...args) => {
-			VERBOSE && log('model ' + instance_name_get(instance_current_get(current_slots_)) + ' -> #' + key, args);
+			VERBOSE && log('model ' + instance_name_get(
+				EXTENDED ? instance_current_get(current_slots_) : current_
+			) + ' -> #' + key, args);
 			const value = (
 				DEBUG
 				?	callback_wrap(mutations[key], [slot[0], ...args], stack + ' -> #' + key)
@@ -1949,7 +1962,7 @@ export const hook_model = mutations => {
 				DEBUG &&
 					callback_wrap(state_check, [value], stack + ' -> #' + key),
 				slot[0] = value,
-				dirtify(current_slots_)
+				EXTENDED ? dirtify_slots(current_slots_) : dirtify_instance(current_)
 			)
 		};
 	}
@@ -2191,27 +2204,26 @@ export const init = (root, dom = document_.body) => {
 		component_['name_'] = '$root'
 	);
 
-	(
-		current = {
-			icall: {
-				component_,
-				props: null_,
-			},
-			props_comp: null_,
-			iparent: null_,
-			ilevel: 0,
-			parent_index: 0,
-			slots: [],
-			childs: null_,
-			dom: /** @type {HTMLElement} */ (dom),
-			dom_first: /** @type {HTMLElement} */ (dom),
-			dirty: true_,
-		}
-	).slots[0] = {
+	let instance;
+	render_queue[0].push(instance = {
+		icall: {
+			component_,
+			props: null_,
+		},
+		props_comp: null_,
+		iparent: null_,
+		ilevel: 0,
+		parent_index: 0,
+		slots: [],
+		childs: null_,
+		dom: /** @type {HTMLElement} */ (dom),
+		dom_first: /** @type {HTMLElement} */ (dom),
+		dirty: true_,
+	});
+	if (EXTENDED) instance.slots[0] = {
 		htype: HOOK.HEAD_INSTANCE,
-		hinstance: current,
+		hinstance: instance,
 	};
-	render_queue[0] = [current];
 
 	DEBUG && (
 		current = current_slots = null_
