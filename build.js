@@ -153,7 +153,7 @@ if (
 	try {
 		console.log('compress...');
 
-		console.log((await exec('zopfli --i1000 ./dist/lui*'))[2]);
+		console.log((await exec('parallel zopfli --i10000 dist/{/} ::: dist/lui*'))[2]);
 
 		console.log(`compression: ${
 			fs.statSync('./dist/lui.js').size

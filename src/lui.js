@@ -2436,7 +2436,9 @@ const dom_get = descriptor => {
 		const tag = (
 			index_sqb < 0
 			?	descriptor
-			:	descriptor.substring(0, index_sqb)
+			: LEGACY
+			?	descriptor.substring(0, index_sqb)
+			:	descriptor.substr(0, index_sqb)
 		);
 
 		DEBUG && (
@@ -2488,7 +2490,9 @@ const dom_get = descriptor => {
 
 				eqi > 0
 				?	dom[
-						sqbi.substring(0, eqi)
+						LEGACY
+						?	sqbi.substring(0, eqi)
+						:	sqbi.substr(0, eqi)
 					] =
 						sqbi.substr(eqi + 1)
 				:	dom[sqbi] = true_;
