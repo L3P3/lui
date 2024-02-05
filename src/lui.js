@@ -1,7 +1,7 @@
 /**
 	@preserve lui.js web frame work
 	inspired by react and mithril
-	L3P3.de 2023
+	L3P3.de 2024
 */
 
 import {
@@ -164,6 +164,9 @@ let render_queue = [[]];
 	@type {!Array<Array<TYPE_INSTANCE>>}
 */
 let render_queue_next = [[]];
+
+let requestAnimationFrame_;
+let cancelAnimationFrame_;
 
 
 /// MAPS ///
@@ -2250,8 +2253,11 @@ const render = () => {
 	render_time = Date_.now();
 
 	// in case there was a synchronous rerender after an asynchronous one was requested
-	rerender_requested &&
-		cancelAnimationFrame(rerender_requested);
+	rerender_requested && (
+		LEGACY
+		?	cancelAnimationFrame_(rerender_requested)
+		:	cancelAnimationFrame(rerender_requested)
+	);
 
 	rerender_deferred = true_;
 	rerender_requested = 0;
@@ -2364,7 +2370,11 @@ const render = () => {
 */
 const rerender_request = () => (
 	VERBOSE && log('animation frame requested'),
-	rerender_requested ||= requestAnimationFrame(render)
+	rerender_requested ||= (
+		LEGACY
+		?	requestAnimationFrame_(render)
+		:	requestAnimationFrame(render)
+	)
 )
 
 /**
@@ -2593,6 +2603,10 @@ DEBUG && (
 if (LEGACY || RJS) {
 	const Array_prototype = Array_.prototype;
 	const String_prototype = String.prototype;
+	if (LEGACY) {
+		requestAnimationFrame_ = window_.requestAnimationFrame;
+		cancelAnimationFrame_ = window_.cancelAnimationFrame;
+	}
 
 
 	Array_prototype['fill'] || ( // chrome < 45 || ie
@@ -2614,20 +2628,25 @@ if (LEGACY || RJS) {
 	}),
 
 
-	!LEGACY || window_.requestAnimationFrame || ( // chrome < 24 || ie < 10
+	!LEGACY || cancelAnimationFrame_ || ( // chrome < 24 || ie < 10
 
-	requestAnimationFrame =
-		window_.mozRequestAnimationFrame ||
+	requestAnimationFrame_ = (
 		(
-			window_.webkitCancelAnimationFrame &&
+			cancelAnimationFrame_ =
+				window_.mozCancelAnimationFrame ||
+				window_.webkitCancelAnimationFrame
+		)
+		?	(
+			window_.mozRequestAnimationFrame ||
 			window_.webkitRequestAnimationFrame
-		) ||
-		(callback => setTimeout_(callback, 20)),
-
-	cancelAnimationFrame =
-		window_.mozCancelAnimationFrame ||
-		window_.webkitCancelAnimationFrame ||
-		clearTimeout_,
+		)
+		:	(
+			cancelAnimationFrame_ = clearTimeout_,
+			function(callback) {
+				return setTimeout_(callback, 20);
+			}
+		)
+	),
 
 
 	Date_['now'] || ( // chrome < 5 || ie < 9
