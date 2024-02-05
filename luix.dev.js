@@ -1,7 +1,7 @@
 'use strict';/*
- lui.js web frame work 1.4.3
+ lui.js web frame work 1.4.4
  inspired by react and mithril
- L3P3.de 2023
+ L3P3.de 2024
 */
 {let e=null,f=!e,g=e,h=0,q=0,t=0,v=f,w=[[]],y=[[]];
 const A={},aa={},ba={},ca=[],B=[],da={},C=e,D=f,E=!f,F=Array,H=Object,I=H.assign,J=H.keys,ea=H.freeze,fa=H.isFrozen,ha=document,ia=window,ja=ia.performance||Date,ka=a=>(void 0===a&&K("model state must not contain undefined, missing return?"),fa(a)||(ea(a).constructor!==F&&(a.constructor!==H&&K("model state must not contain shit like "+a.constructor.name),a=H.values(a)),a.forEach(ka))),la=({s:{A:a}})=>a===L?"list":a.name_||a.name||"?",M=()=>{const a=[];let b=g,c=C;if(g){for(a[0]="$"+(h-1);0!==b[0].j;)a.unshift(1===

@@ -1,7 +1,7 @@
 'use strict';/*
- lui.js web frame work 1.4.3
+ lui.js web frame work 1.4.4
  inspired by react and mithril
- L3P3.de 2023
+ L3P3.de 2024
 */
 {let e=null,g=!e,h=e,l=0,v=0,w=0,x=g,y=[[]],z=[[]];
 const A={},C={},D={},E=[],F=[],aa={},G=e,I=g,J=!g,K=Array,L=Object,M=L.assign,N=L.keys,ba=document,ca=window,da=ca.performance||Date,ea=a=>new Function("a","b",`return a!==b&&(${a.join("||")})`),P=a=>{const b=(a=N(a)).join(",");return D[b]||(D[b]=ea(a.map(c=>`a.${c}!==b.`+c)))},ha=(a,b)=>a===b?F:N(a).filter(c=>a[c]!==b[c]),Q=a=>a?E[a.length]||(E[a.length]=ea(a.map((b,c)=>`a[${c}]!==b[${c}]`))):G,R=(a,b)=>{const c=e,d=b,n=c.s+1;h=c.M;l=0;c.u=J;if(c.o.A!==P){var f=G;try{f=(0,c.o.A)(c.o.l||aa)}catch(O){}var q=
