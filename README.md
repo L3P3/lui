@@ -49,14 +49,12 @@ When you are developing your app, use `lui.dev.js` instead to get fancy error de
 Just add the following line to your HTML file:
 
 ```html
-<script src="https://cdn.jsdelivr.net/gh/L3P3/lui@v1.x/lui.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/L3P3/lui@1/lui.js"></script>
 ```
 
 When doing so, you might want to get type information in your code editor. Just copy `lui.js` and `lui.d.ts` from [here](https://github.com/L3P3/prog/tree/master/src/etc) into your project and import from the `js` file into your modules.
 
 I recommend loading scripts with `type="module"` added to the tags so they load asynchronously and [do not block page loading](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Modules). And make sure the above snippet comes before where lui is used.
-
-Note that the url contains `v1.x` for a reason. If you use `dist` instead, you will always get the latest version but that could introduce breaking changes in its api which would break your app. Better upgrade manually after making sure that api changes are covered within your app.
 
 ## API
 
@@ -360,7 +358,7 @@ Normally, lui controls the entire page. But it is also possible to dynamically l
 require.config({
     map: {
         '*': {
-            'lui': 'https://cdn.jsdelivr.net/gh/L3P3/lui@v1.x/lui.r.js'
+            'lui': 'https://cdn.jsdelivr.net/gh/L3P3/lui@1/lui.r.js'
         }
     }
 });
