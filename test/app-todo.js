@@ -111,7 +111,7 @@ init(() => {
 		[todo_list]
 	);
 
-	return [null, [
+	return [
 		node_dom('h1[innerText=TODO list in lui]'),
 		node(TodoForm, {
 			todo_list_empty: todo_list.length === 0,
@@ -128,6 +128,6 @@ init(() => {
 			}
 		),
 		node_dom('hr'),
-		node_dom('p[innerHTML=2022, <a href=//l3p3.de target=_blank>L3P3</a>]'),
-	]];
+		node_dom('p[innerHTML=2024, <a href=//l3p3.de target=_blank>L3P3</a>]'),
+	];
 });

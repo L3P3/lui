@@ -34,7 +34,7 @@ const ListItem = ({
 init(() => {
 	const [list, {swap}] = hook_model(actions);
 
-	return [null, [
+	return [
 		hook_memo(() => (
 			node_dom('div', null, [
 				node_dom('button[innerText=swap]', {
@@ -46,5 +46,5 @@ init(() => {
 			ListItem,
 			list
 		),
-	]];
+	];
 });

@@ -41,5 +41,5 @@ init(() => {
 		});
 	}
 
-	return [null, null];
+	return null;
 });

@@ -47,7 +47,7 @@ init(() => {
 		foo_toggle: prev => !prev,
 	});
 
-	return [null, [
+	return [
 		node_dom('h1', {
 			innerText: hook_sub(getter, [foo]),
 			onclick: foo_toggle,
@@ -103,5 +103,5 @@ init(() => {
 				return `Initial: ${hook_static(foo)} Vorher: ${hook_prev(foo)} Jetzt: ${foo}`;
 			})),
 		}),
-	]];
+	];
 });

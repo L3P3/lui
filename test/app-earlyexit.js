@@ -21,7 +21,7 @@ function inner({
 init(() => {
 	const [on, on_set] = hook_state(false);
 
-	return [null, [
+	return [
 		node_dom('h1[innerText=Hallo, Welt!]'),
 		node(inner, {on}),
 		node_dom('p', null, [
@@ -31,5 +31,5 @@ init(() => {
 				},
 			}),
 		]),
-	]];
+	];
 });

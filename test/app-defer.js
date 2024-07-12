@@ -14,7 +14,7 @@ init(() => {
 
 	console.log(a + b + c);
 
-	return [null, [
+	return [
 		node_dom('h1', {
 			innerText: a + b + c,
 		}),
@@ -42,5 +42,5 @@ init(() => {
 				defer_end();
 			},
 		})),
-	]];
+	];
 });

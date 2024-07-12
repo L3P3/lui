@@ -22,7 +22,7 @@ dom_define('test2', '#test', {
 });
 
 init(() => {
-	return [null, [
+	return [
 		// use a template
 		node_dom('#test', {
 			S: {
@@ -34,5 +34,5 @@ init(() => {
 				textDecoration: 'underline',
 			},
 		}),
-	]];
+	];
 });

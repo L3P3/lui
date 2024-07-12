@@ -2073,7 +2073,7 @@ export const hook_dom = (descriptor, attributes) => (
 		assert_hook(null_, true_, null_),
 		current = /** @type {TYPE_INSTANCE} */ (current),
 		current.dom
-		?	current_first && error('hook_dom called twice')
+		?	current_first && current.iparent && error('hook_dom called twice')
 		:	current_first || error('hook_dom skipped before'),
 		attributes && (
 			attributes.C &&
@@ -2082,7 +2082,7 @@ export const hook_dom = (descriptor, attributes) => (
 				error('hook_dom cannot have a ref')
 		)
 	),
-	current_first && (
+	current.dom === null_ && (
 		current.dom = /** @type {HTMLElement} */ (
 			dom_get(descriptor)
 			.cloneNode(true_)
@@ -2150,7 +2150,7 @@ export const node_map = (component_, list_data, props) => (
 
 /**
 	mounts the root component
-	@param {function():!Array} root
+	@param {function():Array<TYPE_COMPONENT>} root
 	@param {HTMLElement=} dom
 */
 export const init = (root, dom = document_.body) => {
@@ -2166,51 +2166,14 @@ export const init = (root, dom = document_.body) => {
 		dom._lui_used = 1
 	);
 
-	let result;//[props, childs]
+	dom = /** @type {HTMLElement} */ (dom);
 
 	dom.innerHTML = '';
-
-	/**
-		@type {TYPE_COMPONENT}
-	*/
-	const component_ = () => (
-		DEBUG && (
-			(
-				!(
-					result = root()
-				) ||
-				result.length !== 2
-			) && error('root component must return [props, childs]'),
-			assert_hook_equal(!result[0], 'attributes presence'),
-			result[0] !== null_ && (
-				typeof result[0] !== 'object' &&
-					error('invalid props type'),
-				assert_keys(
-					/** @type {!Object} */ (hook_prev(result[0], result[0])),
-					result[0]
-				),
-				result[0].C &&
-					error('root childs must be in second return value')
-			)
-		),
-		hook_dom_common(
-			(
-				DEBUG
-				?	result
-				:	result = root()
-			)[0]
-		),
-		result[1]
-	);
-
-	DEBUG && (
-		component_['name_'] = '$root'
-	);
 
 	let instance;
 	render_queue[0].push(instance = {
 		icall: {
-			component_,
+			component_: root,
 			props: null_,
 		},
 		props_comp: null_,
@@ -2219,8 +2182,8 @@ export const init = (root, dom = document_.body) => {
 		parent_index: 0,
 		slots: [],
 		childs: null_,
-		dom: /** @type {HTMLElement} */ (dom),
-		dom_first: /** @type {HTMLElement} */ (dom),
+		dom,
+		dom_first: dom,
 		dirty: true_,
 	});
 	if (EXTENDED) instance.slots[0] = {
@@ -2229,6 +2192,7 @@ export const init = (root, dom = document_.body) => {
 	};
 
 	DEBUG && (
+		root['name_'] = '$root',
 		current = current_slots = null_
 	);
 

@@ -81,12 +81,14 @@ init(() => {
 
 	const [red, red_set] = hook_state(false);
 
-	return [{
+	hook_dom('', {
 		F: {
 			dark,
 			red,
 		},
-	}, [
+	});
+
+	return [
 		node_dom('h1[innerText=Hallo, Welt!]'),
 		node_dom('p', {
 			innerText: `Dies ist eine ${
@@ -111,5 +113,5 @@ init(() => {
 			Bar,
 			dark ? colors : colors_reversed
 		),
-	]];
+	];
 });

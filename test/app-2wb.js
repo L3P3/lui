@@ -1,4 +1,5 @@
 import {
+	hook_dom,
 	hook_state,
 	hook_transition,
 	init,
@@ -8,11 +9,12 @@ import {
 const F = {dark: true};
 
 init(() => {
+	hook_dom('', {
+		F,
+	});
 	const [name, name_set] = hook_state('');
 
-	return [{
-		F,
-	}, [
+	return [
 		node_dom('h1', {
 			S: {
 				color: `rgb(255,${
@@ -41,5 +43,5 @@ init(() => {
 				},
 			}),
 		]),
-	]];
+	];
 });

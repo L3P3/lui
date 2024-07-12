@@ -21,9 +21,9 @@ init(() => {
 		}, 1e3);
 	});
 
-	return [null, [
+	return [
 		node(Child),
-	]];
+	];
 });
 
 function Child() {

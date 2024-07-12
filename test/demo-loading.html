@@ -34,6 +34,7 @@
 		<script type=module>
 			import {
 				hook_delay,
+				hook_dom,
 				hook_effect,
 				hook_model,
 				hook_prev,
@@ -131,15 +132,17 @@
 				});
 				const busy = loading || wanted;
 
-				return [{
+				hook_dom('', {
 					onclick,
-				}, [
+				});
+
+				return [
 					busy ||
 					node(Seite),
 					node(Busy, {
 						show: busy,
 					}),
-				]];
+				];
 			});
 		</script>
 	</body>

@@ -7,15 +7,18 @@ define(['lui'], function(lui) {
 		return null;
 	}
 
+	function Root() {
+		lui.hook_dom('', {
+			S: {
+				background: 'lime'
+			}
+		});
+		return [
+			lui.node(Uhr)
+		];
+	}
+
 	return function(root) {
-		lui.init(function() {
-			return [{
-				S: {
-					background: 'lime'
-				}
-			}, [
-				lui.node(Uhr)
-			]];
-		}, root);
+		lui.init(Root, root);
 	};
 });

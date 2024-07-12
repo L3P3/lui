@@ -240,7 +240,7 @@
 				const [width, width_set] = hook_state(300);
 				const [delay, delay_set] = hook_state(100);
 
-				return [null, [
+				return [
 					node_dom('h1[innerText=Moin!]'),
 					node_dom('table', null, [
 						node_dom('tr', null, [
@@ -276,7 +276,7 @@
 						delay,
 						width,
 					}),
-				]];
+				];
 			});
 		</script>
 	</body>

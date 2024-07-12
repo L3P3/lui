@@ -4,13 +4,13 @@ import {
 } from '../src/lui.js';
 
 init(() => {
-	return [null, [
+	return [
 		node_dom('div[id=root][innerText=FAIL]'),
-	]];
+	];
 });
 
 init(() => {
-	return [null, [
+	return [
 		node_dom('h1[innerText=PASS]'),
-	]];
+	];
 }, document.querySelector('#root'));

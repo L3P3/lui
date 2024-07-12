@@ -44,11 +44,11 @@ function Index({
 init(() => {
 	const [caseId, case_set] = hook_state(null);
 
-	return [null, [
+	return [
 		caseId &&
 		node(cases[caseId]),
 
 		!caseId &&
 		node(Index, {case_set}),
-	]];
+	];
 });
