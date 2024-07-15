@@ -164,7 +164,8 @@ if (
 	catch (error) {}
 
 	console.log('deploy...');
-	await exec('cp ./dist/lui* /media/Archiv/Anbieter/www/shr/');
+	const version_m = version.split('.')[0];
+	await exec(`mkdir -p /media/Archiv/Anbieter/www/shr/lui/${version_m};cp ./dist/lui* /media/Archiv/Anbieter/www/shr/lui/${version_m}/`);
 }
 
 })()
