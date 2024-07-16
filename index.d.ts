@@ -176,7 +176,7 @@ declare namespace lui {
 	/**
 		Mounts root component on document's body or whatever root element specified
 	*/
-	export function init(root: Component<{}>, dom?: HTMLElement): void;
+	export function init<T extends {}>(root: Component<T>, dom?: HTMLElement, props?: T | null): void;
 
 	/**
 		Component instantiation

@@ -40,7 +40,7 @@ When I was introduced to [React](https://github.com/facebook/react), I liked it 
 
 ## Getting started
 
-Just download a demo file above and modify it as you like!
+Just download a demo file above and modify it as you like! Also look into the app files in the `test` directory.
 
 When you are developing your app, use `lui.dev.js` instead to get fancy error detection enabled.
 
@@ -148,6 +148,8 @@ init(() => {
 ```
 
 By default, the body is used as the root element. You can also specify another one as the second argument to `init`.
+
+Optionally, static props to the root component can also be passed as a third argument.
 
 ### DOM templates
 
@@ -327,7 +329,7 @@ Function | Description | V
 `hook_static(initial):initial` | This is a much cheaper version of `hook_memo`: What you put in it the first time will _always_ come out of it. | C
 `hook_sub((...deps)=>T, deps[]):T` | Like `hook_memo` but the getter function may be swapped and it may contain hooks. | E
 `hook_transition(target, msecs):current` | When `target` changes, the output number will smoothly pass to the new target, taking the specified time for that transition. | E
-`init(RootComponent, root_element)` | This mounts the body (or root_element) once, you pass it your root component. | C
+`init(RootComponent, root_element, props)` | This mounts the body (or root_element) once, you pass it your root component. | C
 `node(Component, props{}, childs[]):node` | This is how you add child components. If the added component accepts childs (`C` prop), you can pass that as the third argument as an array of nodes. | C
 `node_dom('descriptor', attrs{}, childs[]):node` | When you want to add dom components, use this function. It is very similar to `node` but needs a descriptor instead. | C
 `node_map(Component, data[], props{})` | When you want to add a component n times for each entry of an array, this is the (proper) way to go. If the array items are objects, the [keys](https://react.dev/learn/rendering-lists#keeping-list-items-in-order-with-key) are directly taken from an `id` property. | C

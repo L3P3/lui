@@ -151,19 +151,19 @@ let rerender_requested = 0;
 	no synchronous rerendering?
 	@type {boolean}
 */
-let rerender_deferred = current_first;
+let rerender_deferred = !current_first;
 
 /**
 	instances that should be rerendered in this frame
 	@type {!Array<Array<TYPE_INSTANCE>>}
 */
-let render_queue = [[]];
+let render_queue = [];
 
 /**
 	instances that should be rerendered in the next frame
 	@type {!Array<Array<TYPE_INSTANCE>>}
 */
-let render_queue_next = [[]];
+let render_queue_next = [];
 
 let requestAnimationFrame_;
 let cancelAnimationFrame_;
@@ -203,7 +203,7 @@ const Object_empty = {};
 const null_ = current;
 const undefined_ = void 0;
 const true_ = current_first;
-const false_ = !current_first;
+const false_ = rerender_deferred;
 const regexp_uppercase = /[A-Z]/g;
 const Array_ = Array;
 const Object_ = Object;
@@ -259,7 +259,7 @@ const Object_isFrozen = /** @type {function(*):boolean} */ (
 	?	Object_.isFrozen
 	: DEBUG
 	?	Object_.isFrozen || (value =>
-			value === null || typeof value !== 'object'
+			value === null_ || typeof value !== 'object'
 		)
 	:	null_
 );
@@ -1280,8 +1280,7 @@ export const hook_effect = (effect, deps) => {
 	}
 
 	DEBUG &&
-	current_slots[current_slots_index].unmount &&
-	current_slots[current_slots_index].unmount.then &&
+	current_slots[current_slots_index].unmount?.then &&
 		error('effect function must be synchronous');
 
 	++current_slots_index;
@@ -1506,7 +1505,7 @@ export const hook_callback = (callback, deps) => {
 	);
 
 	DEBUG &&
-	(!deps || !deps.length) &&
+	!(deps?.length) &&
 		error('deps required, use hook_static instead');
 
 	const state = hook_static();
@@ -2150,31 +2149,31 @@ export const node_map = (component_, list_data, props) => (
 
 /**
 	mounts the root component
-	@param {function():Array<TYPE_COMPONENT>} root
+	@param {TYPE_COMPONENT} component_
 	@param {HTMLElement=} dom
+	@param {?TYPE_PROPS=} props
 */
-export const init = (root, dom = document_.body) => {
+export const init = (component_, dom = document_.body, props = null_) => {
 	VERBOSE && log('init');
 
 	DEBUG && (
-		typeof root !== 'function' &&
+		typeof component_ !== 'function' &&
 			error('no init function specified'),
-		dom instanceof HTMLElement ||
-			error('invalid root element'),
-		dom._lui_used &&
+		dom.innerHTML != null_ ||
+			error('invalid component_ element'),
+		dom['_lui_used'] &&
 			error('root element already mounted'),
-		dom._lui_used = 1
+		dom['_lui_used'] = 1
 	);
 
 	dom = /** @type {HTMLElement} */ (dom);
 
 	dom.innerHTML = '';
 
-	let instance;
-	render_queue[0].push(instance = {
+	const instance = {
 		icall: {
-			component_: root,
-			props: null_,
+			component_,
+			props,
 		},
 		props_comp: null_,
 		iparent: null_,
@@ -2184,19 +2183,19 @@ export const init = (root, dom = document_.body) => {
 		childs: null_,
 		dom,
 		dom_first: dom,
-		dirty: true_,
-	});
+		dirty: false_,
+	};
 	if (EXTENDED) instance.slots[0] = {
 		htype: HOOK.HEAD_INSTANCE,
 		hinstance: instance,
 	};
 
 	DEBUG && (
-		root['name_'] = '$root',
+		component_['name_'] = '$root',
 		current = current_slots = null_
 	);
 
-	render();
+	dirtify_instance(instance);
 }
 
 /**
