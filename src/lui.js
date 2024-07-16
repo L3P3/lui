@@ -674,10 +674,17 @@ const instance_render = (dom_parent, dom_first) => {
 				) {
 					child_call = /** @type {TYPE_INSTANCE_CALL} */ (child_call);
 
-					DEBUG &&
-					child &&
-					child.icall.component_ !== child_call.component_ &&
-						error('child component changed at ' + childs_index);
+					DEBUG && (
+						child_call.length != null_ &&
+						childs_index === 0 &&
+						current.ilevel === 0 &&
+							error('root component signature changed, see https://github.com/L3P3/lui/issues/53'),
+						!child_call.component_ &&
+							error('invalid node type at ' + childs_index),
+						child &&
+						child.icall.component_ !== child_call.component_ &&
+							error('node type changed at ' + childs_index)
+					);
 
 					if (
 						current_first =
