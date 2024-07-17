@@ -3,3 +3,4 @@ export const VERBOSE = false;
 export const LEGACY = false;
 export const RJS = false;
 export const EXTENDED = true;
+export const NOEVAL = false;

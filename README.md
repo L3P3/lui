@@ -56,6 +56,20 @@ When doing so, you might want to get type information in your code editor. Just 
 
 I recommend loading scripts with `type="module"` added to the tags so they load asynchronously and [do not block page loading](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Modules). And make sure the above snippet comes before where lui is used.
 
+## Variants
+
+There are several features represented in dedicated variants of lui. These features are:
+
+Feature | Description
+------- | ---
+x | Extended variant, includes [some nice ui features](#full-api) not needed by most apps
+r | Loaded by RequireJS, [read more](#include-lui-via-requirejs)
+dev | Includes many error checks and prints helpful messages into the console
+legacy | Supports old browsers down to IE5, [read more](#legacy-variant)
+noeval | Does not generate code at runtime, [read more](#noeval-variant)
+
+To see which combinations exist, see [the dist branch](https://github.com/L3P3/lui/tree/dist). If you need a combination that is not yet there, contact me.
+
 ## API
 
 When using the standalone file mentioned above, that script file registers a global `lui` object containing all functions mentioned here.
@@ -306,7 +320,7 @@ When `someEvent` is called, lui will rerender only once instead of twice. The re
 
 For the exact signatures, see [the typescript definition file](index.d.ts)! You should somehow integrate it into your project anyway, so your IDE will show you the types automatically.
 
-The third column says if that function is included in the core variant `lui.js` or if you need to use the extended variant `luix.js`. (Only needed when using the [script tag method](#how-to-include-lui) above.)
+The third column says if that function is included in the core variant `lui.js` or if you need to use the extended variant `luix.js`. (Only needed when using the [script tag method](#how-to-include-lui) above. See [variants](#variants).)
 
 Function | Description | V
 --- | --- | ---
@@ -391,6 +405,16 @@ Of course, your code still needs to have the most basic _syntax_, so no arrow fu
 When using lui's polyfills, note that they are not complete or true to specification at all but just made to make lui itself work. Many methods are not included and some have some restrictions thay _may_ cause issues in unusual use cases. Polyfills already take up about a quarter of the file so I want to keep them small, but pretty fast.
 
 See the [demo section](#demos) for examples.
+
+### Noeval variant
+
+Some websites forbid libraries generating code at runtime. This library uses this cool feature to speed up some things but if you cannot use lui due to CSP, use this variant.
+
+It may be slightly slower in theory but probably you would not notice the difference in practice.
+
+Check out this example with restrcting CSP: [normal lui](https://l3p3.de/dev/lui/todo-legacy.html?noeval=0) and [noeval lui](https://l3p3.de/dev/lui/todo-legacy.html?noeval=1). See the console and network tab to see what happens in the background.
+
+See [#50](https://github.com/L3P3/lui/issues/50) for some background.
 
 ## Contribution and Support
 

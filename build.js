@@ -20,7 +20,7 @@ const exec = cmd => (
 	)
 )
 
-function flags_set(debug, verbose, legacy, rjs, extended) {
+function flags_set(debug, verbose, legacy, rjs, extended, noeval) {
 	fs.writeFileSync(
 		'./src/flags.js',
 `export const DEBUG = ${debug};
@@ -28,22 +28,25 @@ export const VERBOSE = ${verbose};
 export const LEGACY = ${legacy};
 export const RJS = ${rjs};
 export const EXTENDED = ${extended};
+export const NOEVAL = ${noeval};
 `,
 		'utf8'
 	);
 }
 
-async function build(prod, legacy, rjs, extended) {
-	flags_set(!prod, false, legacy, rjs, extended);
+async function build(prod, legacy, rjs, extended, noeval) {
+	flags_set(!prod, false, legacy, rjs, extended, noeval);
 
 	const filename = `lui${
 		extended ? 'x' : ''
 	}${
 		rjs ? '.r' : ''
 	}${
-		prod ? '' : '.dev'
+		noeval ? '.noeval' : ''
 	}${
 		legacy ? '.legacy' : ''
+	}${
+		prod ? '' : '.dev'
 	}.js`;
 	const file = './dist/' + filename;
 
@@ -141,9 +144,14 @@ console.log(`build ${version}...`);
 for (const extended of [false, true]) {
 	for (const prod of [false, true])
 	for (const rjs of [false, true])
-		await build(prod, false, rjs, extended);
+		await build(prod, false, rjs, extended, false);
 
-	await build(true, true, false, extended);
+	// legacy
+	await build(true, true, false, extended, false);
+
+	// noeval
+	await build(true, false, false, extended, true);
+	await build(true, false, true, extended, true);
 }
 
 if (
@@ -171,5 +179,5 @@ if (
 })()
 .catch(console.log)
 .finally(() => {
-	flags_set(true, false, false, false, true);
+	flags_set(true, false, false, false, true, false);
 });

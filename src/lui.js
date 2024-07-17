@@ -8,6 +8,7 @@ import {
 	DEBUG,
 	EXTENDED,
 	LEGACY,
+	NOEVAL,
 	RJS,
 	VERBOSE,
 } from './flags.js';
@@ -70,7 +71,7 @@ var TYPE_SLOTS;
 var TYPE_DEPS_COMP;
 
 /**
-	@typedef {function(!Object, !Object):boolean}
+	@typedef {(function(!Object, !Object):boolean|!Array<string>)}
 */
 var TYPE_OBJ_COMP;
 
@@ -193,7 +194,16 @@ const object_comp_functions = {};
 	functions for saying if arrays are different
 	@type {Array<TYPE_DEPS_COMP>}
 */
-const deps_comp_functions = [];
+const deps_comp_functions = (
+	NOEVAL
+	?	[
+		current,
+		(a, b) => a !== b && a[0] !== b[0],
+		(a, b) => a !== b && (a[0] !== b[0] || a[1] !== b[1]),
+		(a, b) => a !== b && (a[0] !== b[0] || a[1] !== b[1] || a[2] !== b[2]),
+	]
+	:	[]
+);
 
 
 /// ALIAS ///
@@ -303,7 +313,7 @@ const state_check = state => (
 	@noinline
 */
 const instance_name_get = ({icall: {component_}}) => (
-	component_ === object_comp_get
+	component_ === instance_render
 	?	'list'
 	:	component_['name_'] ||
 		component_.name ||
@@ -505,7 +515,6 @@ const comp_generate = checks => (
 
 /**
 	gets or generates a compare function for keys, true if different
-	also used as a symbol for node_map
 	@param {!Object} object
 	@return {TYPE_OBJ_COMP}
 	@noinline
@@ -531,15 +540,30 @@ const object_comp_get = object => {
 			),
 			VERBOSE && log('object_comp_get: ' + key),
 
-			object_comp_functions[key] =
-			/** @type {TYPE_OBJ_COMP} */ (
-				comp_generate(
-					object
-					.map(key => `a.${ key }!==b.` + key)
+			object_comp_functions[key] = (
+			NOEVAL
+			?	object
+			:	/** @type {TYPE_OBJ_COMP} */ (
+					comp_generate(
+						object
+						.map(key => `a.${ key }!==b.` + key)
+					)
 				)
 			)
 		)
 	);
+}
+
+/**
+	checks for changes from props list, true if different
+	@param {Object} a
+	@param {Object} b
+	@param {!Array<string>} keys
+*/
+const object_comp_eval = (a, b, keys) => {
+	if (a === b) return false;
+	for (const key of keys) if (a[key] !== b[key]) return true;
+	return false;
 }
 
 /**
@@ -565,18 +589,26 @@ const object_diff = (a, b) => (
 const deps_comp_get = deps => (
 	deps
 	?	(
-		deps_comp_functions[deps.length] ||
-		(
-			DEBUG &&
-			deps.length === 0 &&
-				error('deps must not be empty'),
-			VERBOSE && log('deps_comp_get: ' + deps.length),
+		DEBUG &&
+		deps.length === 0 &&
+			error('deps must not be empty'),
+		NOEVAL
+		?	(
+			deps.length < 5
+			?	deps_comp_functions[deps.length]
+			:	deps_comp_n
+		)
+		:	(
+			deps_comp_functions[deps.length] ||
+			(
+				VERBOSE && log('deps_comp_get: ' + deps.length),
 
-			deps_comp_functions[deps.length] =
-			/** @type {TYPE_DEPS_COMP} */ (
-				comp_generate(
-					deps
-					.map((_, index) => `a[${ index }]!==b[${ index }]`)
+				deps_comp_functions[deps.length] =
+				/** @type {TYPE_DEPS_COMP} */ (
+					comp_generate(
+						deps
+						.map((_, index) => `a[${ index }]!==b[${ index }]`)
+					)
 				)
 			)
 		)
@@ -584,11 +616,29 @@ const deps_comp_get = deps => (
 	:	null_
 )
 
+/**
+	compares n-array, true if different
+	@param {!Array} a
+	@param {!Array} b
+	@return {boolean}
+	@noinline
+*/
+const deps_comp_n = (a, b) => {
+	if (a === b) return false;
+	for (
+		let index = 0, length = a.length;
+		index < length;
+		++index
+	) if (a[index] !== b[index]) return true;
+	return false;
+}
+
 
 /// INSTANCES ///
 
 /**
 	update current instance
+	also used as a symbol for node_map
 	@param {?HTMLElement} dom_parent
 	@param {?HTMLElement} dom_first
 */
@@ -603,7 +653,7 @@ const instance_render = (dom_parent, dom_first) => {
 	instance.dirty = false_;
 
 	// not node_map?
-	if (instance.icall.component_ !== object_comp_get) {
+	if (instance.icall.component_ !== instance_render) {
 		/**
 			@type {Array<TYPE_INSTANCE_CALL_OPTIONAL>}
 		*/
@@ -725,10 +775,17 @@ const instance_render = (dom_parent, dom_first) => {
 							child.icall.props,
 							child_call.props
 						),
-						child_call.props &&
-						child.props_comp(
-							/** @type {!Object} */ (child.icall.props),
-							/** @type {!Object} */ (child_call.props)
+						child_call.props && (
+							NOEVAL
+							?	object_comp_eval(
+									/** @type {!Object} */ (child.icall.props),
+									/** @type {!Object} */ (child_call.props),
+									/** @type {!Array<string>} */ (child.props_comp)
+								)
+							:	/** @type {function(!Object, !Object): boolean} */ (child.props_comp)(
+									/** @type {!Object} */ (child.icall.props),
+									/** @type {!Object} */ (child_call.props)
+								)
 						)
 					) {
 						(
@@ -813,10 +870,17 @@ const instance_render = (dom_parent, dom_first) => {
 		// rerender?
 		if (state.item_map) {
 			props_changed = (
-				props &&
-				state.props_comp(
-					props,
-					state.props_prev
+				props && (
+					NOEVAL
+					?	object_comp_eval(
+							props,
+							state.props_prev,
+							state.props_comp
+						)
+					:	state.props_comp(
+							props,
+							state.props_prev
+						)
 				)
 			);
 
@@ -914,11 +978,18 @@ const instance_render = (dom_parent, dom_first) => {
 
 				if (
 					props_changed ||
-					items_objects &&
-						state.item_comp(
-							items_map[key],
-							child.icall.props.I
-						)
+					items_objects && (
+						NOEVAL
+						?	object_comp_eval(
+								items_map[key],
+								child.icall.props.I,
+								state.item_comp
+							)
+						:	state.item_comp(
+								items_map[key],
+								child.icall.props.I
+							)
+					)
 				) {
 					(
 						current = child
@@ -1812,9 +1883,17 @@ export const hook_map = (getter, list_data, deps) => {
 			dirty ||
 			current_first || (
 				items_objects
-				?	slot.item_comp(
-						items_data_map[key],
-						/** @type {!Object} */ (slots[0].item_data)
+				?	(
+					NOEVAL
+					?	object_comp_eval(
+							items_data_map[key],
+							/** @type {!Object} */ (slots[0].item_data),
+							/** @type {!Array<string>} */ (slot.item_comp)
+						)
+					:	/** @type {function(!Object, !Object): boolean} */ (slot.item_comp)(
+							items_data_map[key],
+							/** @type {!Object} */ (slots[0].item_data)
+						)
 					)
 				:	items_data_map[key] !== slots[0].item_data
 			)
@@ -2144,7 +2223,7 @@ export const node = (component_, props, childs) => (
 */
 export const node_map = (component_, list_data, props) => (
 	node(
-		/** @type {TYPE_COMPONENT} */ (object_comp_get),
+		/** @type {TYPE_COMPONENT} */ (instance_render),
 		{
 			component_,
 			list_data,
