@@ -20,41 +20,38 @@ When I was introduced to [React](https://github.com/facebook/react), I liked it 
 - Created and actively maintained by a [perfectionist](https://www.webdesignerdepot.com/2010/04/the-ups-and-downs-of-being-a-perfectionist)
 - ... and more (see [API](#api))
 
-## Demos
+## Examples
 
-[Small demonstation app](https://l3p3.de/dev/lui/demo.html)
-
-[TODO app](http://l3p3.de/dev/lui/todo-legacy.html), [simpler variant](https://l3p3.de/dev/lui/todo.html)
-
-[Animated sidebar](https://l3p3.de/dev/lui/app.html)
-
-[prog](https://l3p3.de/prog)
-
-[TicTacToe](https://l3p3.de/dev/lui/ttt.html)
-
-[Text encryption toy](https://l3p3.de/dev/lui/crypto.html)
-
-[RequireJS](https://l3p3.de/dev/lui/rjs.html)
-
-[Clock for MS Windows](http://l3p3.de/dev/lui/lui-uhr.hta)
+- [minicraft](https://github.com/L3P3/minicraft)
+- [Small demonstation app](https://l3p3.de/dev/lui/demo.html)
+- [TODO app that runs in IE5](https://l3p3.de/dev/lui/todo-legacy.html), [ssr variant](https://l3p3.de/dev/lui/todo-legacy-static.html), [simpler variant](https://l3p3.de/dev/lui/todo.html)
+- [Animated sidebar](https://l3p3.de/dev/lui/app.html)
+- [prog](https://l3p3.de/prog)
+- [TicTacToe](https://l3p3.de/dev/lui/ttt.html)
+- [Text encryption toy](https://l3p3.de/dev/lui/crypto.html)
+- [RequireJS](https://l3p3.de/dev/lui/rjs.html)
+- [Clock for MS Windows](http://l3p3.de/dev/lui/lui-uhr.hta)
 
 ## Getting started
 
-Just download a demo file above and modify it as you like! Also look into the app files in the `test` directory.
+Just download a demo file from above and modify it as you like! Also look into the app files in the `test` directory. Especially check out minicraft!
 
-When you are developing your app, use `lui.dev.js` instead to get fancy error detection enabled.
+> [!TIP]
+> While coding, use `lui.dev.js` instead for fancy error detection.
 
 ## How to include lui
 
-Just add the following line to your HTML file:
+Just add the following line to your HTML file before where lui is used:
 
 ```html
 <script src="https://cdn.jsdelivr.net/gh/L3P3/lui@2/lui.js"></script>
 ```
 
-When doing so, you might want to get type information in your code editor. Just copy `lui.js` and `lui.d.ts` from [here](https://github.com/L3P3/prog/tree/master/src/etc) into your project and import from the `js` file into your modules.
+> [!TIP]
+> To not block page loading, add [`defer`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script#defer) to the script tags.
 
-I recommend loading scripts with `type="module"` added to the tags so they load asynchronously and [do not block page loading](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Modules). And make sure the above snippet comes before where lui is used.
+> [!TIP]
+> For type information in your code editor, just copy `lui-link.js` and `index.d.ts` from this repo into your project, rename them to `lui.js` and `lui.d.ts` and import from the `js` file.
 
 ## Variants
 
@@ -72,17 +69,17 @@ To see which combinations exist, see [the dist branch](https://github.com/L3P3/l
 
 ## API
 
-When using the standalone file mentioned above, that script file registers a global `lui` object containing all functions mentioned here.
+When using the standalone file mentioned above, it registers a global `lui` object containing all functions mentioned here.
 
-When you transpile/bundle your app, you should use a wrapper as explained [above](#how-to-include-lui).
+When the app is transpiled/bundled, use a wrapper as explained [above](#how-to-include-lui).
 
-If you want to bundle lui itself with your app, you can access these functions by a simple `import {...} from 'lui'` statement. Learn more [here](#bundle-lui-with-your-app).
+To bundle lui itself with your app, just `import {...} from 'lui'`. Learn more [here](#bundle-lui-with-your-app).
 
 ### Components
 
-A component is a function which takes props and returns a list of its child components. By recursion, you can build up a dom tree in a very flexible way. I also recommend reading [React's explaination](https://react.dev/learn/your-first-component).
+A component is a function which takes props and returns a list of its child nodes. Components can be instantiated as nodes in other components. By recursion, you can build up a dom tree in a very flexible way. I also recommend reading [React's explaination](https://react.dev/learn/your-first-component).
 
-Here is a very simple component. It takes two props (one of which is optional) and it contains just one node.
+Here is a very simple component. It takes two props (`color` is optional) and it consists of just one node.
 
 ```js
 function ColoredText({
@@ -121,22 +118,27 @@ If you want to map an array with changing order or length to a list of component
 
 The component you pass to `node_map` gets mounted for each item of the array you pass to it. The component gets a prop `I` containing the corresponding array item. If you pass props as the third argument, every child will get them in addition to `I`.
 
-Allowed array items are numbers, strings and objects. If you pass objects, they must have an unique `id` property. There must not be two items of the same value or id.
+> [!IMPORTANT]
+> Allowed array items are numbers, strings and objects. If you pass objects, they must have an unique `id` property. There must not be two items of the same value or id.
 
 ### DOM components
 
 The leaves of your component tree are mostly made out of native dom elements. To use such a component, use `node_dom` instead of `node`. The signature is the same, except for the first argument being a descriptor, similar to css selectors: `tagName[attr1=value][attr2][...]`
 
-The `tagName` is required but number and order of attributes are optional. Having static attributes in the descriptor instead of in the props improves efficiency (re-using of nodes, reduced diffing).
+The `tagName` is required but number and order of attributes are optional. Having static attributes in the descriptor instead of in the props improves efficiency (re-using of nodes, reduced diffing). For that reason, always sort attributes alphabetically.
 
-Props are directly mapped to dom attributes, except these 4 special props:
+Props are strings directly mapped to dom attributes, except these 4 special non-string props:
+
 prop | Description
 --- | ---
 `C: Array<node>` | The nodes that should come into it. Instead of as a prop, you can pass this array as the third argument to the `node` function.
-`D: Object<string, *>` | `element.dataset` mapping, to set `data-` attributes.
+`D: Object<string, *>` | `element.dataset` mapping object, to set `data-` attributes.
 `F: Object<string, boolean>` | An object of applied css classes. Each key with a `true` value will be applied. Others not.
 `R: function(HTMLElement)` | This function is given the instance's dom element after it is created.
 `S: Object<string, string>` | `element.style` mapping.
+
+> [!TIP]
+> For inline css, css classes and data attributes, use these special props!
 
 ### Virtual components
 
@@ -164,6 +166,9 @@ init(() => {
 By default, the body is used as the root element. You can also specify another one as the second argument to `init`.
 
 Optionally, static props to the root component can also be passed as a third argument.
+
+> [!WARNING]
+> After calling `init` on a root element, leave it and its content alone. It belongs to lui now.
 
 ### DOM templates
 
@@ -203,7 +208,8 @@ Instead of using object oriented syntax like `this.number = 42;` (or `this.setNu
 
 **Stateless hooks** (`hook_assert` and `hook_rerender`) may be called anywhere in your component.
 
-Using any hook in a **callback** is probably a very bad idea.
+> [!WARNING]
+> Placing any hook in a callback/if/loop is not allowed. Only use them directly in component functions.
 
 ### Comparision with React's Hooks
 
@@ -357,9 +363,11 @@ Maybe you want to use lui in a more special case. No problem!
 
 You can simply run `npm install https://github.com/l3p3/lui` to install it. Later, when lui ist complete enough, I may add it to npm as well.
 
-When bundling for production, you should make sure to automatically set `DEBUG` to `false` in `node_modules/lui/src/flags.js`. If that is not done, the result will be bigger and slower.
+> [!CAUTION]
+> When bundling for production, you should make sure to automatically set `DEBUG` to `false` in `node_modules/lui/src/flags.js`. If that is not done, the result will be bigger and slower.
 
-Please do NOT try to use the uncompiled `src/lui.js` in production! It is written specifically for being compiled.
+> [!IMPORTANT]
+> Please do NOT try to use the uncompiled `src/lui.js` in production! It is written specifically for being compiled.
 
 ### Include lui via RequireJS
 
