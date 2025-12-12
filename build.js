@@ -82,19 +82,38 @@ async function build(prod, legacy, rjs, extended, noeval) {
 
 	const wrap_fn = legacy || rjs;
 
-	const code_js = (
-		(
-			fs.readFileSync(file, 'ascii')
-			.trim() + '%END%'
-		)
-		.replace('lui.js web frame work', 'lui.js web frame work ' + version)
+	let code_js = (
+		fs.readFileSync(file, 'ascii')
+		.trim()
+	);
+	if (!code_js.startsWith("'use strict';")) {
+		throw new Error('closure compiler output signature mismatch');
+	}
+	// cut off use strict
+	code_js = code_js.slice(13);
+	// extract closure compiler helpers added to the beginning
+	let cc_helpers = '';
+	const cc_helpers_length = code_js.indexOf('/*');
+	if (cc_helpers_length > 0) {
+		cc_helpers = code_js.slice(0, cc_helpers_length);
+		code_js = code_js.slice(cc_helpers_length);
+	}
+	code_js = (
+		'"use strict";' +
+		code_js
+		// insert version into file header
+		.replace('lui.js web framework', 'lui.js web framework ' + version)
 		.replace('*/\n',
-			wrap_fn ? '*/\n(function(){' : '*/\n{'
+			'*/\n' +
+			(wrap_fn ? '(function()' : '') +
+			'{' +
+			cc_helpers
 		)
-		.replace(';%END%',
-			wrap_fn ? '})()' : '}'
-		)
-		//.split('\n').join('')
+		// remove last ;
+		.slice(0, -1) +
+		'}' +
+		(wrap_fn ? ')()' : '') +
+		'\n'
 	);
 
 	fs.writeFileSync(file, code_js, 'ascii');

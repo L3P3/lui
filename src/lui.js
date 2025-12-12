@@ -1,7 +1,7 @@
 /**
-	@preserve lui.js web frame work
+	@preserve lui.js web framework
 	inspired by react and mithril
-	L3P3.de 2024
+	l3p3.de 2025
 */
 
 import {

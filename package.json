@@ -1,14 +1,14 @@
 {
 	"name": "lui",
-	"version": "2.2.0",
+	"version": "2.2.1",
 	"description": "web framework",
 	"homepage": "https://l3p3.de/dok/lui.html",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/l3p3/lui"
+		"url": "https://github.com/L3P3/lui"
 	},
 	"bugs": {
-		"url": "https://github.com/l3p3/lui/issues"
+		"url": "https://github.com/L3P3/lui/issues"
 	},
 	"main": "./src/lui.js",
 	"module": "./src/lui.js",
