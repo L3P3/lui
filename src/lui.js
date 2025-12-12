@@ -220,9 +220,8 @@ const Object_ = Object;
 const Object_assign = /** @type {function(!Object, ...(?Object|void)):!Object} */ (
 	LEGACY
 	?	(
-		Object_.assign || (
-			Object_.assign =
-			function(result) {
+		Object_['assign'] || (
+			Object_['assign'] = function(result) {
 				for (
 					var sources = arguments,
 						length = sources.length,
@@ -239,14 +238,13 @@ const Object_assign = /** @type {function(!Object, ...(?Object|void)):!Object} *
 			}
 		)
 	)
-	:	Object_.assign
+	:	Object_['assign']
 );
 const Object_keys = /** @type {function(!Object):!Array<string>} */ (
 	LEGACY
 	?	(
-		Object_.keys || (
-			Object_.keys =
-			function(object) {
+		Object_['keys'] || (
+			Object_['keys'] = object => {
 				var result = [];
 				for (var key in object) {
 					result.push(key);
@@ -255,20 +253,35 @@ const Object_keys = /** @type {function(!Object):!Array<string>} */ (
 			}
 		)
 	)
-	:	Object_.keys
+	:	Object_['keys']
+);
+const Object_values = /** @type {function(!Object):!Array<*>} */ (
+	LEGACY || RJS
+	?	(
+		Object_['values'] || (
+			Object_['values'] = object => {
+				var result = [];
+				for (var key in object) {
+					result.push(object[key]);
+				}
+				return result;
+			}
+		)
+	)
+	:	Object_['values']
 );
 const Object_freeze = /** @type {function(!Object):!Object} */ (
 	DEBUG && !RJS && !LEGACY
-	?	Object_.freeze
+	?	Object_['freeze']
 	: DEBUG
-	?	Object_.freeze || (object => object)
+	?	Object_['freeze'] || (object => object)
 	:	null_
 );
 const Object_isFrozen = /** @type {function(*):boolean} */ (
 	DEBUG && !RJS && !LEGACY
-	?	Object_.isFrozen
+	?	Object_['isFrozen']
 	: DEBUG
-	?	Object_.isFrozen || (value =>
+	?	Object_['isFrozen'] || (value =>
 			value === null_ || typeof value !== 'object'
 		)
 	:	null_
@@ -299,7 +312,7 @@ const state_check = state => (
 		Object_freeze(state).constructor !== Array_&& (
 			state.constructor !== Object_ &&
 				error('model state must not contain shit like ' + state.constructor.name),
-			state = Object_.values(state)
+			state = Object_values(state)
 		),
 		state = /** @type {!Array} */ (state),
 		state.forEach(state_check)
@@ -2657,6 +2670,21 @@ if (LEGACY || RJS) {
 	}
 
 
+	Object_['entries'] || ( // chrome < 54
+
+	Object_['entries'] =
+	/**
+		@type {function(!Object):!Array<!Array<*>>}
+	*/
+	(object => {
+		var result = [];
+		for (var key in object) {
+			result.push([key, object[key]]);
+		}
+		return result;
+	}),
+
+
 	Array_prototype['fill'] || ( // chrome < 45 || ie
 
 	Array_prototype['fill'] =
@@ -2975,5 +3003,5 @@ if (LEGACY || RJS) {
 		return result;
 	})
 
-	))))));
+	)))))));
 }
