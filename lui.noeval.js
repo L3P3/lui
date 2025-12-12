@@ -1,5 +1,5 @@
 "use strict";/*
- lui.js web framework 2.2.1
+ lui.js web framework 2.2.2
  inspired by react and mithril
  l3p3.de 2025
 */
