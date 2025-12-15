@@ -295,6 +295,10 @@ const Date_ = (
 	?	Date
 	:	window_.performance || Date
 );
+const flag_style_writable = (
+	!LEGACY && !RJS ||
+	navigator.userAgent.indexOf('WebKit') < 0
+);
 
 
 /// DEBUGGING ///
@@ -2559,14 +2563,32 @@ const dom_get = descriptor => {
 				) &&
 					error('dom: space in attribute name');
 
-				eqi > 0
-				?	dom[
+				if (LEGACY || RJS) { // needed for #57
+					const key = (
 						LEGACY
 						?	sqbi.substring(0, eqi)
 						:	sqbi.substr(0, eqi)
-					] =
-						sqbi.substr(eqi + 1)
-				:	dom[sqbi] = true_;
+					);
+					eqi < 0
+					? dom[sqbi] = true_
+					: flag_style_writable || key !== 'style'
+					?	dom[key] =
+							sqbi.substr(eqi + 1)
+					:	dom.setAttribute(
+							key,
+							sqbi.substr(eqi + 1)
+						);
+				}
+				else {
+					eqi > 0
+					?	dom[
+								LEGACY
+								?	sqbi.substring(0, eqi)
+								:	sqbi.substr(0, eqi)
+							] =
+								sqbi.substr(eqi + 1)
+					:	dom[sqbi] = true_;
+				}
 			}
 		}
 	}
