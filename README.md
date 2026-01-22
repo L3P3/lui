@@ -121,6 +121,9 @@ The component you pass to `node_map` gets mounted for each item of the array you
 > [!IMPORTANT]
 > Allowed array items are numbers, strings and objects. If you pass objects, they must have an unique `id` property. There must not be two items of the same value or id.
 
+> [!IMPORTANT]
+> Components used with `node_map` must use `hook_dom` to define their root element. This is required for efficient reordering of list items.
+
 ### DOM components
 
 The leaves of your component tree are mostly made out of native dom elements. To use such a component, use `node_dom` instead of `node`. The signature is the same, except for the first argument being a descriptor, similar to css selectors: `tagName[attr1=value][attr2][...]`
