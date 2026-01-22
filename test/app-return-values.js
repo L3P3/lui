@@ -42,20 +42,23 @@ init(() => {
 	const testModelReturns = () => {
 		console.log('Testing hook_model action return values...');
 		
+		// Reset to known state first
+		modelActions.reset();
+		
 		// Test increment
 		const result1 = modelActions.increment();
 		console.log('increment() returned:', result1);
-		console.assert(result1.count === modelState.count, 'increment should return updated state');
+		console.assert(result1.count === 1, 'increment should return state with count 1');
 		
 		// Test decrement
 		const result2 = modelActions.decrement();
 		console.log('decrement() returned:', result2);
-		console.assert(result2.count === modelState.count, 'decrement should return updated state');
+		console.assert(result2.count === 0, 'decrement should return state with count 0');
 		
 		// Test with parameters
 		const result3 = modelActions.addAmount(10);
 		console.log('addAmount(10) returned:', result3);
-		console.assert(result3.count === modelState.count, 'addAmount should return updated state');
+		console.assert(result3.count === 10, 'addAmount should return state with count 10');
 		
 		// Test that returned value can be used immediately
 		const result4 = modelActions.reset();
