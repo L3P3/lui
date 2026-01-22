@@ -1,4 +1,6 @@
-import './setup.js';
+import {
+	root_create,
+} from './setup.js';
 import {
 	expect,
 	test,
@@ -10,10 +12,7 @@ import {
 } from '../src/lui.js';
 
 test('app-root: can mount on specific root element', () => {
-	// Create a unique root element for this test
-	const root = document.createElement('div');
-	root.id = 'test-root';
-	document.body.appendChild(root);
+	const root = root_create();
 	
 	// Mount app on the root element using textContent in props instead of descriptor
 	init(() => {

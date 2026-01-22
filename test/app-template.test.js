@@ -1,4 +1,6 @@
-import './setup.js';
+import {
+	root_create,
+} from './setup.js';
 import {
 	expect,
 	test,
@@ -11,6 +13,8 @@ import {
 } from '../src/lui.js';
 
 test('app-template: can define and use templates', () => {
+	const root = root_create();
+	
 	// Define a template
 	dom_define('test', 'h1', {
 		textContent: 'Hello, world!',
@@ -18,9 +22,6 @@ test('app-template: can define and use templates', () => {
 			color: 'red',
 		},
 	});
-	
-	const root = document.createElement('div');
-	document.body.appendChild(root);
 	
 	// Initialize app with template
 	init(() => {

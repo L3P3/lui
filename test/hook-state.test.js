@@ -1,4 +1,6 @@
-import './setup.js';
+import {
+	root_create,
+} from './setup.js';
 import {
 	expect,
 	test,
@@ -11,8 +13,7 @@ import {
 } from '../src/lui.js';
 
 test('hook_state: can manage component state', () => {
-	const root = document.createElement('div');
-	document.body.appendChild(root);
+	const root = root_create();
 	
 	init(() => {
 		const [count, count_set] = hook_state(0);

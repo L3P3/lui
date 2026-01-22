@@ -1,4 +1,6 @@
-import './setup.js';
+import {
+	root_create,
+} from './setup.js';
 import {
 	expect,
 	test,
@@ -12,6 +14,8 @@ import {
 } from '../src/lui.js';
 
 test('app-list: can render list items with node_map', () => {
+	const root = root_create();
+	
 	const actions = {
 		init: () => (
 			new Array(6).fill(null)
@@ -23,9 +27,6 @@ test('app-list: can render list items with node_map', () => {
 		hook_dom('p', { textContent: I }),
 		null
 	);
-	
-	const root = document.createElement('div');
-	document.body.appendChild(root);
 	
 	init(() => {
 		const [list] = hook_model(actions);

@@ -19,8 +19,11 @@ beforeEach(() => {
 	global.HTMLElement = freshDom.window.HTMLElement;
 	global.Node = freshDom.window.Node;
 	global.Element = freshDom.window.Element;
-	// Clear the _lui_used flag from body element if it exists
-	if (global.document.body) {
-		delete global.document.body._lui_used;
-	}
 });
+
+// Helper function to create a unique root element for each test
+export const root_create = () => {
+	const root = document.createElement('div');
+	document.body.appendChild(root);
+	return root;
+};

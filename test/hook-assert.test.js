@@ -1,4 +1,6 @@
-import './setup.js';
+import {
+	root_create,
+} from './setup.js';
 import {
 	expect,
 	test,
@@ -13,6 +15,8 @@ import {
 } from '../src/lui.js';
 
 test('hook_assert: can conditionally render components', () => {
+	const root = root_create();
+	
 	function Inner({ on }) {
 		hook_assert(on);
 		
@@ -20,9 +24,6 @@ test('hook_assert: can conditionally render components', () => {
 			node_dom('p', { textContent: 'Test' }),
 		];
 	}
-	
-	const root = document.createElement('div');
-	document.body.appendChild(root);
 	
 	init(() => {
 		const [on, on_set] = hook_state(false);
