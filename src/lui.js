@@ -1479,7 +1479,7 @@ export const hook_state = initial => {
 				slot[0] = value,
 				EXTENDED ? dirtify_slots(current_slots_) : dirtify_instance(current_)
 			);
-			return slot[0];
+			return value;
 		},
 		() => slot[0]
 	];
@@ -2069,7 +2069,7 @@ export const hook_model = mutations => {
 				slot[0] = value,
 				EXTENDED ? dirtify_slots(current_slots_) : dirtify_instance(current_)
 			);
-			return slot[0];
+			return value;
 		};
 	}
 	current_slots[current_slots_index++] =
