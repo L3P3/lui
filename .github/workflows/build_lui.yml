@@ -24,8 +24,6 @@ jobs:
       
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
       
       - name: Install dependencies
         run: bun install
@@ -37,8 +35,8 @@ jobs:
       - name: Commit artifacts and purge cache
         if: github.ref == 'refs/heads/master'
         run: |
-          export LUIVERSION=$(echo "console.log(require('./package.json').version)" | node)
-          export LUIVERSION_MAJOR=$(echo "console.log(require('./package.json').version.split('.')[0])" | node)
+          export LUIVERSION=$(bun -e "console.log(require('./package.json').version)")
+          export LUIVERSION_MAJOR=$(bun -e "console.log(require('./package.json').version.split('.')[0])")
           mv dist /tmp/lui-dist
           git checkout dist
           mv /tmp/lui-dist/* ./

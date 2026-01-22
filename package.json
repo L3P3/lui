@@ -19,9 +19,9 @@
 	"type": "module",
 	"types": "./index.d.ts",
 	"scripts": {
-		"build": "bun ./build.js",
-		"buildd": "bun ./build.js d",
-		"test": "bun test"
+		"build": "bun run ./build.js",
+		"buildd": "bun run ./build.js d",
+		"test": "bun test --randomize"
 	},
 	"keywords": [
 		"framework",
