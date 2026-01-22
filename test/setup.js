@@ -10,7 +10,5 @@ global.requestAnimationFrame = callback => setTimeout(callback, 0);
 global.cancelAnimationFrame = clearTimeout;
 
 export const root_create = () => {
-	const root = document.createElement('div');
-	document.body.appendChild(root);
-	return root;
+	return document.createElement('div');
 };

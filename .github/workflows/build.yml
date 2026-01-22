@@ -3,13 +3,13 @@ name: Build lui
 
 on:
   push:
-    branches-ignore:
-      - dist
+    branches:
+      - master
     paths:
       - 'package.json'
   pull_request:
-    branches-ignore:
-      - dist
+    branches:
+      - master
     paths:
       - 'package.json'
   workflow_dispatch:
