@@ -135,7 +135,7 @@ declare namespace lui {
 		init: () => T,
 		[key: string]: (current?: T, ...args: any) => T
 	}>(mutations: U): [value: T, methods: {
-		[method in keyof U]: (...args: ParametersExceptFirst<U[method]>) => void
+		[method in keyof U]: (...args: ParametersExceptFirst<U[method]>) => T
 	}];
 
 	/**
@@ -156,7 +156,7 @@ declare namespace lui {
 	/**
 		Simple state containment
 	*/
-	export function hook_state<T>(initial?: T): [value: T, setter: (value: T) => void, getter: () => T];
+	export function hook_state<T>(initial?: T): [value: T, setter: (value: T) => T, getter: () => T];
 
 	/**
 		Returns the value from first rendering
