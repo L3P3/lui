@@ -5,9 +5,15 @@ on:
   push:
     branches-ignore:
       - dist
+    paths:
+      - 'test/**'
+      - 'src/**'
   pull_request:
     branches-ignore:
       - dist
+    paths:
+      - 'test/**'
+      - 'src/**'
   workflow_dispatch:
 
 jobs:
