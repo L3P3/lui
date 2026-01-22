@@ -978,7 +978,7 @@ const instance_render = (dom_parent, dom_first) => {
 
 				DEBUG &&
 				!child.dom &&
-					error('node_map item component must use hook_dom');
+					error('node_map item components must call hook_dom() to define their root DOM element');
 
 				child.dom &&
 					dom_parent.insertBefore(
@@ -988,6 +988,7 @@ const instance_render = (dom_parent, dom_first) => {
 			}
 			else {
 				if (
+					child.dom &&
 					child.dom.nextSibling !== dom_first
 				) {
 					VERBOSE && log('item reinsert ' + key);
