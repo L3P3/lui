@@ -1,11 +1,18 @@
-import { test, expect } from 'bun:test';
-import { setupDOM } from './setup.js';
+import './setup.js';
+import {
+	expect,
+	test,
+} from 'bun:test';
 
-test('hook_assert: can conditionally render components', async () => {
-	setupDOM();
-	
-	const { hook_assert, hook_state, init, node, node_dom } = await import('../src/lui.js');
-	
+import {
+	hook_assert,
+	hook_state,
+	init,
+	node,
+	node_dom,
+} from '../src/lui.js';
+
+test('hook_assert: can conditionally render components', () => {
 	function Inner({ on }) {
 		hook_assert(on);
 		
@@ -14,7 +21,6 @@ test('hook_assert: can conditionally render components', async () => {
 		];
 	}
 	
-	// Create unique root element
 	const root = document.createElement('div');
 	document.body.appendChild(root);
 	
@@ -33,9 +39,6 @@ test('hook_assert: can conditionally render components', async () => {
 		];
 	}, root);
 	
-	// Wait for initialization
-	await new Promise(resolve => setTimeout(resolve, 10));
-	
 	const h1 = root.querySelector('h1');
 	expect(h1.textContent).toBe('Hello, World!');
 	
@@ -46,7 +49,6 @@ test('hook_assert: can conditionally render components', async () => {
 	// Toggle on
 	const button = root.querySelector('button');
 	button.click();
-	await new Promise(resolve => setTimeout(resolve, 10));
 	
 	// Now the inner component should render
 	paragraphs = root.querySelectorAll('p');
@@ -55,7 +57,6 @@ test('hook_assert: can conditionally render components', async () => {
 	
 	// Toggle off
 	button.click();
-	await new Promise(resolve => setTimeout(resolve, 10));
 	
 	// Inner component should not render again
 	paragraphs = root.querySelectorAll('p');

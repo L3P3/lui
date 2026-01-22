@@ -1,11 +1,16 @@
-import { test, expect } from 'bun:test';
-import { setupDOM } from './setup.js';
+import './setup.js';
+import {
+	expect,
+	test,
+} from 'bun:test';
 
-test('app-template: can define and use templates', async () => {
-	setupDOM();
-	
-	const { dom_define, init, node_dom } = await import('../src/lui.js');
-	
+import {
+	dom_define,
+	init,
+	node_dom,
+} from '../src/lui.js';
+
+test('app-template: can define and use templates', () => {
 	// Define a template
 	dom_define('test', 'h1', {
 		textContent: 'Hello, world!',
@@ -14,7 +19,6 @@ test('app-template: can define and use templates', async () => {
 		},
 	});
 	
-	// Create unique root element
 	const root = document.createElement('div');
 	document.body.appendChild(root);
 	
@@ -28,9 +32,6 @@ test('app-template: can define and use templates', async () => {
 			}),
 		];
 	}, root);
-	
-	// Wait for initialization
-	await new Promise(resolve => setTimeout(resolve, 10));
 	
 	const h1 = root.querySelector('h1');
 	expect(h1).toBeTruthy();

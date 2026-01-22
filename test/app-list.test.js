@@ -1,11 +1,17 @@
-import { test, expect } from 'bun:test';
-import { setupDOM } from './setup.js';
+import './setup.js';
+import {
+	expect,
+	test,
+} from 'bun:test';
 
-test('app-list: can render list items with node_map', async () => {
-	setupDOM();
-	
-	const { hook_dom, hook_model, init, node_map } = await import('../src/lui.js');
-	
+import {
+	hook_dom,
+	hook_model,
+	init,
+	node_map,
+} from '../src/lui.js';
+
+test('app-list: can render list items with node_map', () => {
 	const actions = {
 		init: () => (
 			new Array(6).fill(null)
@@ -18,7 +24,6 @@ test('app-list: can render list items with node_map', async () => {
 		null
 	);
 	
-	// Create unique root element
 	const root = document.createElement('div');
 	document.body.appendChild(root);
 	
@@ -32,9 +37,6 @@ test('app-list: can render list items with node_map', async () => {
 			),
 		];
 	}, root);
-	
-	// Wait for initialization
-	await new Promise(resolve => setTimeout(resolve, 10));
 	
 	const paragraphs = root.querySelectorAll('p');
 	expect(paragraphs.length).toBe(6);

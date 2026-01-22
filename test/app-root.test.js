@@ -1,11 +1,15 @@
-import { test, expect } from 'bun:test';
-import { setupDOM } from './setup.js';
+import './setup.js';
+import {
+	expect,
+	test,
+} from 'bun:test';
 
-test('app-root: can mount on specific root element', async () => {
-	setupDOM();
-	
-	const { init, node_dom } = await import('../src/lui.js');
-	
+import {
+	init,
+	node_dom,
+} from '../src/lui.js';
+
+test('app-root: can mount on specific root element', () => {
 	// Create a unique root element for this test
 	const root = document.createElement('div');
 	root.id = 'test-root';
@@ -17,9 +21,6 @@ test('app-root: can mount on specific root element', async () => {
 			node_dom('h1', { textContent: 'PASS' }),
 		];
 	}, root);
-	
-	// Wait for initialization with longer timeout
-	await new Promise(resolve => setTimeout(resolve, 100));
 	
 	expect(root.querySelector('h1')).toBeTruthy();
 	expect(root.querySelector('h1').textContent).toBe('PASS');
