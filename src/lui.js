@@ -980,15 +980,13 @@ const instance_render = (dom_parent, dom_first) => {
 				!child.dom &&
 					error('node_map item components must call hook_dom() to define their root DOM element');
 
-				child.dom &&
-					dom_parent.insertBefore(
-						child.dom_first = child.dom,
-						dom_first
-					);
+				dom_parent.insertBefore(
+					child.dom_first = child.dom,
+					dom_first
+				);
 			}
 			else {
 				if (
-					child.dom &&
 					child.dom.nextSibling !== dom_first
 				) {
 					VERBOSE && log('item reinsert ' + key);
@@ -1025,11 +1023,8 @@ const instance_render = (dom_parent, dom_first) => {
 				}
 			}
 
-			(
-				childs[child.parent_index = items_index] = child
-			).dom_first && (
-				dom_first = child.dom_first
-			);
+			childs[child.parent_index = items_index] = child;
+			dom_first = child.dom_first;
 		}
 
 		instance.dom_first =
