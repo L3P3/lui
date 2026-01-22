@@ -19,8 +19,9 @@
 	"type": "module",
 	"types": "./index.d.ts",
 	"scripts": {
-		"build": "node ./build.js",
-		"buildd": "node ./build.js d"
+		"build": "bun run ./build.js",
+		"buildd": "bun run ./build.js d",
+		"test": "bun test --randomize"
 	},
 	"keywords": [
 		"framework",
@@ -32,5 +33,9 @@
 	"contributors": [
 		"Johann Laur <jl.01@icloud.com> (https://github.com/johann-lr)"
 	],
-	"license": "Zlib"
+	"license": "Zlib",
+	"devDependencies": {
+		"google-closure-compiler": "latest",
+		"jsdom": "latest"
+	}
 }

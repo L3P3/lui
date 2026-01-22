@@ -41,46 +41,46 @@ init(() => {
 
 	const testModelReturns = () => {
 		console.log('Testing hook_model action return values...');
-		
+
 		// Reset to known state first
 		modelActions.reset();
-		
+
 		// Test increment
 		const result1 = modelActions.increment();
 		console.log('increment() returned:', result1);
 		console.assert(result1.count === 1, 'increment should return state with count 1');
-		
+
 		// Test decrement
 		const result2 = modelActions.decrement();
 		console.log('decrement() returned:', result2);
 		console.assert(result2.count === 0, 'decrement should return state with count 0');
-		
+
 		// Test with parameters
 		const result3 = modelActions.addAmount(10);
 		console.log('addAmount(10) returned:', result3);
 		console.assert(result3.count === 10, 'addAmount should return state with count 10');
-		
+
 		// Test that returned value can be used immediately
 		const result4 = modelActions.reset();
 		console.log('reset() returned:', result4);
 		console.assert(result4.count === 0, 'reset should return state with count 0');
-		
+
 		console.log('✓ All hook_model tests passed');
 	};
 
 	const testChainedCalls = () => {
 		console.log('Testing chained usage with return values...');
-		
+
 		// Example: use return value immediately without waiting for re-render
 		const newState = modelActions.addAmount(5);
 		console.log('Added 5, new count is:', newState.count);
-		
+
 		// This demonstrates the value of having return values
 		if (newState.count > 10) {
 			console.log('Count exceeded 10, will reset');
 			modelActions.reset();
 		}
-		
+
 		console.log('✓ Chained call test passed');
 	};
 

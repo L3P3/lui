@@ -34,7 +34,7 @@ When I was introduced to [React](https://github.com/facebook/react), I liked it 
 
 ## Getting started
 
-Just download a demo file from above and modify it as you like! Also look into the app files in the `test` directory. Especially check out minicraft!
+Just download a demo file from above and modify it as you like! Also look into the app files in the `examples` directory. Especially check out minicraft!
 
 > [!TIP]
 > While coding, use `lui.dev.js` instead for fancy error detection.
