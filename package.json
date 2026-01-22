@@ -19,8 +19,8 @@
 	"type": "module",
 	"types": "./index.d.ts",
 	"scripts": {
-		"build": "node ./build.js",
-		"buildd": "node ./build.js d",
+		"build": "bun ./build.js",
+		"buildd": "bun ./build.js d",
 		"test": "bun test"
 	},
 	"keywords": [
@@ -35,6 +35,7 @@
 	],
 	"license": "Zlib",
 	"devDependencies": {
-		"jsdom": "^27.4.0"
+		"google-closure-compiler": "latest",
+		"jsdom": "latest"
 	}
 }

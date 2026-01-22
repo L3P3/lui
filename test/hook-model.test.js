@@ -1,16 +1,8 @@
 import { test, expect } from 'bun:test';
-import { JSDOM } from 'jsdom';
+import { setupDOM } from './setup.js';
 
 test('hook_model: can manage state with actions', async () => {
-	// Setup DOM
-	const dom = new JSDOM('<!DOCTYPE html><html><body></body></html>');
-	global.window = dom.window;
-	global.document = dom.window.document;
-	global.HTMLElement = dom.window.HTMLElement;
-	global.Node = dom.window.Node;
-	global.Element = dom.window.Element;
-	global.requestAnimationFrame = (callback) => setTimeout(callback, 0);
-	global.cancelAnimationFrame = clearTimeout;
+	setupDOM();
 	
 	const { hook_model, init, node_dom } = await import('../src/lui.js');
 	

@@ -1,16 +1,8 @@
 import { test, expect } from 'bun:test';
-import { JSDOM } from 'jsdom';
+import { setupDOM } from './setup.js';
 
 test('app-template: can define and use templates', async () => {
-	// Setup DOM
-	const dom = new JSDOM('<!DOCTYPE html><html><body></body></html>');
-	global.window = dom.window;
-	global.document = dom.window.document;
-	global.HTMLElement = dom.window.HTMLElement;
-	global.Node = dom.window.Node;
-	global.Element = dom.window.Element;
-	global.requestAnimationFrame = (callback) => setTimeout(callback, 0);
-	global.cancelAnimationFrame = clearTimeout;
+	setupDOM();
 	
 	const { dom_define, init, node_dom } = await import('../src/lui.js');
 	
