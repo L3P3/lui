@@ -976,21 +976,21 @@ const instance_render = (dom_parent, dom_first) => {
 					dom_first
 				);
 
-				child.dom &&
-					dom_parent.insertBefore(
-						child.dom_first = child.dom,
-						dom_first
-					);
+				DEBUG &&
+				!child.dom &&
+					error('node_map item components must call hook_dom() to define their root DOM element');
+
+				dom_parent.insertBefore(
+					child.dom_first = child.dom,
+					dom_first
+				);
 			}
 			else {
-				// TODO this algorithm still sucks
-				const dom_last = instance_dom_last_get(child);
 				if (
-					dom_last &&
-					dom_last.nextSibling !== dom_first
+					child.dom.nextSibling !== dom_first
 				) {
-					VERBOSE && log('instance_reinsert ' + key);
-					instance_reinsert(child, dom_parent, dom_first);
+					VERBOSE && log('item reinsert ' + key);
+					dom_parent.insertBefore(child.dom, dom_first);
 				}
 
 				if (
@@ -1023,11 +1023,8 @@ const instance_render = (dom_parent, dom_first) => {
 				}
 			}
 
-			(
-				childs[child.parent_index = items_index] = child
-			).dom_first && (
-				dom_first = child.dom_first
-			);
+			childs[child.parent_index = items_index] = child;
+			dom_first = child.dom_first;
 		}
 
 		instance.dom_first =
@@ -1179,60 +1176,6 @@ const list_data_index = (list_data, items_map, items_order) => {
 	}
 
 	return items_objects;
-}
-
-/**
-	gets last node of an instance (only an ugly workaround!)
-	@param {TYPE_INSTANCE} instance
-	@return {?HTMLElement}
-*/
-const instance_dom_last_get = instance => {
-	if (instance.dom) return instance.dom;
-	let instance_childs;
-	let i = (
-		(instance_childs = instance.childs)
-		?	instance_childs.length
-		:	0
-	);
-	let itm, itm_dom;
-	while (i > 0) {
-		if (
-			(
-				itm_dom = instance_childs[--i]
-			) &&
-			(
-				itm = instance_dom_last_get(itm_dom)
-			)
-		) return itm;
-	}
-	return null_;
-};
-
-/**
-	reinsert all dom nodes of an instance
-	@param {TYPE_INSTANCE} instance
-	@param {HTMLElement} dom_parent
-	@param {?HTMLElement} dom_first
-	@return {?HTMLElement}
-*/
-const instance_reinsert = (instance, dom_parent, dom_first) => {
-	if (instance.dom) {
-		return /** @type {HTMLElement} */ (dom_parent.insertBefore(instance.dom, dom_first));
-	}
-	if (instance.dom_first) {
-		let childs_index = instance.childs.length;
-		do {
-			instance.childs[--childs_index] && (
-				dom_first = instance_reinsert(
-					instance.childs[childs_index],
-					dom_parent,
-					dom_first
-				)
-			);
-		}
-		while (childs_index > 0);
-	}
-	return dom_first;
 }
 
 /**
