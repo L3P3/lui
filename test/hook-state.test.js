@@ -37,13 +37,15 @@ test('hook_state: can manage component state', () => {
 test('hook_state: aborts render and re-renders when setter called during render', () => {
 	const root = root_create();
 	let render_count = 0;
+	let after_set_count = 0;
 
 	init(() => {
 		render_count++;
 		const [value, value_set] = hook_state(false);
 
-		// Setting the same value should NOT trigger an abort or extra render
 		if (!value) value_set(true);
+
+		after_set_count++;
 
 		return [
 			node_dom('p', {
@@ -56,5 +58,7 @@ test('hook_state: aborts render and re-renders when setter called during render'
 	// 1st render: value=false, setter called with true → aborts and re-renders
 	// 2nd render: value=true, setter not called again → stable
 	expect(render_count).toBe(2);
+	// Code after the setter was only reached once (the 2nd render, since the 1st aborted)
+	expect(after_set_count).toBe(1);
 	expect(root.querySelector('p').textContent).toBe('true');
 });

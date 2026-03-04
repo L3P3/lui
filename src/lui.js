@@ -1479,7 +1479,9 @@ export const hook_state = initial => {
 			if (slot[0] !== value) {
 				slot[0] = value;
 				EXTENDED ? dirtify_slots(current_slots_) : dirtify_instance(current_);
-				if (EXTENDED ? current_slots === current_slots_ : current === current_) throw dom_cache;
+				if (
+					EXTENDED ? current_slots === current_slots_ : current === current_
+				) throw dom_cache;
 			}
 			return value;
 		},
@@ -1757,8 +1759,8 @@ export const hook_sub = (getter, deps) => {
 		if (
 			DEBUG &&
 			thrown !== dom_cache
+			|| current.dirty
 		) throw thrown;
-		if (current.dirty) throw thrown;
 	}
 
 	// context pop
@@ -1932,8 +1934,8 @@ export const hook_map = (getter, list_data, deps) => {
 				if (
 					DEBUG &&
 					thrown !== dom_cache
+					|| current.dirty
 				) throw thrown;
-				if (current.dirty) throw thrown;
 			}
 
 			DEBUG && (
@@ -2072,7 +2074,9 @@ export const hook_model = mutations => {
 					callback_wrap(state_check, [value], stack + ' -> #' + key);
 				slot[0] = value;
 				EXTENDED ? dirtify_slots(current_slots_) : dirtify_instance(current_);
-				if (EXTENDED ? current_slots === current_slots_ : current === current_) throw dom_cache;
+				if (
+					EXTENDED ? current_slots === current_slots_ : current === current_
+				) throw dom_cache;
 			}
 			return value;
 		};
