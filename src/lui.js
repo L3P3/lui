@@ -1758,8 +1758,8 @@ export const hook_sub = (getter, deps) => {
 	catch (thrown) {
 		if (
 			DEBUG &&
-			thrown !== dom_cache
-			|| current.dirty
+			thrown !== dom_cache ||
+			current.dirty
 		) throw thrown;
 	}
 
@@ -1933,8 +1933,8 @@ export const hook_map = (getter, list_data, deps) => {
 			catch (thrown) {
 				if (
 					DEBUG &&
-					thrown !== dom_cache
-					|| current.dirty
+					thrown !== dom_cache ||
+					current.dirty
 				) throw thrown;
 			}
 
