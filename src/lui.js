@@ -1480,7 +1480,9 @@ export const hook_state = initial => {
 				slot[0] = value;
 				EXTENDED ? dirtify_slots(current_slots_) : dirtify_instance(current_);
 				if (
-					EXTENDED ? current_slots === current_slots_ : current === current_
+					EXTENDED
+					?	current_slots === current_slots_
+					:	current === current_
 				) throw dom_cache;
 			}
 			return value;
@@ -2075,7 +2077,9 @@ export const hook_model = mutations => {
 				slot[0] = value;
 				EXTENDED ? dirtify_slots(current_slots_) : dirtify_instance(current_);
 				if (
-					EXTENDED ? current_slots === current_slots_ : current === current_
+					EXTENDED
+					?	current_slots === current_slots_
+					:	current === current_
 				) throw dom_cache;
 			}
 			return value;
