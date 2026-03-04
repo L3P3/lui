@@ -686,6 +686,7 @@ const instance_render = (dom_parent, dom_first) => {
 				DEBUG &&
 				thrown !== dom_cache
 			) throw thrown;
+			if (instance.dirty) return;
 		}
 
 		const {dom} = instance;
@@ -1475,10 +1476,15 @@ export const hook_state = initial => {
 				EXTENDED ? instance_current_get(current_slots_) : current_
 			), value);
 
-			slot[0] !== value && (
-				slot[0] = value,
-				EXTENDED ? dirtify_slots(current_slots_) : dirtify_instance(current_)
-			);
+			if (slot[0] !== value) {
+				slot[0] = value;
+				EXTENDED ? dirtify_slots(current_slots_) : dirtify_instance(current_);
+				if (
+					EXTENDED
+					?	current_slots === current_slots_
+					:	current === current_
+				) throw dom_cache;
+			}
 			return value;
 		},
 		() => slot[0]
@@ -1754,7 +1760,8 @@ export const hook_sub = (getter, deps) => {
 	catch (thrown) {
 		if (
 			DEBUG &&
-			thrown !== dom_cache
+			thrown !== dom_cache ||
+			current.dirty
 		) throw thrown;
 	}
 
@@ -1928,7 +1935,8 @@ export const hook_map = (getter, list_data, deps) => {
 			catch (thrown) {
 				if (
 					DEBUG &&
-					thrown !== dom_cache
+					thrown !== dom_cache ||
+					current.dirty
 				) throw thrown;
 			}
 
@@ -2063,12 +2071,17 @@ export const hook_model = mutations => {
 				?	callback_wrap(mutations[key], [slot[0], ...args], stack + ' -> #' + key)
 				:	(0, mutations[key])(slot[0], ...args)
 			);
-			slot[0] !== value && (
+			if (slot[0] !== value) {
 				DEBUG &&
-					callback_wrap(state_check, [value], stack + ' -> #' + key),
-				slot[0] = value,
-				EXTENDED ? dirtify_slots(current_slots_) : dirtify_instance(current_)
-			);
+					callback_wrap(state_check, [value], stack + ' -> #' + key);
+				slot[0] = value;
+				EXTENDED ? dirtify_slots(current_slots_) : dirtify_instance(current_);
+				if (
+					EXTENDED
+					?	current_slots === current_slots_
+					:	current === current_
+				) throw dom_cache;
+			}
 			return value;
 		};
 	}
