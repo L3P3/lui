@@ -1340,13 +1340,15 @@ export const hook_effect = (effect, deps) => {
 	if (current_slots_index >= current_slots.length) {
 		VERBOSE && log('effect initial', deps);
 
-		current_slots[current_slots_index] =
-		/** @type {TYPE_SLOT} */ ({
-			htype: HOOK.EFFECT,
-			deps_comp: deps_comp_get(deps),
-			deps: deps = deps || Array_empty,
-			unmount: effect(...deps) || null_,
-		});
+		(
+			current_slots[current_slots_index] =
+			/** @type {TYPE_SLOT} */ ({
+				htype: HOOK.EFFECT,
+				deps_comp: deps_comp_get(deps),
+				deps: deps = deps || Array_empty,
+				unmount: null_,
+			})
+		).unmount = effect(...deps) || null_;
 	}
 	// rerender?
 	else if (deps) {
@@ -1364,6 +1366,7 @@ export const hook_effect = (effect, deps) => {
 				(slot.unmount)(
 					...slot.deps
 				);
+			slot.unmount = null_;
 			slot.unmount = (
 				effect(
 					...(
