@@ -26,7 +26,10 @@ jobs:
         uses: oven-sh/setup-bun@main
 
       - name: Install dependencies
-        run: bun install --production --no-save google-closure-compiler@latest
+        run: |
+          mv package.json _ackage.json
+          bun install --no-save google-closure-compiler
+          mv _ackage.json package.json
 
       - name: Build
         run: bun run build
