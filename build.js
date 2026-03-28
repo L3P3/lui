@@ -10,6 +10,7 @@ import {hostname} from 'os';
 const {version} = JSON.parse(
 	fs.readFileSync('./package.json', 'utf-8')
 );
+const checks_only = !!process.env.CI && process.env.GITHUB_REF_NAME !== 'master';
 
 const exec = cmd => (
 	new Promise(resolve =>
@@ -71,14 +72,17 @@ async function build(prod, legacy, rjs, extended, noeval) {
 			'module_resolution WEBPACK',
 			'rewrite_polyfills false',
 			'use_types_for_optimization',
-			'warning_level VERBOSE'
+			'warning_level VERBOSE',
+			checks_only ? 'checks_only' : null,
 		]
+		.filter(Boolean)
 		.join(' --')
 	))[2].trim();
 	if (stderr) {
 		console.log(stderr);
 		process.exit(1);
 	}
+	if (checks_only) return;
 
 	const wrap_fn = legacy || rjs;
 
