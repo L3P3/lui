@@ -77,7 +77,9 @@ const colors_reversed = (
 init(() => {
 	const [dark, dark_m] = hook_model(model_dark);
 
-	hook_effect(dark_m.save, [dark]);
+	hook_effect(() => {
+		dark_m.save();
+	}, [dark]);
 
 	const [red, red_set] = hook_state(false);
 

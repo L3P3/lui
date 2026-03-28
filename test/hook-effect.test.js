@@ -12,7 +12,44 @@ import {
 	init,
 	node,
 	node_dom,
+	reset,
 } from '../src/lui.js';
+
+test('hook_effect: returned function must be sync', () => {
+	// Effect returns nothing
+	expect(() => {
+		init(() => (
+			hook_effect(() => {}),
+			null
+		), root_create());
+	}).not.toThrow();
+
+	// Effect returns a sync function
+	expect(() => {
+		init(() => (
+			hook_effect(() => () => {}),
+			null
+		), root_create());
+	}).not.toThrow();
+
+	// Effect returns an async function (should throw)
+	expect(() => {
+		init(() => (
+			hook_effect(async () => {}),
+			null
+		), root_create());
+	}).toThrow('effect function must be synchronous');
+	reset();
+
+	// Effect returns a non-function (should throw)
+	expect(() => {
+		init(() => (
+			hook_effect(() => 123),
+			null
+		), root_create());
+	}).toThrow('effect function may only return unmount function');
+	reset();
+});
 
 const Effectful = ({
 	label,

@@ -1378,8 +1378,14 @@ export const hook_effect = (effect, deps) => {
 	}
 
 	DEBUG &&
-	current_slots[current_slots_index].unmount?.then &&
-		error('effect function must be synchronous');
+	current_slots[current_slots_index].unmount && (
+		VERBOSE &&
+			log('unmount function', current_slots[current_slots_index].unmount),
+		current_slots[current_slots_index].unmount.then &&
+			error('effect function must be synchronous'),
+		typeof current_slots[current_slots_index].unmount !== 'function' &&
+			error('effect function may only return unmount function')
+	);
 
 	++current_slots_index;
 }
@@ -1960,7 +1966,7 @@ export const hook_map = (getter, list_data, deps) => {
 }
 
 /**
-	umount all contained hooks
+	unmount all contained hooks
 	@param {TYPE_SLOT} slot
 	@noinline
 */
@@ -2686,6 +2692,27 @@ const component_dom_get = descriptor => {
 		);
 	}
 	return component;
+}
+
+/**
+	only exported for unit testing, in production it should never be needed!
+*/
+export const reset = () => {
+	// core rendering state
+	current =
+		current_slots = null_;
+	current_slots_index =
+		rerender_requested = 0;
+	rerender_deferred = false_;
+	render_queue = [];
+	render_queue_next = [];
+
+	// cancel pending raf
+	if (LEGACY) cancelAnimationFrame_(rerender_requested);
+	else cancelAnimationFrame(rerender_requested);
+
+	VERBOSE &&
+		log('reset');
 }
 
 DEBUG && (
