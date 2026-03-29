@@ -275,7 +275,7 @@ const Object_freeze = /** @type {function(!Object):!Object} */ (
 	?	Object_['freeze']
 	: DEBUG
 	?	Object_['freeze'] || (object => object)
-	:	null_
+	:	(object => object)
 );
 const Object_isFrozen = /** @type {function(*):boolean} */ (
 	DEBUG && !RJS && !LEGACY
@@ -298,6 +298,10 @@ const Date_ = (
 const flag_style_writable = (
 	!LEGACY && !RJS ||
 	navigator.userAgent.indexOf('WebKit') < 0
+);
+DEBUG && (
+	Object_freeze(Array_empty),
+	Object_freeze(Object_empty)
 );
 
 
@@ -345,7 +349,7 @@ const instance_name_get = ({icall: {component_}}) => (
 const stack_get = () => {
 	const stack = [];
 	let item = EXTENDED ? current_slots : current;
-	let index = null_;
+	let index = '';
 	if (!EXTENDED && current) stack[0] = '$' + current_slots_index;
 	if (EXTENDED && current_slots) {
 		stack[0] = '$' + (current_slots_index - 1);
@@ -368,13 +372,18 @@ const stack_get = () => {
 	while (item) {
 		stack.unshift(
 			instance_name_get(item) +
-			(
-				index !== null_
-				?	':' + index
-				:	''
+			index
+		);
+		index = (
+			!item.icall.props ||
+			item.icall.props.I == null
+			?	':' + item.parent_index
+			:	'#' + (
+				typeof item.icall.props.I === 'object'
+				?	item.icall.props.I.id
+				:	item.icall.props.I
 			)
 		);
-		index = item.parent_index;
 		item = item.iparent;
 	}
 	return (
@@ -657,12 +666,15 @@ const deps_comp_n = (a, b) => {
 	update current instance
 	also used as a symbol for node_map
 	@param {?HTMLElement} dom_parent
-	@param {?HTMLElement} dom_first
+	@param {?HTMLElement} dom_after the next existing sibling
 */
-const instance_render = (dom_parent, dom_first) => {
+const instance_render = (dom_parent, dom_after) => {
 	const instance = /** @type {TYPE_INSTANCE} */ (current);
-	const dom_after = dom_first;
 	const ilevel = instance.ilevel + 1;
+	/**
+		currently first contained element
+	*/
+	let dom_first = dom_after;
 	current_slots = instance.slots;
 	current_slots_index = EXTENDED ? 1 : 0;
 
@@ -674,10 +686,10 @@ const instance_render = (dom_parent, dom_first) => {
 		/**
 			@type {Array<TYPE_INSTANCE_CALL_OPTIONAL>}
 		*/
-		let child_calls = null_;
+		let child_nodes = null_;
 
 		try {
-			child_calls = (0, instance.icall.component_)(
+			child_nodes = (0, instance.icall.component_)(
 				instance.icall.props || Object_empty
 			);
 		}
@@ -692,16 +704,16 @@ const instance_render = (dom_parent, dom_first) => {
 		const {dom} = instance;
 
 		DEBUG &&
-		typeof child_calls !== 'object' &&
+		typeof child_nodes !== 'object' &&
 			error('components need to return child list or null');
 
-		if (child_calls) {
+		if (child_nodes) {
 			if (dom) {
 				dom_parent = dom;
 				dom_first = null_;
 			}
 
-			let childs_index = child_calls.length;
+			let childs_index = child_nodes.length;
 			/**
 				@type {?TYPE_INSTANCE}
 			*/
@@ -736,7 +748,7 @@ const instance_render = (dom_parent, dom_first) => {
 
 				if (
 					(
-						child_call = child_calls[childs_index]
+						child_call = child_nodes[childs_index]
 					) &&
 					child_call !== true_
 				) {
@@ -754,8 +766,7 @@ const instance_render = (dom_parent, dom_first) => {
 					);
 
 					if (
-						current_first =
-						!child
+						current_first = !child
 					) {
 						instance_childs[childs_index] = current = child = {
 							icall: child_call,
@@ -832,7 +843,7 @@ const instance_render = (dom_parent, dom_first) => {
 
 			for (const child of instance.childs)
 				child &&
-					instance_unmount(child, dom_parent);
+					instance_unmount(child, dom || dom_parent);
 			instance.childs = null_;
 		}
 
@@ -939,12 +950,13 @@ const instance_render = (dom_parent, dom_first) => {
 
 		// for all items
 		const childs = instance.childs = new Array_(items_index);
+
+		// (re)render items
 		while (items_index > 0) {
 			const key = items_order[--items_index];
 			let child = state.item_map[key];
 			if (
-				current_first =
-				!child
+				current_first = !child
 			) {
 				VERBOSE && log('item add: ' + key);
 
@@ -960,7 +972,7 @@ const instance_render = (dom_parent, dom_first) => {
 					props_comp: null_,
 					iparent: instance,
 					ilevel,
-					parent_index: items_index,
+					parent_index: 0,
 					slots: [],
 					childs: null_,
 					dom: null_,
@@ -972,59 +984,53 @@ const instance_render = (dom_parent, dom_first) => {
 					hinstance: child,
 				};
 
-				instance_render(
-					dom_parent,
-					dom_first
-				);
+				instance_render(null, null);
+				dom_first = child.dom;
 
 				DEBUG &&
 				!child.dom &&
-					error('node_map item components must call hook_dom() to define their root DOM element');
-
-				dom_parent.insertBefore(
-					child.dom_first = child.dom,
-					dom_first
+					error('node_map item components must have a hook_dom');
+			}
+			else if (
+				props_changed ||
+				items_objects && (
+					NOEVAL
+					?	object_comp_eval(
+							items_map[key],
+							child.icall.props.I,
+							state.item_comp
+						)
+					:	state.item_comp(
+							items_map[key],
+							child.icall.props.I
+						)
+				)
+			) {
+				(
+					current = child
+				).icall.props = (
+					Object_assign({
+						I: items_map[key],
+					}, props)
 				);
-			}
-			else {
-				if (
-					child.dom.nextSibling !== dom_first
-				) {
-					VERBOSE && log('item reinsert ' + key);
-					dom_parent.insertBefore(child.dom, dom_first);
-				}
 
-				if (
-					props_changed ||
-					items_objects && (
-						NOEVAL
-						?	object_comp_eval(
-								items_map[key],
-								child.icall.props.I,
-								state.item_comp
-							)
-						:	state.item_comp(
-								items_map[key],
-								child.icall.props.I
-							)
-					)
-				) {
-					(
-						current = child
-					).icall.props = (
-						Object_assign({
-							I: items_map[key],
-						}, props)
-					);
-
-					instance_render(
-						dom_parent,
-						dom_first
-					);
-				}
+				instance_render(null, null);
 			}
 
-			childs[child.parent_index = items_index] = child;
+			childs[items_index] = child;
+		}
+
+		// reorder items
+		items_index = childs.length;
+		while (items_index > 0) {
+			const child = childs[--items_index];
+			if (
+				dom_first === null ||
+				child.dom.nextSibling !== dom_first
+			) {
+				VERBOSE && log('item reinsert ' + items_order[items_index]);
+				dom_parent.insertBefore(child.dom, dom_first);
+			}
 			dom_first = child.dom_first;
 		}
 
@@ -2177,25 +2183,27 @@ export const node = (component_, props, childs) => (
 		childs.constructor !== Array_ &&
 			error('invalid childs type')
 	),
-	{
+	Object_freeze({
 		component_,
 		props: (
 			props
-			?	(
+			?	Object_freeze(
 					childs
 					?	(
-							props.C = childs,
+							props.C = Object_freeze(childs),
 							props
 						)
 					:	props
 				)
 			:	(
 					childs
-					?	/** @type {TYPE_PROPS} */ ({C: childs})
+					?	/** @type {TYPE_PROPS} */ (Object_freeze({
+						C: Object_freeze(childs),
+					}))
 					:	null_
 				)
 		)
-	}
+	})
 )
 
 /**
