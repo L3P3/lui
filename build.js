@@ -153,7 +153,7 @@ if(
 	)[1].includes('Version: v202')
 ) {
 	console.log('newer closure compiler version required!');
-	return;
+	process.exit(1);
 }
 
 await exec('mkdir -p ./dist');
