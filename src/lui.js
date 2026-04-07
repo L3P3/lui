@@ -847,13 +847,7 @@ const instance_render = (dom_parent, dom_after) => {
 			instance.childs = null_;
 		}
 
-		dom ||
-		(
-			instance.dom_first =
-				dom_first !== dom_after
-				?	dom_first
-				:	null_
-		);
+		if (dom) return;
 	}
 	// node_map?
 	else {
@@ -879,25 +873,34 @@ const instance_render = (dom_parent, dom_after) => {
 		let items_index = list_data.length;
 		let props_changed = true_;
 
-		if (
-			hook_prev(items_index, items_index) + items_index <= 0
-		) return;
-
 		const state = hook_static();
 
+		/**
+			map id->item
+		*/
 		const items_map = {};
+		/**
+			list of ids in desired order
+		*/
 		const items_order = [];
-		const items_objects = (
+		const items_are_objects = (
 			items_index > 0 &&
 			list_data_index(list_data, items_map, items_order)
 		);
+
+		// hook in list_data_index was skipped?
 		DEBUG && (
 			items_index ||
 				hook_static()
 		);
 
 		// rerender?
-		if (state.item_map) {
+		if (state.item_childs) {
+			// fast path if it was and still is empty
+			if (
+				!(state.items_order_prev.length | items_index)
+			) return;
+
 			props_changed = (
 				props && (
 					NOEVAL
@@ -914,21 +917,19 @@ const instance_render = (dom_parent, dom_after) => {
 			);
 
 			VERBOSE &&
-			props &&
 			props_changed &&
 				log('props changed', object_diff(state.props_prev, props));
 
 			// remove items
-			for (const key of state.items_order_prev) {
-				if (
-					LEGACY
-					?	items_map[key] !== undefined_
-					:	key in items_map
-				) continue;
-
+			for (const key of state.items_order_prev)
+			if (
+				LEGACY
+				?	items_map[key] == null_
+				:	!(key in items_map)
+			) {
 				VERBOSE && log('item remove: ' + key);
-				instance_unmount(state.item_map[key], dom_parent);
-				delete state.item_map[key];
+				instance_unmount(state.item_childs[key], dom_parent);
+				delete state.item_childs[key];
 			}
 
 			state.props_prev = props;
@@ -936,9 +937,12 @@ const instance_render = (dom_parent, dom_after) => {
 		}
 		// initial render?
 		else {
-			state.item_map = {};
+			// fast path if empty
+			if (items_index === 0) return;
+
+			state.item_childs = {};
 			state.item_comp = (
-				items_objects
+				items_are_objects
 				?	object_comp_get(items_map[items_order[0]])
 				:	null_
 			);
@@ -954,13 +958,15 @@ const instance_render = (dom_parent, dom_after) => {
 		// (re)render items
 		while (items_index > 0) {
 			const key = items_order[--items_index];
-			let child = state.item_map[key];
+			let child = state.item_childs[key];
+			// create child?
 			if (
 				current_first = !child
 			) {
-				VERBOSE && log('item add: ' + key);
+				VERBOSE &&
+					log('item add: ' + key);
 
-				state.item_map[key] = current = child = {
+				state.item_childs[key] = current = child = {
 					icall: {
 						component_,
 						props: (
@@ -985,60 +991,69 @@ const instance_render = (dom_parent, dom_after) => {
 				};
 
 				instance_render(null, null);
-				dom_first = child.dom;
+
+				if (VERBOSE) {
+					current = instance;
+					current_slots = instance.slots;
+				}
 
 				DEBUG &&
 				!child.dom &&
 					error('node_map item components must have a hook_dom');
-			}
-			else if (
-				props_changed ||
-				items_objects && (
-					NOEVAL
-					?	object_comp_eval(
-							items_map[key],
-							child.icall.props.I,
-							state.item_comp
-						)
-					:	state.item_comp(
-							items_map[key],
-							child.icall.props.I
-						)
-				)
-			) {
-				(
-					current = child
-				).icall.props = (
-					Object_assign({
-						I: items_map[key],
-					}, props)
-				);
 
-				instance_render(null, null);
-			}
+				VERBOSE &&
+					log('item insert: ' + key);
 
-			childs[items_index] = child;
-		}
-
-		// reorder items
-		items_index = childs.length;
-		while (items_index > 0) {
-			const child = childs[--items_index];
-			if (
-				dom_first === null ||
-				child.dom.nextSibling !== dom_first
-			) {
-				VERBOSE && log('item reinsert ' + items_order[items_index]);
 				dom_parent.insertBefore(child.dom, dom_first);
 			}
-			dom_first = child.dom_first;
-		}
+			// child exists?
+			else {
+				// child updated?
+				if (
+					props_changed ||
+					items_are_objects && (
+						NOEVAL
+						?	object_comp_eval(
+								items_map[key],
+								child.icall.props.I,
+								state.item_comp
+							)
+						:	state.item_comp(
+								items_map[key],
+								child.icall.props.I
+							)
+					)
+				) {
+					(
+						current = child
+					).icall.props = (
+						Object_assign({
+							I: items_map[key],
+						}, props)
+					);
 
-		instance.dom_first =
-			dom_first !== dom_after
-			?	dom_first
-			:	null_;
+					instance_render(null, null);
+				}
+				// move child?
+				if (child.dom.nextSibling !== dom_first) {
+					VERBOSE &&
+						log('item reinsert: ' + key);
+
+					dom_parent.insertBefore(child.dom, dom_first);
+				}
+			}
+
+			dom_first = (
+				childs[items_index] = child
+			).dom;
+		}
 	}
+
+	instance.dom_first = (
+		dom_first !== dom_after
+		?	dom_first
+		:	null_
+	);
 }
 
 /**
@@ -1047,7 +1062,8 @@ const instance_render = (dom_parent, dom_after) => {
 	@param {?HTMLElement} dom_parent
 */
 const instance_unmount = (instance, dom_parent) => {
-	VERBOSE && log('instance_unmount ' + instance_name_get(instance));
+	VERBOSE &&
+		log('instance_unmount ' + instance_name_get(instance));
 
 	dom_parent &&
 	instance.dom && (
@@ -1123,10 +1139,10 @@ const hooks_unmount = slots => {
 	@param {TYPE_LIST} list_data must not be empty
 	@param {!Object<(string|number), TYPE_LIST_ITEM>} items_map
 	@param {!Array<(string|number)>} items_order
-	@return {boolean}
+	@return {boolean} if items are objects, otherwise they are string or number
 */
 const list_data_index = (list_data, items_map, items_order) => {
-	const items_objects = typeof list_data[0] === 'object';
+	const items_are_objects = typeof list_data[0] === 'object';
 
 	if (DEBUG) {
 		const item_type_ref = hook_static();
@@ -1139,7 +1155,7 @@ const list_data_index = (list_data, items_map, items_order) => {
 			) ||
 				error('item type invalid');
 
-			items_objects && (
+			items_are_objects && (
 				!['string', 'number']
 				.includes(
 					item_type_ref.val_id = typeof list_data[0].id
@@ -1156,7 +1172,7 @@ const list_data_index = (list_data, items_map, items_order) => {
 				error('item is null');
 			typeof item !== item_type_ref.val &&
 				error('item type changed');
-			items_objects && (
+			items_are_objects && (
 				typeof item.id !== item_type_ref.val_id &&
 					error('item id type changed'),
 				Object_keys(
@@ -1169,7 +1185,7 @@ const list_data_index = (list_data, items_map, items_order) => {
 
 	for (const item of list_data) {
 		const key = /** @type {number|string} */ (
-			items_objects
+			items_are_objects
 			?	item.id
 			:	item
 		);
@@ -1182,7 +1198,7 @@ const list_data_index = (list_data, items_map, items_order) => {
 		items_order.push(key);
 	}
 
-	return items_objects;
+	return items_are_objects;
 }
 
 /**
@@ -1792,16 +1808,24 @@ export const hook_map = (getter, list_data, deps) => {
 	const current_slots_before = current_slots;
 	const current_slots_index_before = ++current_slots_index;
 
+	/**
+		map id->item
+	*/
 	const items_data_map = {};
+	/**
+		list of ids in desired order
+	*/
 	const items_order = [];
-	const items_objects = (
+	const items_are_objects = (
 		list_data.length > 0 &&
 		list_data_index(list_data, items_data_map, items_order)
 	);
 
-	DEBUG &&
-	list_data.length === 0 &&
-		hook_static();
+	// hook in list_data_index was skipped?
+	DEBUG && (
+		list_data.length ||
+			hook_static()
+	);
 
 	// initial?
 	if (!slot) {
@@ -1813,7 +1837,7 @@ export const hook_map = (getter, list_data, deps) => {
 			hvalue: [],
 			clean: true_,
 			getter: getter,
-			item_comp: items_objects ? object_comp_get(
+			item_comp: items_are_objects ? object_comp_get(
 				/** @type {!Object} */ (list_data[0])
 			) : null_,
 			items_order: [],
@@ -1865,7 +1889,7 @@ export const hook_map = (getter, list_data, deps) => {
 		if (
 			dirty ||
 			current_first || (
-				items_objects
+				items_are_objects
 				?	(
 					NOEVAL
 					?	object_comp_eval(

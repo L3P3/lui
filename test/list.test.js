@@ -11,6 +11,55 @@ import {
 	node_map,
 } from '../src/lui.js';
 
+const ListItem = ({
+	I,
+}) => (
+	hook_dom('p', {
+		textContent: I,
+	}),
+	null
+);
+
+test('node_map: empty list', () => {
+	const root = root_create();
+
+	init(() => [
+		node_map(
+			ListItem,
+			[]
+		),
+	], root);
+
+	expect(root.childNodes.length).toBe(0);
+});
+test('node_map: simple list, 1 item', () => {
+	const root = root_create();
+
+	init(() => [
+		node_map(
+			ListItem,
+			['item_0']
+		),
+	], root);
+
+	expect(root.childNodes.length).toBe(1);
+	expect(root.childNodes[0].textContent).toBe('item_0');
+});
+test('node_map: simple list, 2 items', () => {
+	const root = root_create();
+
+	init(() => [
+		node_map(
+			ListItem,
+			['item_0', 'item_1']
+		),
+	], root);
+
+	expect(root.childNodes.length).toBe(2);
+	expect(root.childNodes[0].textContent).toBe('item_0');
+	expect(root.childNodes[1].textContent).toBe('item_1');
+});
+
 const model = {
 	init: () => (
 		new Array(6).fill(null)
@@ -22,15 +71,6 @@ const model = {
 	],
 	pop: state => state.slice(0, -1),
 };
-
-const ListItem = ({
-	I,
-}) => (
-	hook_dom('p', {
-		textContent: I,
-	}),
-	null
-);
 
 test('node_map: can render changing list items with node_map', () => {
 	const root = root_create();
