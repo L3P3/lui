@@ -28,7 +28,7 @@ jobs:
       - name: Install dependencies
         run: |
           mv package.json _ackage.json
-          bun install --no-save google-closure-compiler
+          bun add --no-save google-closure-compiler
           mv _ackage.json package.json
 
       - name: Build

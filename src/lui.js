@@ -2207,14 +2207,14 @@ export const node = (component_, props, childs) => (
 		childs.constructor !== Array_ &&
 			error('invalid childs type')
 	),
-	Object_freeze({
+	/** @type {TYPE_INSTANCE_CALL} */ (Object_freeze({
 		component_,
 		props: (
 			props
 			?	Object_freeze(
 					childs
 					?	(
-							props.C = Object_freeze(childs),
+							props.C = /** @type {Array<?>} */ (Object_freeze(childs)),
 							props
 						)
 					:	props
@@ -2227,7 +2227,7 @@ export const node = (component_, props, childs) => (
 					:	null_
 				)
 		)
-	})
+	}))
 )
 
 /**

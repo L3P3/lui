@@ -30,7 +30,7 @@ jobs:
       - name: Install dependencies
         run: |
           mv package.json _ackage.json
-          bun install --no-save jsdom
+          bun add --no-save jsdom
           mv _ackage.json package.json
       
       - name: Run tests
