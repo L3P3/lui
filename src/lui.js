@@ -275,7 +275,7 @@ const Object_freeze = /** @type {function(!Object):!Object} */ (
 	?	Object_['freeze']
 	: DEBUG
 	?	Object_['freeze'] || (object => object)
-	:	null_
+	:	(object => object)
 );
 const Object_isFrozen = /** @type {function(*):boolean} */ (
 	DEBUG && !RJS && !LEGACY
@@ -298,6 +298,10 @@ const Date_ = (
 const flag_style_writable = (
 	!LEGACY && !RJS ||
 	navigator.userAgent.indexOf('WebKit') < 0
+);
+DEBUG && (
+	Object_freeze(Array_empty),
+	Object_freeze(Object_empty)
 );
 
 
@@ -345,7 +349,7 @@ const instance_name_get = ({icall: {component_}}) => (
 const stack_get = () => {
 	const stack = [];
 	let item = EXTENDED ? current_slots : current;
-	let index = null_;
+	let index = '';
 	if (!EXTENDED && current) stack[0] = '$' + current_slots_index;
 	if (EXTENDED && current_slots) {
 		stack[0] = '$' + (current_slots_index - 1);
@@ -368,13 +372,18 @@ const stack_get = () => {
 	while (item) {
 		stack.unshift(
 			instance_name_get(item) +
-			(
-				index !== null_
-				?	':' + index
-				:	''
+			index
+		);
+		index = (
+			!item.icall.props ||
+			item.icall.props.I == null_
+			?	':' + item.parent_index
+			:	'#' + (
+				typeof item.icall.props.I === 'object'
+				?	item.icall.props.I.id
+				:	item.icall.props.I
 			)
 		);
-		index = item.parent_index;
 		item = item.iparent;
 	}
 	return (
@@ -657,12 +666,15 @@ const deps_comp_n = (a, b) => {
 	update current instance
 	also used as a symbol for node_map
 	@param {?HTMLElement} dom_parent
-	@param {?HTMLElement} dom_first
+	@param {?HTMLElement} dom_after the next existing sibling
 */
-const instance_render = (dom_parent, dom_first) => {
+const instance_render = (dom_parent, dom_after) => {
 	const instance = /** @type {TYPE_INSTANCE} */ (current);
-	const dom_after = dom_first;
 	const ilevel = instance.ilevel + 1;
+	/**
+		currently first contained element
+	*/
+	let dom_first = dom_after;
 	current_slots = instance.slots;
 	current_slots_index = EXTENDED ? 1 : 0;
 
@@ -674,10 +686,10 @@ const instance_render = (dom_parent, dom_first) => {
 		/**
 			@type {Array<TYPE_INSTANCE_CALL_OPTIONAL>}
 		*/
-		let child_calls = null_;
+		let child_nodes = null_;
 
 		try {
-			child_calls = (0, instance.icall.component_)(
+			child_nodes = (0, instance.icall.component_)(
 				instance.icall.props || Object_empty
 			);
 		}
@@ -692,16 +704,16 @@ const instance_render = (dom_parent, dom_first) => {
 		const {dom} = instance;
 
 		DEBUG &&
-		typeof child_calls !== 'object' &&
+		typeof child_nodes !== 'object' &&
 			error('components need to return child list or null');
 
-		if (child_calls) {
+		if (child_nodes) {
 			if (dom) {
 				dom_parent = dom;
 				dom_first = null_;
 			}
 
-			let childs_index = child_calls.length;
+			let childs_index = child_nodes.length;
 			/**
 				@type {?TYPE_INSTANCE}
 			*/
@@ -736,7 +748,7 @@ const instance_render = (dom_parent, dom_first) => {
 
 				if (
 					(
-						child_call = child_calls[childs_index]
+						child_call = child_nodes[childs_index]
 					) &&
 					child_call !== true_
 				) {
@@ -754,8 +766,7 @@ const instance_render = (dom_parent, dom_first) => {
 					);
 
 					if (
-						current_first =
-						!child
+						current_first = !child
 					) {
 						instance_childs[childs_index] = current = child = {
 							icall: child_call,
@@ -832,17 +843,11 @@ const instance_render = (dom_parent, dom_first) => {
 
 			for (const child of instance.childs)
 				child &&
-					instance_unmount(child, dom_parent);
+					instance_unmount(child, dom || dom_parent);
 			instance.childs = null_;
 		}
 
-		dom ||
-		(
-			instance.dom_first =
-				dom_first !== dom_after
-				?	dom_first
-				:	null_
-		);
+		if (dom) return;
 	}
 	// node_map?
 	else {
@@ -868,25 +873,34 @@ const instance_render = (dom_parent, dom_first) => {
 		let items_index = list_data.length;
 		let props_changed = true_;
 
-		if (
-			hook_prev(items_index, items_index) + items_index <= 0
-		) return;
-
 		const state = hook_static();
 
+		/**
+			map id->item
+		*/
 		const items_map = {};
+		/**
+			list of ids in desired order
+		*/
 		const items_order = [];
-		const items_objects = (
+		const items_are_objects = (
 			items_index > 0 &&
 			list_data_index(list_data, items_map, items_order)
 		);
+
+		// hook in list_data_index was skipped?
 		DEBUG && (
 			items_index ||
 				hook_static()
 		);
 
 		// rerender?
-		if (state.item_map) {
+		if (state.item_childs) {
+			// fast path if it was and still is empty
+			if (
+				!(state.items_order_prev.length | items_index)
+			) return;
+
 			props_changed = (
 				props && (
 					NOEVAL
@@ -903,21 +917,19 @@ const instance_render = (dom_parent, dom_first) => {
 			);
 
 			VERBOSE &&
-			props &&
 			props_changed &&
 				log('props changed', object_diff(state.props_prev, props));
 
 			// remove items
-			for (const key of state.items_order_prev) {
-				if (
-					LEGACY
-					?	items_map[key] !== undefined_
-					:	key in items_map
-				) continue;
-
+			for (const key of state.items_order_prev)
+			if (
+				LEGACY
+				?	items_map[key] == null_
+				:	!(key in items_map)
+			) {
 				VERBOSE && log('item remove: ' + key);
-				instance_unmount(state.item_map[key], dom_parent);
-				delete state.item_map[key];
+				instance_unmount(state.item_childs[key], dom_parent);
+				delete state.item_childs[key];
 			}
 
 			state.props_prev = props;
@@ -925,9 +937,12 @@ const instance_render = (dom_parent, dom_first) => {
 		}
 		// initial render?
 		else {
-			state.item_map = {};
+			// fast path if empty
+			if (items_index === 0) return;
+
+			state.item_childs = {};
 			state.item_comp = (
-				items_objects
+				items_are_objects
 				?	object_comp_get(items_map[items_order[0]])
 				:	null_
 			);
@@ -939,16 +954,19 @@ const instance_render = (dom_parent, dom_first) => {
 
 		// for all items
 		const childs = instance.childs = new Array_(items_index);
+
+		// (re)render items
 		while (items_index > 0) {
 			const key = items_order[--items_index];
-			let child = state.item_map[key];
+			let child = state.item_childs[key];
+			// create child?
 			if (
-				current_first =
-				!child
+				current_first = !child
 			) {
-				VERBOSE && log('item add: ' + key);
+				VERBOSE &&
+					log('item add: ' + key);
 
-				state.item_map[key] = current = child = {
+				state.item_childs[key] = current = child = {
 					icall: {
 						component_,
 						props: (
@@ -960,7 +978,7 @@ const instance_render = (dom_parent, dom_first) => {
 					props_comp: null_,
 					iparent: instance,
 					ilevel,
-					parent_index: items_index,
+					parent_index: 0,
 					slots: [],
 					childs: null_,
 					dom: null_,
@@ -972,31 +990,28 @@ const instance_render = (dom_parent, dom_first) => {
 					hinstance: child,
 				};
 
-				instance_render(
-					dom_parent,
-					dom_first
-				);
+				instance_render(null_, null_);
 
-				child.dom &&
-					dom_parent.insertBefore(
-						child.dom_first = child.dom,
-						dom_first
-					);
-			}
-			else {
-				// TODO this algorithm still sucks
-				const dom_last = instance_dom_last_get(child);
-				if (
-					dom_last &&
-					dom_last.nextSibling !== dom_first
-				) {
-					VERBOSE && log('instance_reinsert ' + key);
-					instance_reinsert(child, dom_parent, dom_first);
+				if (VERBOSE) {
+					current = instance;
+					current_slots = instance.slots;
 				}
 
+				DEBUG &&
+				!child.dom &&
+					error('node_map item components must have a hook_dom');
+
+				VERBOSE &&
+					log('item insert: ' + key);
+
+				dom_parent.insertBefore(child.dom, dom_first);
+			}
+			// child exists?
+			else {
+				// child updated?
 				if (
 					props_changed ||
-					items_objects && (
+					items_are_objects && (
 						NOEVAL
 						?	object_comp_eval(
 								items_map[key],
@@ -1017,25 +1032,28 @@ const instance_render = (dom_parent, dom_first) => {
 						}, props)
 					);
 
-					instance_render(
-						dom_parent,
-						dom_first
-					);
+					instance_render(null_, null_);
+				}
+				// move child?
+				if (child.dom.nextSibling !== dom_first) {
+					VERBOSE &&
+						log('item reinsert: ' + key);
+
+					dom_parent.insertBefore(child.dom, dom_first);
 				}
 			}
 
-			(
-				childs[child.parent_index = items_index] = child
-			).dom_first && (
-				dom_first = child.dom_first
-			);
+			dom_first = (
+				childs[items_index] = child
+			).dom;
 		}
-
-		instance.dom_first =
-			dom_first !== dom_after
-			?	dom_first
-			:	null_;
 	}
+
+	instance.dom_first = (
+		dom_first !== dom_after
+		?	dom_first
+		:	null_
+	);
 }
 
 /**
@@ -1044,7 +1062,8 @@ const instance_render = (dom_parent, dom_first) => {
 	@param {?HTMLElement} dom_parent
 */
 const instance_unmount = (instance, dom_parent) => {
-	VERBOSE && log('instance_unmount ' + instance_name_get(instance));
+	VERBOSE &&
+		log('instance_unmount ' + instance_name_get(instance));
 
 	dom_parent &&
 	instance.dom && (
@@ -1120,10 +1139,10 @@ const hooks_unmount = slots => {
 	@param {TYPE_LIST} list_data must not be empty
 	@param {!Object<(string|number), TYPE_LIST_ITEM>} items_map
 	@param {!Array<(string|number)>} items_order
-	@return {boolean}
+	@return {boolean} if items are objects, otherwise they are string or number
 */
 const list_data_index = (list_data, items_map, items_order) => {
-	const items_objects = typeof list_data[0] === 'object';
+	const items_are_objects = typeof list_data[0] === 'object';
 
 	if (DEBUG) {
 		const item_type_ref = hook_static();
@@ -1136,7 +1155,7 @@ const list_data_index = (list_data, items_map, items_order) => {
 			) ||
 				error('item type invalid');
 
-			items_objects && (
+			items_are_objects && (
 				!['string', 'number']
 				.includes(
 					item_type_ref.val_id = typeof list_data[0].id
@@ -1153,7 +1172,7 @@ const list_data_index = (list_data, items_map, items_order) => {
 				error('item is null');
 			typeof item !== item_type_ref.val &&
 				error('item type changed');
-			items_objects && (
+			items_are_objects && (
 				typeof item.id !== item_type_ref.val_id &&
 					error('item id type changed'),
 				Object_keys(
@@ -1166,7 +1185,7 @@ const list_data_index = (list_data, items_map, items_order) => {
 
 	for (const item of list_data) {
 		const key = /** @type {number|string} */ (
-			items_objects
+			items_are_objects
 			?	item.id
 			:	item
 		);
@@ -1179,61 +1198,7 @@ const list_data_index = (list_data, items_map, items_order) => {
 		items_order.push(key);
 	}
 
-	return items_objects;
-}
-
-/**
-	gets last node of an instance (only an ugly workaround!)
-	@param {TYPE_INSTANCE} instance
-	@return {?HTMLElement}
-*/
-const instance_dom_last_get = instance => {
-	if (instance.dom) return instance.dom;
-	let instance_childs;
-	let i = (
-		(instance_childs = instance.childs)
-		?	instance_childs.length
-		:	0
-	);
-	let itm, itm_dom;
-	while (i > 0) {
-		if (
-			(
-				itm_dom = instance_childs[--i]
-			) &&
-			(
-				itm = instance_dom_last_get(itm_dom)
-			)
-		) return itm;
-	}
-	return null_;
-};
-
-/**
-	reinsert all dom nodes of an instance
-	@param {TYPE_INSTANCE} instance
-	@param {HTMLElement} dom_parent
-	@param {?HTMLElement} dom_first
-	@return {?HTMLElement}
-*/
-const instance_reinsert = (instance, dom_parent, dom_first) => {
-	if (instance.dom) {
-		return /** @type {HTMLElement} */ (dom_parent.insertBefore(instance.dom, dom_first));
-	}
-	if (instance.dom_first) {
-		let childs_index = instance.childs.length;
-		do {
-			instance.childs[--childs_index] && (
-				dom_first = instance_reinsert(
-					instance.childs[childs_index],
-					dom_parent,
-					dom_first
-				)
-			);
-		}
-		while (childs_index > 0);
-	}
-	return dom_first;
+	return items_are_objects;
 }
 
 /**
@@ -1843,16 +1808,24 @@ export const hook_map = (getter, list_data, deps) => {
 	const current_slots_before = current_slots;
 	const current_slots_index_before = ++current_slots_index;
 
+	/**
+		map id->item
+	*/
 	const items_data_map = {};
+	/**
+		list of ids in desired order
+	*/
 	const items_order = [];
-	const items_objects = (
+	const items_are_objects = (
 		list_data.length > 0 &&
 		list_data_index(list_data, items_data_map, items_order)
 	);
 
-	DEBUG &&
-	list_data.length === 0 &&
-		hook_static();
+	// hook in list_data_index was skipped?
+	DEBUG && (
+		list_data.length ||
+			hook_static()
+	);
 
 	// initial?
 	if (!slot) {
@@ -1864,7 +1837,7 @@ export const hook_map = (getter, list_data, deps) => {
 			hvalue: [],
 			clean: true_,
 			getter: getter,
-			item_comp: items_objects ? object_comp_get(
+			item_comp: items_are_objects ? object_comp_get(
 				/** @type {!Object} */ (list_data[0])
 			) : null_,
 			items_order: [],
@@ -1916,7 +1889,7 @@ export const hook_map = (getter, list_data, deps) => {
 		if (
 			dirty ||
 			current_first || (
-				items_objects
+				items_are_objects
 				?	(
 					NOEVAL
 					?	object_comp_eval(
@@ -2234,25 +2207,27 @@ export const node = (component_, props, childs) => (
 		childs.constructor !== Array_ &&
 			error('invalid childs type')
 	),
-	{
+	Object_freeze({
 		component_,
 		props: (
 			props
-			?	(
+			?	Object_freeze(
 					childs
 					?	(
-							props.C = childs,
+							props.C = Object_freeze(childs),
 							props
 						)
 					:	props
 				)
 			:	(
 					childs
-					?	/** @type {TYPE_PROPS} */ ({C: childs})
+					?	/** @type {TYPE_PROPS} */ (Object_freeze({
+						C: Object_freeze(childs),
+					}))
 					:	null_
 				)
 		)
-	}
+	})
 )
 
 /**

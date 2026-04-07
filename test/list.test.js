@@ -11,6 +11,55 @@ import {
 	node_map,
 } from '../src/lui.js';
 
+const ListItem = ({
+	I,
+}) => (
+	hook_dom('p', {
+		textContent: I,
+	}),
+	null
+);
+
+test('node_map: empty list', () => {
+	const root = root_create();
+
+	init(() => [
+		node_map(
+			ListItem,
+			[]
+		),
+	], root);
+
+	expect(root.childNodes.length).toBe(0);
+});
+test('node_map: simple list, 1 item', () => {
+	const root = root_create();
+
+	init(() => [
+		node_map(
+			ListItem,
+			['item_0']
+		),
+	], root);
+
+	expect(root.childNodes.length).toBe(1);
+	expect(root.childNodes[0].textContent).toBe('item_0');
+});
+test('node_map: simple list, 2 items', () => {
+	const root = root_create();
+
+	init(() => [
+		node_map(
+			ListItem,
+			['item_0', 'item_1']
+		),
+	], root);
+
+	expect(root.childNodes.length).toBe(2);
+	expect(root.childNodes[0].textContent).toBe('item_0');
+	expect(root.childNodes[1].textContent).toBe('item_1');
+});
+
 const model = {
 	init: () => (
 		new Array(6).fill(null)
@@ -22,15 +71,6 @@ const model = {
 	],
 	pop: state => state.slice(0, -1),
 };
-
-const ListItem = ({
-	I,
-}) => (
-	hook_dom('p', {
-		textContent: I,
-	}),
-	null
-);
 
 test('node_map: can render changing list items with node_map', () => {
 	const root = root_create();
@@ -151,4 +191,64 @@ test('node_map: keeps identity while reordering and updating keyed items', () =>
 	// remove an item and ensure list shrinks and order remains
 	actions_.remove('a');
 	expect(mapIds(root)).toEqual(['b', 'x', 'c']);
+});
+
+test('node_map: updates keyed item text without replacing dom node', () => {
+	const root = root_create();
+
+	let actions_;
+	init(() => {
+		const [items, actions] = hook_model({
+			init: () => ([
+				{id: 'a', text: 'item_a'},
+				{id: 'b', text: 'item_b'},
+			]),
+			update: (state, id, text) => state.map(item => (
+				item.id === id ? {...item, text} : item
+			)),
+		});
+		actions_ = actions;
+
+		return [
+			node_map(ListItemComplex, items),
+		];
+	}, root);
+
+	const before = mapElementsById(root);
+	actions_.update('b', 'item_b_new');
+	const after = mapElementsById(root);
+
+	expect(after.get('b')).toBe(before.get('b'));
+	expect(after.get('b').textContent).toBe('item_b_new');
+	expect(mapIds(root)).toEqual(['a', 'b']);
+});
+
+test('node_map: removes keyed item and keeps remaining dom nodes', () => {
+	const root = root_create();
+
+	let actions_;
+	init(() => {
+		const [items, actions] = hook_model({
+			init: () => ([
+				{id: 'a', text: 'item_a'},
+				{id: 'b', text: 'item_b'},
+				{id: 'c', text: 'item_c'},
+			]),
+			remove: (state, id) => state.filter(item => item.id !== id),
+		});
+		actions_ = actions;
+
+		return [
+			node_map(ListItemComplex, items),
+		];
+	}, root);
+
+	const before = mapElementsById(root);
+	actions_.remove('b');
+	const after = mapElementsById(root);
+
+	expect(mapIds(root)).toEqual(['a', 'c']);
+	expect(after.get('a')).toBe(before.get('a'));
+	expect(after.get('c')).toBe(before.get('c'));
+	expect(after.get('b')).toBe(undefined);
 });
