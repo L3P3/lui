@@ -192,3 +192,63 @@ test('node_map: keeps identity while reordering and updating keyed items', () =>
 	actions_.remove('a');
 	expect(mapIds(root)).toEqual(['b', 'x', 'c']);
 });
+
+test('node_map: updates keyed item text without replacing dom node', () => {
+	const root = root_create();
+
+	let actions_;
+	init(() => {
+		const [items, actions] = hook_model({
+			init: () => ([
+				{id: 'a', text: 'item_a'},
+				{id: 'b', text: 'item_b'},
+			]),
+			update: (state, id, text) => state.map(item => (
+				item.id === id ? {...item, text} : item
+			)),
+		});
+		actions_ = actions;
+
+		return [
+			node_map(ListItemComplex, items),
+		];
+	}, root);
+
+	const before = mapElementsById(root);
+	actions_.update('b', 'item_b_new');
+	const after = mapElementsById(root);
+
+	expect(after.get('b')).toBe(before.get('b'));
+	expect(after.get('b').textContent).toBe('item_b_new');
+	expect(mapIds(root)).toEqual(['a', 'b']);
+});
+
+test('node_map: removes keyed item and keeps remaining dom nodes', () => {
+	const root = root_create();
+
+	let actions_;
+	init(() => {
+		const [items, actions] = hook_model({
+			init: () => ([
+				{id: 'a', text: 'item_a'},
+				{id: 'b', text: 'item_b'},
+				{id: 'c', text: 'item_c'},
+			]),
+			remove: (state, id) => state.filter(item => item.id !== id),
+		});
+		actions_ = actions;
+
+		return [
+			node_map(ListItemComplex, items),
+		];
+	}, root);
+
+	const before = mapElementsById(root);
+	actions_.remove('b');
+	const after = mapElementsById(root);
+
+	expect(mapIds(root)).toEqual(['a', 'c']);
+	expect(after.get('a')).toBe(before.get('a'));
+	expect(after.get('c')).toBe(before.get('c'));
+	expect(after.get('b')).toBe(undefined);
+});

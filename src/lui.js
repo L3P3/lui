@@ -376,7 +376,7 @@ const stack_get = () => {
 		);
 		index = (
 			!item.icall.props ||
-			item.icall.props.I == null
+			item.icall.props.I == null_
 			?	':' + item.parent_index
 			:	'#' + (
 				typeof item.icall.props.I === 'object'
@@ -990,7 +990,7 @@ const instance_render = (dom_parent, dom_after) => {
 					hinstance: child,
 				};
 
-				instance_render(null, null);
+				instance_render(null_, null_);
 
 				if (VERBOSE) {
 					current = instance;
@@ -1032,7 +1032,7 @@ const instance_render = (dom_parent, dom_after) => {
 						}, props)
 					);
 
-					instance_render(null, null);
+					instance_render(null_, null_);
 				}
 				// move child?
 				if (child.dom.nextSibling !== dom_first) {
