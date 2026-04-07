@@ -147,13 +147,12 @@ async function build(prod, legacy, rjs, extended, noeval) {
 
 (async () => {
 
-if(
-	!(
-		await exec('google-closure-compiler --version')
-	)[1].includes('Version: v202')
-) {
-	console.log('newer closure compiler version required!');
-	process.exit(1);
+const gcc_version_output = (
+	await exec('google-closure-compiler --version')
+)[1];
+if(!gcc_version_output.includes('Version: v202')) {
+	console.log('command output: ' + gcc_version_output);
+	throw new Error('newer closure compiler version required!');
 }
 
 await exec('mkdir -p ./dist');
