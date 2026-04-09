@@ -10,16 +10,25 @@ import {hostname} from 'os';
 const {version} = JSON.parse(
 	fs.readFileSync('./package.json', 'utf-8')
 );
-const checks_only = !!process.env.CI && process.env.GITHUB_REF_NAME !== 'master';
+const CI = !!process.env.CI;
+const checks_only = CI && process.env.GITHUB_REF_NAME !== 'master';
+const GCC_PATH = 'node_modules/.bin/google-closure-compiler';
 
 const exec = cmd => (
-	new Promise(resolve =>
+	new Promise((resolve, reject) =>
 		child_process_exec(
 			cmd,
-			(...args) => resolve(args)
+			(error, stdout, stderr) => {
+				if (error) reject(error);
+				else if (stderr.trim()) {
+					console.error(stderr);
+					reject(new Error('error output'));
+				}
+				else resolve(stdout);
+			}
 		)
 	)
-)
+);
 
 function flags_set(debug, verbose, legacy, rjs, extended, noeval) {
 	fs.writeFileSync(
@@ -51,8 +60,8 @@ async function build(prod, legacy, rjs, extended, noeval) {
 	}.js`;
 	const file = './dist/' + filename;
 
-	const stderr = (await exec(
-		'google-closure-compiler --' +
+	await exec(
+		GCC_PATH + ' --' +
 		[
 			'assume_function_wrapper',
 			'charset UTF-8',
@@ -77,11 +86,7 @@ async function build(prod, legacy, rjs, extended, noeval) {
 		]
 		.filter(Boolean)
 		.join(' --')
-	))[2].trim();
-	if (stderr) {
-		console.log(stderr);
-		process.exit(1);
-	}
+	);
 	if (checks_only) return;
 
 	const wrap_fn = legacy || rjs;
@@ -123,11 +128,8 @@ async function build(prod, legacy, rjs, extended, noeval) {
 	fs.writeFileSync(file, code_js, 'ascii');
 
 	let size_before = parseInt(
-		(
-			await exec(`git cat-file -s origin/dist:${filename}`)
-		)[1]
+		await exec(`git cat-file -s origin/dist:${filename}`).catch(() => 0)
 	);
-	if (isNaN(size_before)) size_before = 0;
 
 	let diff = String(code_js.length - size_before);
 	if (diff === '0') diff = '';
@@ -147,9 +149,7 @@ async function build(prod, legacy, rjs, extended, noeval) {
 
 (async () => {
 
-const gcc_version_output = (
-	await exec('google-closure-compiler --version')
-)[1];
+const gcc_version_output = await exec(GCC_PATH + ' --version');
 if(!gcc_version_output.includes('Version: v202')) {
 	console.log('command output: ' + gcc_version_output);
 	throw new Error('newer closure compiler version required!');
@@ -157,7 +157,7 @@ if(!gcc_version_output.includes('Version: v202')) {
 
 await exec('mkdir -p ./dist');
 //await exec('rm ./dist/*.old.js;rename.ul .js .old.js ./dist/*.js');
-await exec('rm ./dist/*');
+await exec('rm ./dist/*').catch(() => {});
 
 console.log(`build ${version}...`);
 
@@ -177,13 +177,14 @@ for (const extended of [false, true]) {
 }
 
 if (
+	!CI &&
 	flags.includes('d') &&
 	hostname() === 'l3p3-rk5'
 ) {
 	try {
 		console.log('compress...');
 
-		console.log((await exec('parallel zopfli --i10000 dist/{/} ::: dist/lui*'))[2]);
+		await exec('parallel zopfli --i10000 dist/{/} ::: dist/lui*');
 
 		console.log(`compression: ${
 			fs.statSync('./dist/lui.js').size
@@ -199,7 +200,11 @@ if (
 }
 
 })()
-.catch(console.log)
+.catch(error => {
+	console.error(error);
+	process.exitCode = 1;
+})
 .finally(() => {
+	if (CI) return;
 	flags_set(true, false, false, false, true, false);
 });
