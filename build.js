@@ -35,10 +35,11 @@ async function old_size(path) {
 	return size ? parseInt(size) : 0;
 }
 
-function flags_set(debug, verbose, legacy, rjs, extended, noeval) {
+function flags_set(debug, verbose, legacy, rjs, extended, noeval, debug_internal) {
 	fs.writeFileSync(
 		'./src/flags.js',
 `export const DEBUG = ${debug};
+export const DEBUG_INTERNAL = ${debug_internal};
 export const VERBOSE = ${verbose};
 export const LEGACY = ${legacy};
 export const RJS = ${rjs};
@@ -50,7 +51,7 @@ export const NOEVAL = ${noeval};
 }
 
 async function build(prod, legacy, rjs, extended, noeval) {
-	flags_set(!prod, false, legacy, rjs, extended, noeval);
+	flags_set(!prod, false, legacy, rjs, extended, noeval, false);
 
 	const filename = `lui${
 		extended ? 'x' : ''
@@ -209,5 +210,5 @@ if (
 })
 .finally(() => {
 	if (CI) return;
-	flags_set(true, false, false, false, true, false);
+	flags_set(true, false, false, false, true, false, true);
 });

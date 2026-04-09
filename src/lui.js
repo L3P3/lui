@@ -6,6 +6,7 @@
 
 import {
 	DEBUG,
+	DEBUG_INTERNAL,
 	EXTENDED,
 	LEGACY,
 	NOEVAL,
@@ -465,9 +466,9 @@ const assert_keys = (a, b) => {
 
 /**
 	ensures hook rules
-	@param {?HOOK} type
+	@param {?HOOK} type null for generic hook context checks
 	@param {boolean} component_ only allowed directly in components
-	@param {?Array|void} deps
+	@param {?Array|void} deps null/undefined when hook has no deps list
 	@noinline
 */
 const assert_hook = (type, component_, deps) => {
@@ -611,7 +612,7 @@ const object_diff = (a, b) => (
 
 /**
 	gets or generates a compare function for n-array, true if different
-	@param {?Array|void} deps
+	@param {?Array|void} deps null/undefined means no deps comparison needed
 	@return {?TYPE_DEPS_COMP}
 	@noinline
 */
@@ -668,7 +669,7 @@ const deps_comp_n = (a, b) => {
 /**
 	update current instance
 	also used as a symbol for node_map
-	@param {?HTMLElement} dom_parent
+	@param {?HTMLElement} dom_parent null when instance.dom exists
 	@param {?HTMLElement} dom_after the next existing sibling
 */
 const instance_render = (dom_parent, dom_after) => {
@@ -705,6 +706,11 @@ const instance_render = (dom_parent, dom_after) => {
 		}
 
 		const {dom} = instance;
+
+		DEBUG_INTERNAL &&
+		!dom_parent &&
+		!instance.dom &&
+			error('no dom parent');
 
 		DEBUG &&
 		typeof child_nodes !== 'object' &&
@@ -845,9 +851,10 @@ const instance_render = (dom_parent, dom_after) => {
 		else if (instance.childs) {
 			VERBOSE && log('discard childs');
 
+			if (dom) dom_parent = dom;
 			for (const child of instance.childs)
 				child &&
-					instance_unmount(child, dom || dom_parent);
+					instance_unmount(child, dom_parent);
 			instance.childs = null_;
 		}
 
@@ -860,6 +867,10 @@ const instance_render = (dom_parent, dom_after) => {
 			list_data,
 			props,
 		} = instance.icall.props;
+
+		DEBUG_INTERNAL &&
+		!dom_parent &&
+			error('no dom parent');
 
 		DEBUG && (
 			(
@@ -1064,7 +1075,7 @@ const instance_render = (dom_parent, dom_after) => {
 /**
 	unmount an instance
 	@param {TYPE_INSTANCE} instance
-	@param {?HTMLElement} dom_parent
+	@param {?HTMLElement} dom_parent given if there are still dom nodes to be removed
 */
 const instance_unmount = (instance, dom_parent) => {
 	VERBOSE &&
@@ -1082,10 +1093,9 @@ const instance_unmount = (instance, dom_parent) => {
 
 	if (dom_parent || instance.needs_unmount) {
 		if (instance.childs)
-		for (const child of instance.childs) {
-			child &&
-				instance_unmount(child, dom_parent);
-		}
+		for (const child of instance.childs)
+		if (child)
+			instance_unmount(child, dom_parent);
 
 		instance.needs_unmount &&
 			hooks_unmount(instance.slots);
@@ -2107,13 +2117,17 @@ export const hook_model = mutations => {
 
 /**
 	syncs dom attributes
-	@param {?TYPE_PROPS} attributes
+	@param {?TYPE_PROPS} attributes null when no attributes are used
 	@return {HTMLElement}
 */
 const hook_dom_common = attributes => {
 	DEBUG &&
 		assert_hook_equal(!attributes, 'attributes presence');
 	const {dom} = current;
+
+	DEBUG_INTERNAL &&
+	!dom &&
+		error('hook_dom_common without dom');
 
 	if (attributes) {
 		for (const key of hook_object_changes(attributes)) {
@@ -2383,6 +2397,10 @@ const render = () => {
 					let dom_first = current.dom_first;
 					let dom_parent_instance = current;
 					let instance = current;
+
+					DEBUG_INTERNAL &&
+					!current.iparent &&
+						error('detached instance without dom');
 
 					while (
 						!(
