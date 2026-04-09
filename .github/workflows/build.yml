@@ -31,6 +31,10 @@ jobs:
           bun add --no-save google-closure-compiler
           mv _ackage.json package.json
 
+      - name: Fetch dist branch
+        if: github.ref == 'refs/heads/master'
+        run: git fetch origin dist || true
+
       - name: Build
         run: bun run ./build.js
 
@@ -41,7 +45,7 @@ jobs:
           export LUIVERSION_MAJOR=$(bun -e "console.log(require('./package.json').version.split('.')[0])")
           mv dist /tmp/lui-dist
           git fetch origin dist
-          git checkout dist
+          git checkout -f dist
           mv /tmp/lui-dist/* ./
           git add lui*.js
           git clean -fd

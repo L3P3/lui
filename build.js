@@ -30,6 +30,11 @@ const exec = cmd => (
 	)
 );
 
+async function old_size(path) {
+	const size = await exec(`git cat-file -s origin/dist:${path}`).catch(() => '');
+	return size ? parseInt(size) : 0;
+}
+
 function flags_set(debug, verbose, legacy, rjs, extended, noeval) {
 	fs.writeFileSync(
 		'./src/flags.js',
@@ -127,9 +132,7 @@ async function build(prod, legacy, rjs, extended, noeval) {
 
 	fs.writeFileSync(file, code_js, 'ascii');
 
-	let size_before = parseInt(
-		await exec(`git cat-file -s origin/dist:${filename}`).catch(() => 0)
-	);
+	const size_before = await old_size(filename);
 
 	let diff = String(code_js.length - size_before);
 	if (diff === '0') diff = '';
