@@ -452,6 +452,7 @@ const callback_wrap = (fn, args, stack) => {
 	checks for added/removed keys
 	@param {Object} a
 	@param {Object} b
+	@noinline
 */
 const assert_keys = (a, b) => {
 	a !== b && (
@@ -503,6 +504,7 @@ const assert_hook = (type, component_, deps) => {
 	ensures that value does not change between renderings
 	@param {*} value
 	@param {string} description
+	@noinline
 */
 const assert_hook_equal = (value, description) => {
 	assert_hook(null_, false_, null_);
@@ -1211,6 +1213,7 @@ const list_data_index = (list_data, items_map, items_order) => {
 	return instance for slots
 	@param {TYPE_SLOTS} slots
 	@return {TYPE_INSTANCE}
+	@noinline
 */
 const instance_current_get = slots => {
 	while (slots[0].htype !== HOOK.HEAD_INSTANCE) {
@@ -1223,6 +1226,7 @@ const instance_current_get = slots => {
 	dirtify parent hooks and return instance, return null if already dirty
 	@param {TYPE_SLOTS} slots
 	@return {?TYPE_INSTANCE}
+	@noinline
 */
 const dirtup = slots => {
 	while (slots[0].htype !== HOOK.HEAD_INSTANCE) {
@@ -1249,6 +1253,7 @@ const dirtify_slots = slots => (
 /**
 	request rerendering for instance
 	@param {TYPE_INSTANCE} instance
+	@noinline
 */
 const dirtify_instance = instance => (
 	!instance.dirty && (
