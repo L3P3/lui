@@ -1,18 +1,20 @@
 #!/bin/env node
-/* eslint-disable no-undef */
 
-const flags = process.argv[2] || '';
-
-import * as fs from 'fs';
 import {exec as child_process_exec} from 'child_process';
+import {
+	readFile,
+	stat,
+	writeFile,
+} from 'fs/promises';
 import {hostname} from 'os';
 
+const GCC_COMMAND = 'node_modules/.bin/google-closure-compiler --';
+
 const {version} = JSON.parse(
-	fs.readFileSync('./package.json', 'utf-8')
+	await readFile('./package.json', 'utf-8')
 );
 const CI = !!process.env.CI;
 const checks_only = CI && process.env.GITHUB_REF_NAME !== 'master';
-const GCC_PATH = 'node_modules/.bin/google-closure-compiler';
 
 const exec = cmd => (
 	new Promise((resolve, reject) =>
@@ -35,8 +37,8 @@ async function old_size(path) {
 	return size ? parseInt(size) : 0;
 }
 
-function flags_set(debug, verbose, legacy, rjs, extended, noeval, debug_internal) {
-	fs.writeFileSync(
+async function flags_set(debug, verbose, legacy, rjs, extended, noeval, debug_internal) {
+	await writeFile(
 		'./src/flags.js',
 `export const DEBUG = ${debug};
 export const DEBUG_INTERNAL = ${debug_internal};
@@ -51,7 +53,7 @@ export const NOEVAL = ${noeval};
 }
 
 async function build(prod, legacy, rjs, extended, noeval) {
-	flags_set(!prod, false, legacy, rjs, extended, noeval, false);
+	await flags_set(!prod, false, legacy, rjs, extended, noeval, false);
 
 	const filename = `lui${
 		extended ? 'x' : ''
@@ -67,7 +69,7 @@ async function build(prod, legacy, rjs, extended, noeval) {
 	const file = './dist/' + filename;
 
 	await exec(
-		GCC_PATH + ' --' +
+		GCC_COMMAND +
 		[
 			'assume_function_wrapper',
 			'charset UTF-8',
@@ -98,9 +100,8 @@ async function build(prod, legacy, rjs, extended, noeval) {
 	const wrap_fn = legacy || rjs;
 
 	let code_js = (
-		fs.readFileSync(file, 'ascii')
-		.trim()
-	);
+		await readFile(file, 'ascii')
+	).trim();
 	if (!code_js.startsWith("'use strict';")) {
 		throw new Error('closure compiler output signature mismatch');
 	}
@@ -131,7 +132,7 @@ async function build(prod, legacy, rjs, extended, noeval) {
 		'\n'
 	);
 
-	fs.writeFileSync(file, code_js, 'ascii');
+	await writeFile(file, code_js, 'ascii');
 
 	const size_before = await old_size(filename);
 
@@ -151,64 +152,57 @@ async function build(prod, legacy, rjs, extended, noeval) {
 	}`);
 }
 
-(async () => {
-
-const gcc_version_output = await exec(GCC_PATH + ' --version');
-if(!gcc_version_output.includes('Version: v202')) {
-	console.log('command output: ' + gcc_version_output);
-	throw new Error('newer closure compiler version required!');
-}
-
-await exec('mkdir -p ./dist');
-//await exec('rm ./dist/*.old.js;rename.ul .js .old.js ./dist/*.js');
-await exec('rm ./dist/*').catch(() => {});
-
-console.log(`build ${version}...`);
-
-//await build(true, false, false, false);
-
-for (const extended of [false, true]) {
-	for (const prod of [false, true])
-	for (const rjs of [false, true])
-		await build(prod, false, rjs, extended, false);
-
-	// legacy
-	await build(true, true, false, extended, false);
-
-	// noeval
-	await build(true, false, false, extended, true);
-	await build(true, false, true, extended, true);
-}
-
-if (
-	!CI &&
-	flags.includes('d') &&
-	hostname() === 'l3p3-rk5'
-) {
-	try {
-		console.log('compress...');
-
-		await exec('parallel zopfli --i10000 dist/{/} ::: dist/lui*');
-
-		console.log(`compression: ${
-			fs.statSync('./dist/lui.js').size
-		} -> ${
-			fs.statSync('./dist/lui.js.gz').size
-		}`);
+try {
+	const gcc_version_output = await exec(GCC_COMMAND + 'version');
+	if(!gcc_version_output.includes('Version: v202')) {
+		console.log('command output: ' + gcc_version_output);
+		throw new Error('newer closure compiler version required!');
 	}
-	catch (error) {}
 
-	console.log('deploy...');
-	const version_m = version.split('.')[0];
-	await exec(`mkdir -p /media/Archiv/Anbieter/www/shr/lui/${version_m};cp ./dist/lui* /media/Archiv/Anbieter/www/shr/lui/${version_m}/`);
+	await exec('mkdir -p ./dist;rm ./dist/app*').catch(() => {});
+
+	console.log(`build ${version}...`);
+
+	for (const extended of [false, true]) {
+		for (const prod of [false, true])
+		for (const rjs of [false, true])
+			await build(prod, false, rjs, extended, false);
+
+		// legacy
+		await build(true, true, false, extended, false);
+
+		// noeval
+		await build(true, false, false, extended, true);
+		await build(true, false, true, extended, true);
+	}
+
+	if (
+		!CI &&
+		process.argv.includes('d') &&
+		hostname() === 'l3p3-rk5'
+	) {
+		try {
+			console.log('compress...');
+
+			await exec('parallel zopfli --i10000 dist/{/} ::: dist/lui*');
+
+			console.log(`compression: ${
+				(await stat('./dist/lui.js')).size
+			} -> ${
+				(await stat('./dist/lui.js.gz')).size
+			}`);
+		}
+		catch (error) {}
+
+		console.log('deploy...');
+		const version_m = version.split('.')[0];
+		await exec(`mkdir -p /media/Archiv/Anbieter/www/shr/lui/${version_m};cp ./dist/lui* /media/Archiv/Anbieter/www/shr/lui/${version_m}/`);
+	}
 }
-
-})()
-.catch(error => {
+catch (error) {
 	console.error(error);
 	process.exitCode = 1;
-})
-.finally(() => {
-	if (CI) return;
-	flags_set(true, false, false, false, true, false, true);
-});
+}
+finally {
+	if (!CI) await flags_set(true, false, false, false, true, false, true);
+}
