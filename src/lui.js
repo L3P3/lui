@@ -1266,6 +1266,7 @@ const dirtify_instance = instance => (
 
 /**
 	flag instance and parents as needing unmount
+	@noinline
 */
 const unmountup = () => {
 	let instance = current;
