@@ -1329,16 +1329,16 @@ export const hook_effect = (effect, deps) => {
 		VERBOSE && log('effect initial', deps);
 
 		(
-			current_slots[current_slots_index] =
-			/** @type {TYPE_SLOT} */ ({
-				htype: HOOK.EFFECT,
-				deps_comp: deps_comp_get(deps),
-				deps: deps = deps || Array_empty,
-				unmount: null_,
-			})
-		).unmount = effect(...deps) || null_;
-
-		current_slots[current_slots_index].unmount &&
+			(
+				current_slots[current_slots_index] =
+				/** @type {TYPE_SLOT} */ ({
+					htype: HOOK.EFFECT,
+					deps_comp: deps_comp_get(deps),
+					deps: deps = deps || Array_empty,
+					unmount: null_,
+				})
+			).unmount = effect(...deps) || null_
+		) &&
 			unmountup();
 	}
 	// rerender?
@@ -1358,15 +1358,15 @@ export const hook_effect = (effect, deps) => {
 					...slot.deps
 				);
 			slot.unmount = null_;
-			slot.unmount = (
-				effect(
-					...(
-						slot.deps = deps
-					)
-				) || null_
-			);
-
-			slot.unmount &&
+			(
+				slot.unmount = (
+					effect(
+						...(
+							slot.deps = deps
+						)
+					) || null_
+				)
+			) &&
 				unmountup();
 		}
 	}
@@ -1411,15 +1411,14 @@ export const hook_async = (getter, deps, fallback) => {
 				false_
 			)
 			:	(
+				unmountup(),
 				slot = current_slots[current_slots_index++] =
 				/** @type {TYPE_SLOT} */ ({
 					htype: HOOK.ASYNC,
 					deps_comp: deps_comp_get(deps),
 					deps: deps || Array_empty,
 					hvalue: null_,
-				}),
-				unmountup(),
-				slot
+				})
 			)
 		) ||
 		deps && slot.deps_comp(slot.deps, deps) && (
