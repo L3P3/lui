@@ -6,6 +6,7 @@
 
 import {
 	DEBUG,
+	DEBUG_INTERNAL,
 	EXTENDED,
 	LEGACY,
 	NOEVAL,
@@ -105,6 +106,7 @@ var TYPE_INSTANCE_CALL_OPTIONAL;
 		dom: ?HTMLElement,
 		dom_first: ?HTMLElement,
 		dirty: boolean,
+		needs_unmount: boolean,
 	}}
 */
 var TYPE_INSTANCE;
@@ -451,6 +453,7 @@ const callback_wrap = (fn, args, stack) => {
 	checks for added/removed keys
 	@param {Object} a
 	@param {Object} b
+	@noinline
 */
 const assert_keys = (a, b) => {
 	a !== b && (
@@ -463,9 +466,9 @@ const assert_keys = (a, b) => {
 
 /**
 	ensures hook rules
-	@param {?HOOK} type
+	@param {?HOOK} type null for generic hook context checks
 	@param {boolean} component_ only allowed directly in components
-	@param {?Array|void} deps
+	@param {?Array|void} deps null/undefined when hook has no deps list
 	@noinline
 */
 const assert_hook = (type, component_, deps) => {
@@ -502,6 +505,7 @@ const assert_hook = (type, component_, deps) => {
 	ensures that value does not change between renderings
 	@param {*} value
 	@param {string} description
+	@noinline
 */
 const assert_hook_equal = (value, description) => {
 	assert_hook(null_, false_, null_);
@@ -608,7 +612,7 @@ const object_diff = (a, b) => (
 
 /**
 	gets or generates a compare function for n-array, true if different
-	@param {?Array|void} deps
+	@param {?Array|void} deps null/undefined means no deps comparison needed
 	@return {?TYPE_DEPS_COMP}
 	@noinline
 */
@@ -665,7 +669,7 @@ const deps_comp_n = (a, b) => {
 /**
 	update current instance
 	also used as a symbol for node_map
-	@param {?HTMLElement} dom_parent
+	@param {?HTMLElement} dom_parent null when instance.dom exists
 	@param {?HTMLElement} dom_after the next existing sibling
 */
 const instance_render = (dom_parent, dom_after) => {
@@ -702,6 +706,11 @@ const instance_render = (dom_parent, dom_after) => {
 		}
 
 		const {dom} = instance;
+
+		DEBUG_INTERNAL &&
+		!dom_parent &&
+		!instance.dom &&
+			error('no dom parent');
 
 		DEBUG &&
 		typeof child_nodes !== 'object' &&
@@ -782,6 +791,7 @@ const instance_render = (dom_parent, dom_after) => {
 							dom: null_,
 							dom_first: null_,
 							dirty: false_,
+							needs_unmount: false_,
 						};
 						if (EXTENDED) current.slots[0] = {
 							htype: HOOK.HEAD_INSTANCE,
@@ -841,9 +851,10 @@ const instance_render = (dom_parent, dom_after) => {
 		else if (instance.childs) {
 			VERBOSE && log('discard childs');
 
+			if (dom) dom_parent = dom;
 			for (const child of instance.childs)
 				child &&
-					instance_unmount(child, dom || dom_parent);
+					instance_unmount(child, dom_parent);
 			instance.childs = null_;
 		}
 
@@ -856,6 +867,10 @@ const instance_render = (dom_parent, dom_after) => {
 			list_data,
 			props,
 		} = instance.icall.props;
+
+		DEBUG_INTERNAL &&
+		!dom_parent &&
+			error('no dom parent');
 
 		DEBUG && (
 			(
@@ -984,6 +999,7 @@ const instance_render = (dom_parent, dom_after) => {
 					dom: null_,
 					dom_first: null_,
 					dirty: false_,
+					needs_unmount: false_,
 				};
 				if (EXTENDED) current.slots[0] = {
 					htype: HOOK.HEAD_INSTANCE,
@@ -1059,7 +1075,7 @@ const instance_render = (dom_parent, dom_after) => {
 /**
 	unmount an instance
 	@param {TYPE_INSTANCE} instance
-	@param {?HTMLElement} dom_parent
+	@param {?HTMLElement} dom_parent given if there are still dom nodes to be removed
 */
 const instance_unmount = (instance, dom_parent) => {
 	VERBOSE &&
@@ -1075,13 +1091,15 @@ const instance_unmount = (instance, dom_parent) => {
 		dom_parent = null_
 	);
 
-	if (instance.childs)
-	for (const child of instance.childs) {
-		child &&
+	if (dom_parent || instance.needs_unmount) {
+		if (instance.childs)
+		for (const child of instance.childs)
+		if (child)
 			instance_unmount(child, dom_parent);
-	}
 
-	hooks_unmount(instance.slots);
+		instance.needs_unmount &&
+			hooks_unmount(instance.slots);
+	}
 
 	if (instance.dirty) {
 		let index;
@@ -1205,6 +1223,7 @@ const list_data_index = (list_data, items_map, items_order) => {
 	return instance for slots
 	@param {TYPE_SLOTS} slots
 	@return {TYPE_INSTANCE}
+	@noinline
 */
 const instance_current_get = slots => {
 	while (slots[0].htype !== HOOK.HEAD_INSTANCE) {
@@ -1217,6 +1236,7 @@ const instance_current_get = slots => {
 	dirtify parent hooks and return instance, return null if already dirty
 	@param {TYPE_SLOTS} slots
 	@return {?TYPE_INSTANCE}
+	@noinline
 */
 const dirtup = slots => {
 	while (slots[0].htype !== HOOK.HEAD_INSTANCE) {
@@ -1243,6 +1263,7 @@ const dirtify_slots = slots => (
 /**
 	request rerendering for instance
 	@param {TYPE_INSTANCE} instance
+	@noinline
 */
 const dirtify_instance = instance => (
 	!instance.dirty && (
@@ -1257,6 +1278,18 @@ const dirtify_instance = instance => (
 			render()
 	)
 )
+
+/**
+	flag instance and parents as needing unmount
+	@noinline
+*/
+const unmountup = () => {
+	let instance = current;
+	while (instance && !instance.needs_unmount) {
+		instance.needs_unmount = true_;
+		instance = instance.iparent;
+	}
+}
 
 
 /// HOOKS ///
@@ -1306,14 +1339,17 @@ export const hook_effect = (effect, deps) => {
 		VERBOSE && log('effect initial', deps);
 
 		(
-			current_slots[current_slots_index] =
-			/** @type {TYPE_SLOT} */ ({
-				htype: HOOK.EFFECT,
-				deps_comp: deps_comp_get(deps),
-				deps: deps = deps || Array_empty,
-				unmount: null_,
-			})
-		).unmount = effect(...deps) || null_;
+			(
+				current_slots[current_slots_index] =
+				/** @type {TYPE_SLOT} */ ({
+					htype: HOOK.EFFECT,
+					deps_comp: deps_comp_get(deps),
+					deps: deps = deps || Array_empty,
+					unmount: null_,
+				})
+			).unmount = effect(...deps) || null_
+		) &&
+			unmountup();
 	}
 	// rerender?
 	else if (deps) {
@@ -1332,13 +1368,16 @@ export const hook_effect = (effect, deps) => {
 					...slot.deps
 				);
 			slot.unmount = null_;
-			slot.unmount = (
-				effect(
-					...(
-						slot.deps = deps
-					)
-				) || null_
-			);
+			(
+				slot.unmount = (
+					effect(
+						...(
+							slot.deps = deps
+						)
+					) || null_
+				)
+			) &&
+				unmountup();
 		}
 	}
 
@@ -1382,6 +1421,7 @@ export const hook_async = (getter, deps, fallback) => {
 				false_
 			)
 			:	(
+				unmountup(),
 				slot = current_slots[current_slots_index++] =
 				/** @type {TYPE_SLOT} */ ({
 					htype: HOOK.ASYNC,
@@ -2077,13 +2117,17 @@ export const hook_model = mutations => {
 
 /**
 	syncs dom attributes
-	@param {?TYPE_PROPS} attributes
+	@param {?TYPE_PROPS} attributes null when no attributes are used
 	@return {HTMLElement}
 */
 const hook_dom_common = attributes => {
 	DEBUG &&
 		assert_hook_equal(!attributes, 'attributes presence');
 	const {dom} = current;
+
+	DEBUG_INTERNAL &&
+	!dom &&
+		error('hook_dom_common without dom');
 
 	if (attributes) {
 		for (const key of hook_object_changes(attributes)) {
@@ -2285,6 +2329,7 @@ export const init = (component_, dom = document_.body, props = null_) => {
 		dom,
 		dom_first: dom,
 		dirty: false_,
+		needs_unmount: false_,
 	};
 	if (EXTENDED) instance.slots[0] = {
 		htype: HOOK.HEAD_INSTANCE,
@@ -2352,6 +2397,10 @@ const render = () => {
 					let dom_first = current.dom_first;
 					let dom_parent_instance = current;
 					let instance = current;
+
+					DEBUG_INTERNAL &&
+					!current.iparent &&
+						error('detached instance without dom');
 
 					while (
 						!(
