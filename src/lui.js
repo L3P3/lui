@@ -105,6 +105,7 @@ var TYPE_INSTANCE_CALL_OPTIONAL;
 		dom: ?HTMLElement,
 		dom_first: ?HTMLElement,
 		dirty: boolean,
+		needs_unmount: boolean,
 	}}
 */
 var TYPE_INSTANCE;
@@ -782,6 +783,7 @@ const instance_render = (dom_parent, dom_after) => {
 							dom: null_,
 							dom_first: null_,
 							dirty: false_,
+							needs_unmount: false_,
 						};
 						if (EXTENDED) current.slots[0] = {
 							htype: HOOK.HEAD_INSTANCE,
@@ -984,6 +986,7 @@ const instance_render = (dom_parent, dom_after) => {
 					dom: null_,
 					dom_first: null_,
 					dirty: false_,
+					needs_unmount: false_,
 				};
 				if (EXTENDED) current.slots[0] = {
 					htype: HOOK.HEAD_INSTANCE,
@@ -1075,13 +1078,16 @@ const instance_unmount = (instance, dom_parent) => {
 		dom_parent = null_
 	);
 
-	if (instance.childs)
-	for (const child of instance.childs) {
-		child &&
-			instance_unmount(child, dom_parent);
-	}
+	if (dom_parent || instance.needs_unmount) {
+		if (instance.childs)
+		for (const child of instance.childs) {
+			child &&
+				instance_unmount(child, dom_parent);
+		}
 
-	hooks_unmount(instance.slots);
+		instance.needs_unmount &&
+			hooks_unmount(instance.slots);
+	}
 
 	if (instance.dirty) {
 		let index;
@@ -1258,6 +1264,17 @@ const dirtify_instance = instance => (
 	)
 )
 
+/**
+	flag instance and parents as needing unmount
+*/
+const unmountup = () => {
+	let instance = current;
+	while (instance && !instance.needs_unmount) {
+		instance.needs_unmount = true_;
+		instance = instance.iparent;
+	}
+}
+
 
 /// HOOKS ///
 
@@ -1314,6 +1331,9 @@ export const hook_effect = (effect, deps) => {
 				unmount: null_,
 			})
 		).unmount = effect(...deps) || null_;
+
+		current_slots[current_slots_index].unmount &&
+			unmountup();
 	}
 	// rerender?
 	else if (deps) {
@@ -1339,6 +1359,9 @@ export const hook_effect = (effect, deps) => {
 					)
 				) || null_
 			);
+
+			slot.unmount &&
+				unmountup();
 		}
 	}
 
@@ -1388,7 +1411,9 @@ export const hook_async = (getter, deps, fallback) => {
 					deps_comp: deps_comp_get(deps),
 					deps: deps || Array_empty,
 					hvalue: null_,
-				})
+				}),
+				unmountup(),
+				slot
 			)
 		) ||
 		deps && slot.deps_comp(slot.deps, deps) && (
@@ -2285,6 +2310,7 @@ export const init = (component_, dom = document_.body, props = null_) => {
 		dom,
 		dom_first: dom,
 		dirty: false_,
+		needs_unmount: false_,
 	};
 	if (EXTENDED) instance.slots[0] = {
 		htype: HOOK.HEAD_INSTANCE,
