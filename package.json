@@ -1,6 +1,6 @@
 {
 	"name": "lui",
-	"version": "2.5.0",
+	"version": "2.5.1",
 	"description": "web framework",
 	"homepage": "https://l3p3.de/dok/lui.html",
 	"repository": {
@@ -35,7 +35,7 @@
 	],
 	"license": "Zlib",
 	"devDependencies": {
-		"google-closure-compiler": "latest",
+		"google-closure-compiler": "v20260223.0.0",
 		"jsdom": "latest"
 	}
 }
