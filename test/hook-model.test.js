@@ -14,7 +14,7 @@ test('hook_model: can manage state with actions', () => {
 	const root = root_create();
 
 	const model = {
-		init: () => 0,
+		init: (_, arg) => arg,
 		increment: state => state + 1,
 		decrement: state => state - 1,
 	};
@@ -23,7 +23,7 @@ test('hook_model: can manage state with actions', () => {
 		const [count, {
 			increment,
 			decrement,
-		}] = hook_model(model);
+		}] = hook_model(model, 0);
 
 		return [
 			node_dom('span', {

@@ -1,7 +1,7 @@
 /**
 	@preserve lui.js web framework
 	inspired by react and mithril
-	l3p3.de 2025
+	l3p3.de 2026
 */
 
 import {
@@ -693,9 +693,16 @@ const instance_render = (dom_parent, dom_after) => {
 		let child_nodes = null_;
 
 		try {
-			child_nodes = (0, instance.icall.component_)(
-				instance.icall.props || Object_empty
-			);
+			if (DEBUG) {
+				child_nodes = (0, instance.icall.component_)(
+					instance.icall.props || Object_empty
+				);
+			}
+			else {
+				child_nodes = instance.icall.component_(
+					instance.icall.props || Object_empty
+				);
+			}
 		}
 		catch (thrown) {
 			if (
@@ -2057,9 +2064,10 @@ export const hook_object_changes = object => {
 /**
 	get persistent state with custom mutations
 	@param {Object<string, function(...?):*>} mutations
+	@param {*=} init_arg
 	@return {!Array}
 */
-export const hook_model = mutations => {
+export const hook_model = (mutations, init_arg) => {
 	DEBUG && (
 		assert_hook(HOOK.MODEL, false_, null_),
 		(typeof mutations !== 'object' || !mutations) &&
@@ -2077,8 +2085,8 @@ export const hook_model = mutations => {
 	const stack = DEBUG ? stack_get() : '';
 	const slot = [
 		DEBUG
-		?	callback_wrap(mutations['init'], [null_], stack + ' -> #init')
-		:	(0, mutations['init'])(null_),
+		?	callback_wrap(mutations['init'], [null_, init_arg], stack + ' -> #init')
+		:	mutations['init'](null_, init_arg),
 		{},
 	];
 	DEBUG &&
@@ -2091,7 +2099,7 @@ export const hook_model = mutations => {
 			const value = (
 				DEBUG
 				?	callback_wrap(mutations[key], [slot[0], ...args], stack + ' -> #' + key)
-				:	(0, mutations[key])(slot[0], ...args)
+				:	mutations[key](slot[0], ...args)
 			);
 			if (slot[0] !== value) {
 				DEBUG &&

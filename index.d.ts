@@ -132,9 +132,9 @@ declare namespace lui {
 		Model state with set of methods, `init` returning the initial state
 	*/
 	export function hook_model<T, U extends {
-		init: () => T,
-		[key: string]: (current?: T, ...args: any) => T
-	}>(mutations: U): [value: T, methods: {
+		init: (current: T, init_arg?: V) => T,
+		[key: string]: (current: T, ...args: any) => T
+	}, V>(mutations: U, init_arg?: V): [value: T, methods: {
 		[method in keyof U]: (...args: ParametersExceptFirst<U[method]>) => T
 	}];
 

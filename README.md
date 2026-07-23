@@ -344,7 +344,7 @@ Function | Description | V
 `hook_effect((...deps)=>destroy, deps[])` | Run the given function once and every time an `deps` item changes. That function _may_ return another function that gets called before the effect appears again or when the component gets unmounted. | C
 `hook_map((item, ...deps)=>T, items[], deps[]):T[]` | Like `hook_sub` but for each data item as in `node_map`. | E
 `hook_memo((...deps)=>T, deps[]):T` | When you need to do some data transformation, put your transformation code inside this hook and it only gets called when a `deps` entry changes. | C
-`hook_model({init, ...}):[value, {...}]` | If you use a state that has some logic with it, use this. This replaces `hook_reducer`. | C
+`hook_model({init, ...}, init_arg?):[value, {...}]` | If you use a state that has some logic with it, use this. | C
 `hook_object_changes(object):keys[]` | This gives you a list of properties that changed since the last rendering. | E
 `hook_prev(current, initial):prev` | If you want to compare something to its version from the previous rendering, use this. At first rendering, `initial` is returned. | C
 `hook_rerender()` | When this is called, this component will be rendered again next frame, only intended for _animations_. | C
