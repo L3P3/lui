@@ -1,5 +1,5 @@
 "use strict";/*
- lui.js web framework 2.5.2
+ lui.js web framework 2.5.3
  inspired by react and mithril
  l3p3.de 2026
 */
@@ -27,4 +27,4 @@ b){var c=U();c.h=b;return c.ja||(c.ja=function(){var d=ba.apply(0,arguments);ret
 0&&pa(b,m,u);if(d){if(d.g=[],d.P!==b)for(d.P=b,b=g(d.Z),c=b.next();!c.done;c=b.next())c=c.value,m[c]===void 0&&(V(d.O[c]),delete d.O[c])}else r[n-1]=d={j:3,G:R(c),h:c||G,g:[],H:I,U:a,X:q?Q(b[0]):H,Z:[],O:{},P:b};b=g(u);for(c=b.next();!c.done;c=b.next()){c=c.value;var x=d.O[c];if(p=!x)d.O[c]=x=[{j:1,fa:l,W:d,Y:H,g:H}];if(e||p||(q?d.X(m[c],x[0].Y):m[c]!==x[0].Y)){r=x;t=1;try{x[0].g=a.apply(null,[x[0].Y=m[c]].concat(h(d.h)))}catch(J){if(k.v)throw J;}}d.g.push(x[0].g)}p=f;r=l;t=n;d.Z=u;return d.g},hook_memo:za,
 hook_model:function(a,b){if(t<r.length)return r[t++].g;for(var c=r,d=[a.init(H,b),{}],e=g(N(a)),f=e.next(),l={};!f.done;l={aa:void 0},f=e.next())l.aa=f.value,d[1][l.aa]=function(n){return function(){var m=a[n.aa].apply(a,[d[0]].concat(h(ba.apply(0,arguments))));if(d[0]!==m&&(d[0]=m,sa(c),r===c))throw F;return m}}(l);r[t++]={j:0,g:d};return d},hook_object_changes:W,hook_prev:Aa,hook_rerender:wa,hook_state:ya,hook_static:U,hook_sub:function(a,b){var c=H;if(t<r.length)if((c=r[t]).U!==a)V(c.u),c=H;else if(!c.H||
 b&&c.G(c.h,b))b&&(c.h=b),c.H=I;else return++t,c.g;var d=p,e=r,f=t;if(p=!c)(r[t]=c={j:4,G:R(b),h:b||G,g:H,U:a,H:I,u:[]}).u[0]={j:2,fa:r,W:c};r=c.u;t=1;try{c.g=a.apply(null,h(c.h))}catch(l){if(k.v)throw l;}p=d;r=e;t=f+1;return c.g},hook_transition:function(a,b){var c=U({ea:a}),d=za(Ca,[a,b,c]);return c.ea=d.ha<=v?d.ia:(wa(),d.ca===v?d.da:d.da+(d.ia-d.da)*(v-d.ca)/(d.ha-d.ca))},init:function(a,b,c){b=b===void 0?la.body:b;c=c===void 0?H:c;b.innerHTML="";a={A:{K:a,l:c},T:H,L:H,B:0,ba:0,u:[],m:H,i:b,o:b,
-v:K,M:K};a.u[0]={j:0,V:a};r=H;ta(a)},node:Ea,node_dom:function(a,b,c){return Ea(Ia(a),b,c)},node_map:function(a,b,c){return Ea(S,{K:a,P:b,l:c||H})},now:function(){return v}}})()
+v:K,M:K};a.u[0]={j:0,V:a};ta(a)},node:Ea,node_dom:function(a,b,c){return Ea(Ia(a),b,c)},node_map:function(a,b,c){return Ea(S,{K:a,P:b,l:c||H})},now:function(){return v}}})()

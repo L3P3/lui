@@ -1,5 +1,5 @@
 "use strict";/*
- lui.js web framework 2.5.2
+ lui.js web framework 2.5.3
  inspired by react and mithril
  l3p3.de 2026
 */
@@ -16,4 +16,4 @@ x).length;){x=[];for(const b of a)if(b)for(e of b)if(e.A){if(e.i)Q(G,G);else{let
 hook_delay:a=>{const [b,c]=pa(I);oa(sa,[a,c]);return b},hook_dom:(a,b)=>(e.i===G&&(e.i=Z(a).cloneNode(H)),ua(b||G)),hook_effect:oa,hook_map:(a,b,c)=>{let d=G,l=H;if(m<g.length)if((d=g[m]).U!==a)ka(d),d=G;else if(!d.H||c&&d.G(d.h,c))d.h=c||E,d.H=H;else{if(b===d.P)return++m,d.g;l=I}const h=f,n=g,p=++m,q={},v=[],k=b.length>0&&ja(b,q,v);if(d){if(d.g=[],d.P!==b){d.P=b;for(const u of d.Z)u in q||(T(d.O[u]),delete d.O[u])}}else g[p-1]=d={j:3,G:P(c),h:c||E,g:[],H,U:a,X:k?N(b[0]):G,Z:[],O:{},P:b};for(const u of v){b=
 d.O[u];if(f=!b)d.O[u]=b=[{j:1,ea:n,W:d,Y:G,g:G}];if(l||f||(k?O(q[u],b[0].Y,d.X):q[u]!==b[0].Y)){g=b;m=1;try{b[0].g=a(b[0].Y=q[u],...d.h)}catch(D){if(e.A)throw D;}}d.g.push(b[0].g)}f=h;g=n;m=p;d.Z=v;return d.g},hook_memo:qa,hook_model:(a,b)=>{if(m<g.length)return g[m++].g;const c=g,d=[a.init(G,b),{}];for(const l of M(a))d[1][l]=(...h)=>{h=a[l](d[0],...h);if(d[0]!==h&&(d[0]=h,U(c),g===c))throw A;return h};g[m++]={j:0,g:d};return d},hook_object_changes:X,hook_prev:ra,hook_rerender:na,hook_state:pa,hook_static:S,
 hook_sub:(a,b)=>{let c=G;if(m<g.length)if((c=g[m]).U!==a)T(c.v),c=G;else if(!c.H||b&&c.G(c.h,b))b&&(c.h=b),c.H=H;else return++m,c.g;const d=f,l=g,h=m;if(f=!c)(g[m]=c={j:4,G:P(b),h:b||E,g:G,U:a,H,v:[]}).v[0]={j:2,ea:g,W:c};g=c.v;m=1;try{c.g=a(...c.h)}catch(n){if(e.A)throw n;}f=d;g=l;m=h+1;return c.g},hook_transition:(a,b)=>{const c=S({da:a});a=qa(ta,[a,b,c]);return c.da=a.ga<=r?a.ha:(na(),a.ba===r?a.ca:a.ca+(a.ha-a.ca)*(r-a.ba)/(a.ga-a.ba))},init:(a,b=da.body,c=G)=>{b.innerHTML="";a={u:{K:a,l:c},T:G,
-L:G,B:0,aa:0,v:[],m:G,i:b,o:b,A:I,M:I};a.v[0]={j:0,V:a};g=G;ma(a)},node:Y,node_dom:(a,b,c)=>Y(wa(a),b,c),node_map:(a,b,c)=>Y(Q,{K:a,P:b,l:c||G}),now:()=>r}}
+L:G,B:0,aa:0,v:[],m:G,i:b,o:b,A:I,M:I};a.v[0]={j:0,V:a};ma(a)},node:Y,node_dom:(a,b,c)=>Y(wa(a),b,c),node_map:(a,b,c)=>Y(Q,{K:a,P:b,l:c||G}),now:()=>r}}

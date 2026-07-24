@@ -1,5 +1,5 @@
 "use strict";/*
- lui.js web framework 2.5.2
+ lui.js web framework 2.5.3
  inspired by react and mithril
  l3p3.de 2026
 */
@@ -23,4 +23,4 @@ Y.join=function(a){for(var b="",c=this.length-1,d=0;d<c;++d)b+=this[d]+a;d<c+1&&
 "";a<b;++a)c+=this[a];return c})))))));O.lui={defer:function(){return A=I,ua()},defer_end:va,dom_define:function(a,b,c){b=wa(b);c&&(b=b.cloneNode(I),c.D&&(M(b.dataset,c.D),delete c.D),c.S&&(M(b.style,c.S),delete c.S),M(b,c));F["#"+a]=b},hook_assert:function(a){if(!a)throw F;},hook_async:function(a,b,c){var d;if((u<r.length?(d=r[u++],J):(pa(),d=r[u++]={A:2,K:T(b),i:b||G,h:H}))||b&&d.K(d.i,b)&&(d.i=b)){c!==void 0&&(d.h=c);var f=m;a.apply(null,l(d.i)).then(function(e){return d.h!==e&&d.i===b&&(d.h=e,W(f))})}return d.h},hook_dom:function(a,
 b){return m.g===H&&(m.g=wa(a).cloneNode(I)),sa(b||H)},hook_effect:function(a,b){if(u>=r.length)((r[u]={A:1,K:T(b),i:b=b||G,B:H}).B=a.apply(null,l(b))||H)&&pa();else if(b){var c=r[u];c.K(c.i,b)&&(c.B&&c.B.apply(c,l(c.i)),c.B=H,(c.B=a.apply(null,l(c.i=b))||H)&&pa())}++u},hook_memo:function(a,b){return u>=r.length?(r[u++]={A:0,K:T(b),i:b=b||G,h:a.apply(null,l(b))}).h:b&&r[u].K(r[u].i,b)?r[u].h=a.apply(null,l(r[u++].i=b)):r[u++].h},hook_model:function(a,b){if(u<r.length)return r[u++].h;for(var c=m,d=
 [a.init(H,b),{}],f=g(N(a)),e=f.next(),h={};!e.done;h={P:void 0},e=f.next())h.P=e.value,d[1][h.P]=function(p){return function(){var k=a[p.P].apply(a,[d[0]].concat(l(ba.apply(0,arguments))));if(d[0]!==k&&(d[0]=k,W(c),m===c))throw F;return k}}(h);r[u++]={A:0,h:d};return d},hook_prev:qa,hook_rerender:function(){var a=m;a.v=I;C[a.u]?C[a.u].push(a):C[a.u]=[a]},hook_state:function(a){if(u<r.length)return r[u++].h;var b=m,c=[a,function(d){if(c[0]!==d&&(c[0]=d,W(b),m===b))throw F;return d},function(){return c[0]}];
-r[u++]={A:0,h:c};return c},hook_static:oa,init:function(a,b,c){b=b===void 0?ka.body:b;c=c===void 0?H:c;b.innerHTML="";a={o:{G:a,j:c},M:H,H:H,u:0,T:0,N:[],l:H,g:b,m:b,v:J,J:J};m=H;W(a)},node:ta,node_dom:function(a,b,c){return ta(xa(a),b,c)},node_map:function(a,b,c){return ta(U,{G:a,W:b,j:c||H})},now:function(){return w}}})()
+r[u++]={A:0,h:c};return c},hook_static:oa,init:function(a,b,c){b=b===void 0?ka.body:b;c=c===void 0?H:c;b.innerHTML="";W({o:{G:a,j:c},M:H,H:H,u:0,T:0,N:[],l:H,g:b,m:b,v:J,J:J})},node:ta,node_dom:function(a,b,c){return ta(xa(a),b,c)},node_map:function(a,b,c){return ta(U,{G:a,W:b,j:c||H})},now:function(){return w}}})()

@@ -1,5 +1,5 @@
 "use strict";/*
- lui.js web framework 2.5.2
+ lui.js web framework 2.5.3
  inspired by react and mithril
  l3p3.de 2026
 */
@@ -22,4 +22,4 @@ c){var b=S();b.h=c;return b.ja||(b.ja=function(){var d=ba.apply(0,arguments);ret
 0&&na(c,l,u);if(d){if(d.g=[],d.P!==c)for(d.P=c,c=f(d.Z),b=c.next();!b.done;b=c.next())b=b.value,b in l||(U(d.O[b]),delete d.O[b])}else r[n-1]=d={j:3,G:P(b),h:b||E,g:[],H:H,U:a,X:q?N(c[0]):F,Z:[],O:{},P:c};c=f(u);for(b=c.next();!b.done;b=c.next()){b=b.value;var w=d.O[b];if(p=!w)d.O[b]=w=[{j:1,fa:m,W:d,Y:F,g:F}];if(e||p||(q?O(l[b],w[0].Y,d.X):l[b]!==w[0].Y)){r=w;t=1;try{w[0].g=a.apply(null,[w[0].Y=l[b]].concat(g(d.h)))}catch(G){if(k.v)throw G;}}d.g.push(w[0].g)}p=h;r=m;t=n;d.Z=u;return d.g},hook_memo:ua,
 hook_model:function(a,c){if(t<r.length)return r[t++].g;var b=r,d=[a.init(F,c),{}];c=f(M(a));for(var e=c.next(),h={};!e.done;h={aa:void 0},e=c.next())h.aa=e.value,d[1][h.aa]=function(m){return function(){var n=a[m.aa].apply(a,[d[0]].concat(g(ba.apply(0,arguments))));if(d[0]!==n&&(d[0]=n,V(b),r===b))throw D;return n}}(h);r[t++]={j:0,g:d};return d},hook_object_changes:Y,hook_prev:va,hook_rerender:ra,hook_state:ta,hook_static:S,hook_sub:function(a,c){var b=F;if(t<r.length)if((b=r[t]).U!==a)U(b.u),b=F;
 else if(!b.H||c&&b.G(b.h,c))c&&(b.h=c),b.H=H;else return++t,b.g;var d=p,e=r,h=t;if(p=!b)(r[t]=b={j:4,G:P(c),h:c||E,g:F,U:a,H:H,u:[]}).u[0]={j:2,fa:r,W:b};r=b.u;t=1;try{b.g=a.apply(null,g(b.h))}catch(m){if(k.v)throw m;}p=d;r=e;t=h+1;return b.g},hook_transition:function(a,c){var b=S({ea:a});a=ua(xa,[a,c,b]);return b.ea=a.ha<=v?a.ia:(ra(),a.ca===v?a.da:a.da+(a.ia-a.da)*(v-a.ca)/(a.ha-a.ca))},init:function(a,c,b){c=c===void 0?ia.body:c;b=b===void 0?F:b;c.innerHTML="";a={A:{K:a,l:b},T:F,L:F,B:0,ba:0,u:[],
-m:F,i:c,o:c,v:I,M:I};a.u[0]={j:0,V:a};r=F;qa(a)},node:Z,node_dom:function(a,c,b){return Z(Ca(a),c,b)},node_map:function(a,c,b){return Z(Q,{K:a,P:c,l:b||F})},now:function(){return v}})})()
+m:F,i:c,o:c,v:I,M:I};a.u[0]={j:0,V:a};qa(a)},node:Z,node_dom:function(a,c,b){return Z(Ca(a),c,b)},node_map:function(a,c,b){return Z(Q,{K:a,P:c,l:b||F})},now:function(){return v}})})()
