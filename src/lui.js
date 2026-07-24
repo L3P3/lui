@@ -2323,6 +2323,10 @@ export const init = (component_, dom = document_.body, props = null_) => {
 
 	dom.innerHTML = '';
 
+	if (DEBUG) {
+		component_['name_'] = '$root';
+	}
+
 	const instance = {
 		icall: {
 			component_,
@@ -2343,14 +2347,6 @@ export const init = (component_, dom = document_.body, props = null_) => {
 		htype: HOOK.HEAD_INSTANCE,
 		hinstance: instance,
 	};
-
-	// why we reset it to null on init? no idea. should always be null unless a rendering is in progress.
-	if (DEBUG) {
-		component_['name_'] = '$root',
-		current = current_slots = null_;
-	}
-	else if (EXTENDED) current_slots = null_;
-	else current = null_;
 
 	dirtify_instance(instance);
 }
