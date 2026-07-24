@@ -2344,10 +2344,13 @@ export const init = (component_, dom = document_.body, props = null_) => {
 		hinstance: instance,
 	};
 
-	DEBUG && (
+	// why we reset it to null on init? no idea. should always be null unless a rendering is in progress.
+	if (DEBUG) {
 		component_['name_'] = '$root',
-		current = current_slots = null_
-	);
+		current = current_slots = null_;
+	}
+	else if (EXTENDED) current_slots = null_;
+	else current = null_;
 
 	dirtify_instance(instance);
 }
@@ -2473,9 +2476,9 @@ const render = () => {
 	}
 	rerender_deferred = false_;
 
-	DEBUG && (
-		current = current_slots = null_
-	);
+	if (DEBUG) current = current_slots = null_;
+	else if (EXTENDED) current_slots = null_;
+	else current = null_;
 
 	if (render_queue_next.length) {
 		render_queue = render_queue_next;
