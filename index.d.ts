@@ -199,4 +199,35 @@ declare namespace lui {
 	export function now(): number;
 }
 
-export = lui;
+export type NodeData = lui.NodeData;
+export type LuiNode = lui.LuiNode;
+export type LuiNodeList = lui.LuiNodeList;
+export type DomDescriptor = lui.DomDescriptor;
+export type Attrs = lui.Attrs;
+export type AttrsNode = lui.AttrsNode;
+export type Component<T extends {}> = lui.Component<T>;
+
+export import defer = lui.defer;
+export import defer_end = lui.defer_end;
+export import dom_define = lui.dom_define;
+export import hook_assert = lui.hook_assert;
+export import hook_async = lui.hook_async;
+export import hook_callback = lui.hook_callback;
+export import hook_delay = lui.hook_delay;
+export import hook_dom = lui.hook_dom;
+export import hook_effect = lui.hook_effect;
+export import hook_map = lui.hook_map;
+export import hook_memo = lui.hook_memo;
+export import hook_model = lui.hook_model;
+export import hook_object_changes = lui.hook_object_changes;
+export import hook_prev = lui.hook_prev;
+export import hook_rerender = lui.hook_rerender;
+export import hook_state = lui.hook_state;
+export import hook_static = lui.hook_static;
+export import hook_sub = lui.hook_sub;
+export import hook_transition = lui.hook_transition;
+export import init = lui.init;
+export import node = lui.node;
+export import node_dom = lui.node_dom;
+export import node_map = lui.node_map;
+export import now = lui.now;

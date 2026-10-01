@@ -1,6 +1,5 @@
 {
 	"compilerOptions": {
-		"baseUrl": "./src",
 		"lib": ["es6"],
 		"target": "es6",
 		"module": "es6"
@@ -8,5 +7,8 @@
 	"include": [
 		"src/**/*",
 		"test/*.*"
+	],
+	"exclude": [
+		"src/externs.js"
 	]
 }

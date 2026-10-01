@@ -51,7 +51,13 @@ Just add the following line to your HTML file before where lui is used:
 > To not block page loading, add [`defer`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script#defer) to the script tags.
 
 > [!TIP]
-> For type information in your code editor, just copy `lui-link.js` and `index.d.ts` from this repo into your project, rename them to `lui.js` and `lui.d.ts` and import from the `js` file.
+> When using the standalone global script with a package-aware project, import from `lui/link` for the window-backed runtime and complete editor types:
+>
+> ```js
+> import {node_dom} from 'lui/link';
+> ```
+>
+> When bundling lui itself, import from `lui` instead.
 
 ## Variants
 

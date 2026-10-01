@@ -13,8 +13,14 @@
 	"main": "./src/lui.js",
 	"module": "./src/lui.js",
 	"exports": {
-		".": "./src/lui.js",
-		"./link": "./src/lui-link.js"
+		".": {
+			"types": "./index.d.ts",
+			"default": "./src/lui.js"
+		},
+		"./link": {
+			"types": "./link.d.ts",
+			"default": "./lui-link.js"
+		}
 	},
 	"type": "module",
 	"types": "./index.d.ts",
