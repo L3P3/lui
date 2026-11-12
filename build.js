@@ -7,10 +7,6 @@ import {
 	writeFile,
 } from 'fs/promises';
 import {hostname} from 'os';
-import {
-	confirm_size_increases,
-	size_increase,
-} from './build-size.js';
 
 const GCC_COMMAND = 'node_modules/.bin/google-closure-compiler --';
 
@@ -141,8 +137,8 @@ async function build(prod, legacy, rjs, extended, noeval) {
 	const size_before = await old_size(filename);
 
 	const size_diff = size_before === null ? 0 : code_js.length - size_before;
-	const increase = size_increase(filename, code_js.length, size_before);
-	if (increase) size_increases.push(increase);
+	if (size_before !== null && size_diff > 50)
+		size_increases.push(`${filename}: +${size_diff} bytes`);
 	let diff = String(size_diff);
 	if (diff === '0') diff = '';
 	else {
@@ -183,9 +179,11 @@ try {
 		await build(true, false, true, extended, true);
 	}
 
-	await confirm_size_increases(size_increases, {
-		accepted: process.env.LUI_ACCEPT_SIZE_INCREASE === '1',
-	});
+	if (size_increases.length) {
+		console.warn('Bundle size increases over 50 bytes:\n  ' + size_increases.join('\n  '));
+		if (CI && process.env.LUI_ACCEPT_SIZE_INCREASE !== '1')
+			throw new Error('Size increase requires confirmation; set LUI_ACCEPT_SIZE_INCREASE=1 to proceed');
+	}
 
 	if (
 		!CI &&

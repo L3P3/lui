@@ -10,7 +10,6 @@ import {
 const env = {...process.env};
 delete env.CI;
 delete env.GITHUB_REF_NAME;
-env.LUI_ACCEPT_SIZE_INCREASE = '1';
 
 execFileSync(
 	process.execPath,

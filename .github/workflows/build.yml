@@ -15,7 +15,7 @@ on:
   workflow_dispatch:
     inputs:
       accept_size_increase:
-        description: Accept bundle size increases over 100 bytes
+        description: Accept bundle size increases over 50 bytes
         type: boolean
         default: false
 

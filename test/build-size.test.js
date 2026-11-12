@@ -1,79 +1,77 @@
-import {PassThrough} from 'node:stream';
+import {execFileSync, spawnSync} from 'node:child_process';
+import {
+	copyFileSync,
+	cpSync,
+	mkdtempSync,
+	readFileSync,
+	rmSync,
+	symlinkSync,
+} from 'node:fs';
+import {tmpdir} from 'node:os';
+import {join, resolve} from 'node:path';
 import {
 	expect,
 	test,
 } from 'bun:test';
-import {
-	confirm_size_increases,
-	size_increase,
-} from '../build-size.js';
 
-test('only known bundle increases over 100 bytes require confirmation', () => {
-	expect(size_increase('lui.js', 1101, 1000)).toEqual({
-		filename: 'lui.js',
-		diff: 101,
+test('only CI rejects unaccepted bundle increases above 50 bytes', () => {
+	const dir = mkdtempSync(join(tmpdir(), 'lui-build-size-'));
+	const env = {...process.env};
+	delete env.CI;
+	delete env.GITHUB_REF_NAME;
+	delete env.LUI_ACCEPT_SIZE_INCREASE;
+	const run = extra => spawnSync(process.execPath, ['build.js'], {
+		cwd: dir,
+		env: {...env, ...extra},
+		encoding: 'utf8',
 	});
-	expect(size_increase('lui.js', 1100, 1000)).toBeNull();
-	expect(size_increase('lui.js', 900, 1000)).toBeNull();
-	expect(size_increase('lui.js', 1101, null)).toBeNull();
-});
-
-test('non-interactive builds require explicit acceptance', async () => {
-	const output = new PassThrough();
-	let text = '';
-	output.on('data', data => { text += data; });
-	const increases = [
-		{filename: 'lui.js', diff: 101},
-		{filename: 'luix.r.js', diff: 250},
-	];
-	await expect(confirm_size_increases(increases, {
-		input: new PassThrough(),
-		output,
-	})).rejects.toThrow('requires confirmation');
-	expect(text).toContain('lui.js: +101 bytes');
-	expect(text).toContain('luix.r.js: +250 bytes');
-	await expect(confirm_size_increases(increases, {
-		input: new PassThrough(),
-		output,
-		accepted: true,
-	})).resolves.toBeUndefined();
-	await expect(confirm_size_increases([], {
-		input: new PassThrough(),
-		output,
-	})).resolves.toBeUndefined();
-});
-
-for (const [answer, accepted] of [
-	['y\n', true],
-	['YES\n', true],
-	['n\n', false],
-	['\n', false],
-]) {
-	test(`interactive size confirmation: ${JSON.stringify(answer)}`, async () => {
-		const input = new PassThrough();
-		const output = new PassThrough();
-		input.isTTY = output.isTTY = true;
-		const result = confirm_size_increases([{filename: 'lui.js', diff: 101}], {
-			input,
-			output,
-		});
-		input.write(answer);
-		if (accepted) await expect(result).resolves.toBeUndefined();
-		else await expect(result).rejects.toThrow('Build cancelled');
-		input.destroy();
-		output.destroy();
-	});
-}
-
-test('closing the prompt without an answer rejects the build', async () => {
-	const input = new PassThrough();
-	const output = new PassThrough();
-	input.isTTY = output.isTTY = true;
-	const result = confirm_size_increases([{filename: 'lui.js', diff: 101}], {
+	const git = (args, input) => execFileSync('git', args, {
+		cwd: dir,
+		env: {
+			...env,
+			GIT_AUTHOR_NAME: 'Test',
+			GIT_AUTHOR_EMAIL: 'test@example.invalid',
+			GIT_COMMITTER_NAME: 'Test',
+			GIT_COMMITTER_EMAIL: 'test@example.invalid',
+		},
 		input,
-		output,
-	});
-	input.end();
-	await expect(result).rejects.toThrow('Build cancelled');
-	output.destroy();
-});
+		encoding: 'utf8',
+	}).trim();
+
+	try {
+		copyFileSync('build.js', join(dir, 'build.js'));
+		copyFileSync('package.json', join(dir, 'package.json'));
+		cpSync('src', join(dir, 'src'), {recursive: true});
+		symlinkSync(resolve('node_modules'), join(dir, 'node_modules'), 'dir');
+		git(['init', '-q']);
+		const initial = run({});
+		expect(initial.status).toBe(0);
+		expect(initial.stderr).not.toContain('Bundle size increases');
+		const entries = [
+			['lui.js', 51],
+			['luix.js', 50],
+		].map(([filename, diff]) => {
+			const size = readFileSync(join(dir, 'dist', filename)).length;
+			const blob = git(['hash-object', '-w', '--stdin'], Buffer.alloc(size - diff));
+			return `100644 blob ${blob}\t${filename}\n`;
+		});
+		const tree = git(['mktree'], entries.join(''));
+		const commit = git(['commit-tree', tree], 'baseline');
+		git(['update-ref', 'refs/remotes/origin/dist', commit]);
+		const ci = {CI: 'true', GITHUB_REF_NAME: 'master'};
+		const rejected = run(ci);
+		expect(rejected.status).toBe(1);
+		expect(rejected.stderr).toContain('lui.js: +51 bytes');
+		expect(rejected.stderr).not.toContain('luix.js: +50 bytes');
+		expect(rejected.stderr).toContain('Size increase requires confirmation');
+		const accepted = run({...ci, LUI_ACCEPT_SIZE_INCREASE: '1'});
+		expect(accepted.status).toBe(0);
+		expect(accepted.stderr).toContain('lui.js: +51 bytes');
+		const local = run({});
+		expect(local.status).toBe(0);
+		expect(local.stderr).toContain('lui.js: +51 bytes');
+	}
+	finally {
+		rmSync(dir, {recursive: true, force: true});
+	}
+}, 300000);
