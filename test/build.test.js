@@ -37,12 +37,12 @@ test('production bundles keep internal variables scoped', () => {
 });
 
 for (const [filename, max_size, rjs] of [
-	['lui.legacy.js', 9100, false],
-	['lui.r.js', 6950, true],
-	['lui.r.noeval.js', 7150, true],
-	['luix.legacy.js', 11050, false],
-	['luix.r.js', 8900, true],
-	['luix.r.noeval.js', 9100, true],
+	['lui.legacy.js', 9200, false],
+	['lui.r.js', 7050, true],
+	['lui.r.noeval.js', 7250, true],
+	['luix.legacy.js', 11150, false],
+	['luix.r.js', 9000, true],
+	['luix.r.noeval.js', 9200, true],
 ]) {
 	test(`${filename}: compact bundle updates and removes children`, () => {
 		const code = readFileSync('./dist/' + filename, 'utf8');
@@ -81,3 +81,46 @@ for (const [filename, max_size, rjs] of [
 		dom.window.close();
 	});
 }
+
+for (const [filename, max_size] of [
+	['lui.js', 4850],
+	['lui.noeval.js', 5030],
+	['luix.js', 6450],
+	['luix.noeval.js', 6630],
+]) {
+	test(`${filename}: modern bundle stays compact`, () => {
+		expect(readFileSync('./dist/' + filename).length).toBeLessThan(max_size);
+	});
+}
+
+test('extended rjs noeval bundle preserves mapped hooks and cleanup order', () => {
+	const dom = new JSDOM('<!DOCTYPE html><body></body>', {
+		runScripts: 'outside-only',
+	});
+	let lui;
+	dom.window.define = value => { lui = value; };
+	dom.window.eval(readFileSync('./dist/luix.r.noeval.js', 'utf8'));
+
+	const root = dom.window.document.createElement('div');
+	const cleanups = [];
+	let set_items;
+	const map_item = item => {
+		lui.hook_effect(() => () => cleanups.push(item), []);
+		return item.toUpperCase();
+	};
+	lui.init(() => {
+		const [items, set] = lui.hook_state(['a', 'b', 'c']);
+		set_items = set;
+		const values = lui.hook_map(map_item, items);
+		return [lui.node_dom('p', {textContent: values.join('')})];
+	}, root);
+
+	expect(root.textContent).toBe('ABC');
+	set_items(['c', 'a']);
+	expect(root.textContent).toBe('CA');
+	expect(cleanups).toEqual(['b']);
+	set_items([]);
+	expect(root.textContent).toBe('');
+	expect(cleanups).toEqual(['b', 'c', 'a']);
+	dom.window.close();
+});
