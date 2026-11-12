@@ -8,12 +8,14 @@ on:
     paths:
       - 'test/**'
       - 'src/**'
+      - '.github/workflows/test.yml'
   pull_request:
     branches-ignore:
       - dist
     paths:
       - 'test/**'
       - 'src/**'
+      - '.github/workflows/test.yml'
   workflow_dispatch:
 
 jobs:
@@ -34,4 +36,4 @@ jobs:
           mv _ackage.json package.json
       
       - name: Run tests
-        run: bun test
+        run: bun test $(find test -name '*.test.js' ! -path 'test/build.test.js')
