@@ -73,6 +73,11 @@ noeval | Does not generate code at runtime, [read more](#noeval-variant)
 
 To see which combinations exist, see [the dist branch](https://github.com/L3P3/lui/tree/dist). If you need a combination that is not yet there, contact me.
 
+Builds compare sizes with `origin/dist` when available (`git fetch origin dist:refs/remotes/origin/dist`).
+If a variant grows by more than 100 bytes, the build requests confirmation.
+For non-interactive builds, explicitly set `LUI_ACCEPT_SIZE_INCREASE=1` to accept the increase.
+The manually dispatched build workflow also offers an acceptance option.
+
 ## API
 
 When using the standalone file mentioned above, it registers a global `lui` object containing all functions mentioned here.

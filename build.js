@@ -7,6 +7,10 @@ import {
 	writeFile,
 } from 'fs/promises';
 import {hostname} from 'os';
+import {
+	confirm_size_increases,
+	size_increase,
+} from './build-size.js';
 
 const GCC_COMMAND = 'node_modules/.bin/google-closure-compiler --';
 
@@ -15,6 +19,7 @@ const {version} = JSON.parse(
 );
 const CI = !!process.env.CI;
 const checks_only = CI && process.env.GITHUB_REF_NAME !== 'master';
+const size_increases = [];
 
 const exec = cmd => (
 	new Promise((resolve, reject) =>
@@ -34,7 +39,7 @@ const exec = cmd => (
 
 async function old_size(path) {
 	const size = await exec(`git cat-file -s origin/dist:${path}`).catch(() => '');
-	return size ? parseInt(size) : 0;
+	return size ? parseInt(size) : null;
 }
 
 async function flags_set(debug, verbose, legacy, rjs, extended, noeval, debug_internal) {
@@ -135,7 +140,10 @@ async function build(prod, legacy, rjs, extended, noeval) {
 
 	const size_before = await old_size(filename);
 
-	let diff = String(code_js.length - size_before);
+	const size_diff = size_before === null ? 0 : code_js.length - size_before;
+	const increase = size_increase(filename, code_js.length, size_before);
+	if (increase) size_increases.push(increase);
+	let diff = String(size_diff);
 	if (diff === '0') diff = '';
 	else {
 		if (!diff.startsWith('-')) diff = ' +' + diff;
@@ -174,6 +182,10 @@ try {
 		await build(true, false, false, extended, true);
 		await build(true, false, true, extended, true);
 	}
+
+	await confirm_size_increases(size_increases, {
+		accepted: process.env.LUI_ACCEPT_SIZE_INCREASE === '1',
+	});
 
 	if (
 		!CI &&

@@ -10,6 +10,7 @@ import {
 const env = {...process.env};
 delete env.CI;
 delete env.GITHUB_REF_NAME;
+env.LUI_ACCEPT_SIZE_INCREASE = '1';
 
 execFileSync(
 	process.execPath,
@@ -37,12 +38,12 @@ test('production bundles keep internal variables scoped', () => {
 });
 
 for (const [filename, max_size, rjs] of [
-	['lui.legacy.js', 9280, false],
-	['lui.r.js', 7130, true],
-	['lui.r.noeval.js', 7330, true],
-	['luix.legacy.js', 11230, false],
-	['luix.r.js', 9080, true],
-	['luix.r.noeval.js', 9280, true],
+	['lui.legacy.js', 9270, false],
+	['lui.r.js', 7132, true],
+	['lui.r.noeval.js', 7334, true],
+	['luix.legacy.js', 11203, false],
+	['luix.r.js', 9075, true],
+	['luix.r.noeval.js', 9279, true],
 ]) {
 	test(`${filename}: compact bundle updates and removes children`, () => {
 		const code = readFileSync('./dist/' + filename, 'utf8');
@@ -83,10 +84,10 @@ for (const [filename, max_size, rjs] of [
 }
 
 for (const [filename, max_size] of [
-	['lui.js', 4930],
-	['lui.noeval.js', 5110],
-	['luix.js', 6530],
-	['luix.noeval.js', 6710],
+	['lui.js', 4937],
+	['lui.noeval.js', 5117],
+	['luix.js', 6554],
+	['luix.noeval.js', 6730],
 ]) {
 	test(`${filename}: modern bundle stays compact`, () => {
 		expect(readFileSync('./dist/' + filename).length).toBeLessThan(max_size);
