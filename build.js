@@ -54,6 +54,7 @@ export const NOEVAL = ${noeval};
 
 async function build(prod, legacy, rjs, extended, noeval) {
 	await flags_set(!prod, false, legacy, rjs, extended, noeval, false);
+	const wrap_fn = legacy || rjs;
 
 	const filename = `lui${
 		extended ? 'x' : ''
@@ -71,7 +72,7 @@ async function build(prod, legacy, rjs, extended, noeval) {
 	await exec(
 		GCC_COMMAND +
 		[
-			'assume_function_wrapper',
+			wrap_fn ? 'assume_function_wrapper' : null,
 			'charset UTF-8',
 			'compilation_level ADVANCED',
 			'dependency_mode PRUNE',
@@ -96,8 +97,6 @@ async function build(prod, legacy, rjs, extended, noeval) {
 		.join(' --')
 	);
 	if (checks_only) return;
-
-	const wrap_fn = legacy || rjs;
 
 	let code_js = (
 		await readFile(file, 'ascii')
