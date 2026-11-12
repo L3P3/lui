@@ -54,6 +54,7 @@ export const NOEVAL = ${noeval};
 
 async function build(prod, legacy, rjs, extended, noeval) {
 	await flags_set(!prod, false, legacy, rjs, extended, noeval, false);
+	const wrap_fn = legacy || rjs;
 
 	const filename = `lui${
 		extended ? 'x' : ''
@@ -71,7 +72,6 @@ async function build(prod, legacy, rjs, extended, noeval) {
 	await exec(
 		GCC_COMMAND +
 		[
-			'assume_function_wrapper',
 			'charset UTF-8',
 			'compilation_level ADVANCED',
 			'dependency_mode PRUNE',
@@ -119,14 +119,14 @@ async function build(prod, legacy, rjs, extended, noeval) {
 		.replace('lui.js web framework', 'lui.js web framework ' + version)
 		.replace('*/\n',
 			'*/\n' +
-			'(function()' +
+			(wrap_fn ? '(function()' : '') +
 			'{' +
 			cc_helpers
 		)
 		// remove last ;
 		.slice(0, -1) +
 		'}' +
-		')()' +
+		(wrap_fn ? ')()' : '') +
 		'\n'
 	);
 
