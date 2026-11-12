@@ -1013,7 +1013,7 @@ const instance_render = (dom_parent, dom_after) => {
 					hinstance: child,
 				};
 
-				instance_render(null_, null_);
+				instance_render(dom_parent, dom_first);
 
 				if (VERBOSE) {
 					current = instance;
