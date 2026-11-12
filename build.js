@@ -72,6 +72,7 @@ async function build(prod, legacy, rjs, extended, noeval) {
 	await exec(
 		GCC_COMMAND +
 		[
+			wrap_fn ? 'assume_function_wrapper' : null,
 			'charset UTF-8',
 			'compilation_level ADVANCED',
 			'dependency_mode PRUNE',
