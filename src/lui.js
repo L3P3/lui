@@ -714,6 +714,12 @@ const instance_render = (dom_parent, dom_after) => {
 
 		const {dom} = instance;
 
+		DEBUG &&
+		!dom &&
+		instance.iparent &&
+		instance.iparent.icall.component_ === instance_render &&
+			error('node_map item components must have a hook_dom');
+
 		DEBUG_INTERNAL &&
 		!dom_parent &&
 		!instance.dom &&

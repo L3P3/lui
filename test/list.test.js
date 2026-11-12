@@ -8,7 +8,9 @@ import {
 	hook_dom,
 	hook_model,
 	init,
+	node_dom,
 	node_map,
+	reset,
 } from '../src/lui.js';
 
 const ListItem = ({
@@ -31,6 +33,26 @@ test('node_map: empty list', () => {
 	], root);
 
 	expect(root.childNodes.length).toBe(0);
+});
+test('node_map: reports items without hook_dom in dev', () => {
+	const root = root_create();
+
+	try {
+		expect(() => {
+			init(() => [
+				node_map(
+					() => [
+						node_dom('p'),
+					],
+					[1]
+				),
+			], root);
+		}).toThrow('node_map item components must have a hook_dom');
+		expect(root.childNodes.length).toBe(0);
+	}
+	finally {
+		reset();
+	}
 });
 test('node_map: simple list, 1 item', () => {
 	const root = root_create();
