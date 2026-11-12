@@ -48,6 +48,7 @@ test('node_map: reports items without hook_dom in dev', () => {
 				),
 			], root);
 		}).toThrow('node_map item components must have a hook_dom');
+		expect(root.childNodes.length).toBe(0);
 	}
 	finally {
 		reset();
