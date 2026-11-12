@@ -592,7 +592,8 @@ const object_comp_get = object => {
 */
 const object_comp_eval = (a, b, keys) => {
 	if (a === b) return false;
-	for (const key of keys) if (a[key] !== b[key]) return true;
+	for (let i = 0; i < keys.length; i++)
+		if (a[keys[i]] !== b[keys[i]]) return true;
 	return false;
 }
 
@@ -865,9 +866,10 @@ const instance_render = (dom_parent, dom_after) => {
 			VERBOSE && log('discard childs');
 
 			if (dom) dom_parent = dom;
-			for (const child of instance.childs)
-				child &&
-					instance_unmount(child, dom_parent);
+			const childs = instance.childs;
+			for (let i = 0; i < childs.length; i++)
+				childs[i] &&
+					instance_unmount(childs[i], dom_parent);
 			instance.childs = null_;
 		}
 
@@ -949,15 +951,18 @@ const instance_render = (dom_parent, dom_after) => {
 				log('props changed', object_diff(state.props_prev, props));
 
 			// remove items
-			for (const key of state.items_order_prev)
-			if (
-				LEGACY
-				?	items_map[key] == null_
-				:	!(key in items_map)
-			) {
-				VERBOSE && log('item remove: ' + key);
-				instance_unmount(state.item_childs[key], dom_parent);
-				delete state.item_childs[key];
+			const items_order_prev = state.items_order_prev;
+			for (let i = 0; i < items_order_prev.length; i++) {
+				const key = items_order_prev[i];
+				if (
+					LEGACY
+					?	items_map[key] == null_
+					:	!(key in items_map)
+				) {
+					VERBOSE && log('item remove: ' + key);
+					instance_unmount(state.item_childs[key], dom_parent);
+					delete state.item_childs[key];
+				}
 			}
 
 			state.props_prev = props;
@@ -1105,10 +1110,11 @@ const instance_unmount = (instance, dom_parent) => {
 	);
 
 	if (dom_parent || instance.needs_unmount) {
-		if (instance.childs)
-		for (const child of instance.childs)
-		if (child)
-			instance_unmount(child, dom_parent);
+		const childs = instance.childs;
+		if (childs)
+		for (let i = 0; i < childs.length; i++)
+		if (childs[i])
+			instance_unmount(childs[i], dom_parent);
 
 		instance.needs_unmount &&
 			hooks_unmount(instance.slots);
@@ -1905,7 +1911,9 @@ export const hook_map = (getter, list_data, deps) => {
 		if (slot.list_data !== list_data) {
 			slot.list_data = list_data;
 			// remove items
-			for (const key of slot.items_order) {
+			const items_order_prev = slot.items_order;
+			for (let i = 0; i < items_order_prev.length; i++) {
+				const key = items_order_prev[i];
 				if (
 					LEGACY
 					?	items_data_map[key] !== undefined_
@@ -1920,7 +1928,8 @@ export const hook_map = (getter, list_data, deps) => {
 	}
 
 	// run/rerun all items
-	for (const key of items_order) {
+	for (let i = 0; i < items_order.length; i++) {
+		const key = items_order[i];
 		let slots = slot.items_map[key];
 		if (
 			current_first =
@@ -1997,8 +2006,9 @@ export const hook_map = (getter, list_data, deps) => {
 	@noinline
 */
 const hook_map_unmount = slot => {
-	for (const key of slot.items_order)
-		hooks_unmount(slot.items_map[key]);
+	const items_order = slot.items_order;
+	for (let i = 0; i < items_order.length; i++)
+		hooks_unmount(slot.items_map[items_order[i]]);
 }
 
 /**
@@ -2097,7 +2107,9 @@ export const hook_model = (mutations, init_arg) => {
 	];
 	DEBUG &&
 		callback_wrap(state_check, [slot[0]], stack + ' -> #init');
-	for (const key of Object_keys(mutations)) {
+	const mutation_keys = Object_keys(mutations);
+	for (let i = 0; i < mutation_keys.length; i++) {
+		const key = mutation_keys[i];
 		slot[1][key] = (...args) => {
 			VERBOSE && log('model ' + instance_name_get(
 				EXTENDED ? instance_current_get(current_slots_) : current_
@@ -2144,7 +2156,9 @@ const hook_dom_common = attributes => {
 		error('hook_dom_common without dom');
 
 	if (attributes) {
-		for (const key of hook_object_changes(attributes)) {
+		const changed = hook_object_changes(attributes);
+		for (let i = 0; i < changed.length; i++) {
+			const key = changed[i];
 			DEBUG &&
 			key.length > 1 &&
 			key.charAt(0).toLowerCase() !== key.charAt(0) &&
@@ -2195,24 +2209,30 @@ const hook_dom_common = attributes => {
 
 		DEBUG &&
 			assert_hook_equal(!attributes.D, 'dataset presence');
-		if (attributes.D)
-		for (const key of hook_object_changes(attributes.D)) {
-			VERBOSE && log('dom data ' + key + '=' + attributes.D[key]);
-			if (LEGACY || RJS)
-				dom.setAttribute(
-					'data-' + key.replace(regexp_uppercase, '-$&').toLowerCase(),
-					/** @type {string} */ (attributes.D[key])
-				);
-			else
-				dom.dataset[key] = /** @type {string} */ (attributes.D[key]);
+		if (attributes.D) {
+			const changed = hook_object_changes(attributes.D);
+			for (let i = 0; i < changed.length; i++) {
+				const key = changed[i];
+				VERBOSE && log('dom data ' + key + '=' + attributes.D[key]);
+				if (LEGACY || RJS)
+					dom.setAttribute(
+						'data-' + key.replace(regexp_uppercase, '-$&').toLowerCase(),
+						/** @type {string} */ (attributes.D[key])
+					);
+				else
+					dom.dataset[key] = /** @type {string} */ (attributes.D[key]);
+			}
 		}
 
 		DEBUG &&
 			assert_hook_equal(!attributes.S, 'style presence');
-		if (attributes.S)
-		for (const key of hook_object_changes(attributes.S)) {
-			VERBOSE && log('dom css ' + key + '=' + attributes.S[key]);
-			dom.style[key] = attributes.S[key];
+		if (attributes.S) {
+			const changed = hook_object_changes(attributes.S);
+			for (let i = 0; i < changed.length; i++) {
+				const key = changed[i];
+				VERBOSE && log('dom css ' + key + '=' + attributes.S[key]);
+				dom.style[key] = attributes.S[key];
+			}
 		}
 	}
 	return dom;
@@ -2393,9 +2413,11 @@ const render = () => {
 		++rerender_count > 10 &&
 			error('rerender loop detected');
 		render_queue = [];
-		for (const group of queue) {
+		for (let i = 0; i < queue.length; i++) {
+			const group = queue[i];
 			if (group)
-			for (current of group) {
+			for (let j = 0; j < group.length; j++) {
+				current = group[j];
 				// already rerendered?
 				if (!current.dirty) continue;
 				// simple update?
@@ -2459,7 +2481,9 @@ const render = () => {
 						).dom
 					) {
 						dom_first = null_;
-						for (const child of instance.childs) {//TODO skip n items if possible
+						const childs = instance.childs;
+						for (let i = 0; i < childs.length; i++) {//TODO skip n items if possible
+							const child = childs[i];
 							if (
 								child &&
 								(
