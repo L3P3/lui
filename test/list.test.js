@@ -7,7 +7,9 @@ import {root_create} from './setup.js';
 import {
 	hook_dom,
 	hook_model,
+	hook_state,
 	init,
+	node,
 	node_dom,
 	node_map,
 	reset,
@@ -273,4 +275,30 @@ test('node_map: removes keyed item and keeps remaining dom nodes', () => {
 	expect(after.get('a')).toBe(before.get('a'));
 	expect(after.get('c')).toBe(before.get('c'));
 	expect(after.get('b')).toBe(undefined);
+});
+
+test('node_map: nested empty and reordered lists keep following siblings in place', () => {
+	const root = root_create();
+	let set_items;
+	const List = () => {
+		const [items, set] = hook_state([]);
+		set_items = set;
+		return [node_map(ListItem, items)];
+	};
+	const Wrapper = () => [
+		node(List),
+		false,
+		node_dom('span[textContent=tail]'),
+	];
+	init(() => [node(Wrapper), node_dom('span[textContent=end]')], root);
+
+	expect(root.textContent).toBe('tailend');
+	set_items(['a', 'b', 'c']);
+	expect(root.textContent).toBe('abctailend');
+	set_items(['c', 'a']);
+	expect(root.textContent).toBe('catailend');
+	set_items([]);
+	expect(root.textContent).toBe('tailend');
+	set_items(['b']);
+	expect(root.textContent).toBe('btailend');
 });

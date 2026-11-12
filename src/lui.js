@@ -2486,7 +2486,7 @@ const render = () => {
 						while (
 							++index < childs_length &&
 							(
-								childs[index] &&
+								!childs[index] ||
 								!(
 									dom_after = childs[index].dom_first
 								)
@@ -2505,31 +2505,27 @@ const render = () => {
 						dom_after
 					);
 
-					if (instance.dom_first !== dom_first)//TODO it better
-					while (
-						!(
-							instance = instance.iparent
-						).dom
-					) {
-						dom_first = null_;
-						if (LEGACY || RJS) {
-							const childs = instance.childs;
-							for (let i = 0, length = childs.length; i < length; ++i) {
-								const child = childs[i];
-								if (child && (dom_first = child.dom_first)) break;
-							}
+					if (instance.dom_first !== dom_first)
+					while (!instance.iparent.dom) {
+						const parent = instance.iparent;
+						// A different previous first node belongs to an unaffected earlier sibling.
+						if (dom_first && parent.dom_first !== dom_first) break;
+						const childs = parent.childs;
+						// If the old first nodes match, all preceding siblings are empty.
+						let index = (
+							parent.dom_first === dom_first
+							?	instance.parent_index
+							:	0
+						);
+						dom_first = parent.dom_first;
+						let dom_first_new = null_;
+						for (let length = childs.length; index < length; ++index) {
+							const child = childs[index];
+							if (child && (dom_first_new = child.dom_first)) break;
 						}
-						else for (const child of instance.childs) {//TODO skip n items if possible
-							if (
-								child &&
-								(
-									dom_first = child.dom_first
-								)
-							)
-								break;
-						}
-						if (dom_first === instance.dom_first) break;
-						instance.dom_first = dom_first;
+						if (dom_first_new === dom_first) break;
+						parent.dom_first = dom_first_new;
+						instance = parent;
 					}
 				}
 				current_first = false_;

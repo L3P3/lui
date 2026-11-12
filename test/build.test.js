@@ -37,12 +37,12 @@ test('production bundles keep internal variables scoped', () => {
 });
 
 for (const [filename, max_size, rjs] of [
-	['lui.legacy.js', 9200, false],
-	['lui.r.js', 7050, true],
-	['lui.r.noeval.js', 7250, true],
-	['luix.legacy.js', 11150, false],
-	['luix.r.js', 9000, true],
-	['luix.r.noeval.js', 9200, true],
+	['lui.legacy.js', 9280, false],
+	['lui.r.js', 7130, true],
+	['lui.r.noeval.js', 7330, true],
+	['luix.legacy.js', 11230, false],
+	['luix.r.js', 9080, true],
+	['luix.r.noeval.js', 9280, true],
 ]) {
 	test(`${filename}: compact bundle updates and removes children`, () => {
 		const code = readFileSync('./dist/' + filename, 'utf8');
@@ -83,13 +83,55 @@ for (const [filename, max_size, rjs] of [
 }
 
 for (const [filename, max_size] of [
-	['lui.js', 4850],
-	['lui.noeval.js', 5030],
-	['luix.js', 6450],
-	['luix.noeval.js', 6630],
+	['lui.js', 4930],
+	['lui.noeval.js', 5110],
+	['luix.js', 6530],
+	['luix.noeval.js', 6710],
 ]) {
 	test(`${filename}: modern bundle stays compact`, () => {
 		expect(readFileSync('./dist/' + filename).length).toBeLessThan(max_size);
+	});
+}
+
+for (const filename of [
+	'lui.noeval.js',
+	'lui.r.noeval.js',
+	'luix.noeval.js',
+	'luix.r.noeval.js',
+]) {
+	test(`${filename}: nested first nodes preserve order`, () => {
+		const dom = new JSDOM('<!DOCTYPE html><body></body>', {
+			runScripts: 'outside-only',
+		});
+		let lui;
+		dom.window.define = value => { lui = value; };
+		dom.window.eval(readFileSync('./dist/' + filename, 'utf8'));
+		lui ||= dom.window.lui;
+
+		const setters = {};
+		const Part = ({name}) => {
+			const [show, set] = lui.hook_state(false);
+			setters[name] = set;
+			return show ? [lui.node_dom('span', {textContent: name})] : null;
+		};
+		const Inner = () => [
+			lui.node(Part, {name: 'a'}),
+			false,
+			lui.node(Part, {name: 'b'}),
+			lui.node(Part, {name: 'c'}),
+		];
+		const root = dom.window.document.createElement('div');
+		lui.init(() => [lui.node(Inner), lui.node_dom('span[textContent=z]')], root);
+		setters.c(true);
+		setters.a(true);
+		setters.b(true);
+		expect(root.textContent).toBe('abcz');
+		setters.a(false);
+		setters.c(false);
+		expect(root.textContent).toBe('bz');
+		setters.a(true);
+		expect(root.textContent).toBe('abz');
+		dom.window.close();
 	});
 }
 
