@@ -592,7 +592,11 @@ const object_comp_get = object => {
 */
 const object_comp_eval = (a, b, keys) => {
 	if (a === b) return false;
-	for (const key of keys) if (a[key] !== b[key]) return true;
+	if (LEGACY || RJS) {
+		for (let i = 0, length = keys.length; i < length; ++i)
+			if (a[keys[i]] !== b[keys[i]]) return true;
+	}
+	else for (const key of keys) if (a[key] !== b[key]) return true;
 	return false;
 }
 
@@ -865,9 +869,15 @@ const instance_render = (dom_parent, dom_after) => {
 			VERBOSE && log('discard childs');
 
 			if (dom) dom_parent = dom;
-			for (const child of instance.childs)
-				child &&
-					instance_unmount(child, dom_parent);
+			const unmount_child = child => (
+				child && instance_unmount(child, dom_parent)
+			);
+			if (LEGACY || RJS) {
+				const childs = instance.childs;
+				for (let i = 0, length = childs.length; i < length; ++i)
+					unmount_child(childs[i]);
+			}
+			else for (const child of instance.childs) unmount_child(child);
 			instance.childs = null_;
 		}
 
@@ -949,16 +959,23 @@ const instance_render = (dom_parent, dom_after) => {
 				log('props changed', object_diff(state.props_prev, props));
 
 			// remove items
-			for (const key of state.items_order_prev)
-			if (
-				LEGACY
-				?	items_map[key] == null_
-				:	!(key in items_map)
-			) {
-				VERBOSE && log('item remove: ' + key);
-				instance_unmount(state.item_childs[key], dom_parent);
-				delete state.item_childs[key];
+			const remove_item = key => {
+				if (
+					LEGACY
+					?	items_map[key] == null_
+					:	!(key in items_map)
+				) {
+					VERBOSE && log('item remove: ' + key);
+					instance_unmount(state.item_childs[key], dom_parent);
+					delete state.item_childs[key];
+				}
+			};
+			if (LEGACY || RJS) {
+				const items = state.items_order_prev;
+				for (let i = 0, length = items.length; i < length; ++i)
+					remove_item(items[i]);
 			}
+			else for (const key of state.items_order_prev) remove_item(key);
 
 			state.props_prev = props;
 			state.items_order_prev = items_order;
@@ -1105,10 +1122,17 @@ const instance_unmount = (instance, dom_parent) => {
 	);
 
 	if (dom_parent || instance.needs_unmount) {
-		if (instance.childs)
-		for (const child of instance.childs)
-		if (child)
-			instance_unmount(child, dom_parent);
+		if (instance.childs) {
+			const unmount_child = child => (
+				child && instance_unmount(child, dom_parent)
+			);
+			if (LEGACY || RJS) {
+				const childs = instance.childs;
+				for (let i = 0, length = childs.length; i < length; ++i)
+					unmount_child(childs[i]);
+			}
+			else for (const child of instance.childs) unmount_child(child);
+		}
 
 		instance.needs_unmount &&
 			hooks_unmount(instance.slots);
@@ -1905,22 +1929,28 @@ export const hook_map = (getter, list_data, deps) => {
 		if (slot.list_data !== list_data) {
 			slot.list_data = list_data;
 			// remove items
-			for (const key of slot.items_order) {
+			const remove_item = key => {
 				if (
 					LEGACY
 					?	items_data_map[key] !== undefined_
 					:	key in items_data_map
-				) continue;
+				) return;
 
 				VERBOSE && log('map item remove: ' + key);
 				hooks_unmount(slot.items_map[key]);
 				delete slot.items_map[key];
+			};
+			if (LEGACY || RJS) {
+				const items = slot.items_order;
+				for (let i = 0, length = items.length; i < length; ++i)
+					remove_item(items[i]);
 			}
+			else for (const key of slot.items_order) remove_item(key);
 		}
 	}
 
 	// run/rerun all items
-	for (const key of items_order) {
+	const render_item = key => {
 		let slots = slot.items_map[key];
 		if (
 			current_first =
@@ -1980,7 +2010,12 @@ export const hook_map = (getter, list_data, deps) => {
 			);
 		}
 		slot.hvalue.push(slots[0].hvalue);
+	};
+	if (LEGACY || RJS) {
+		for (let i = 0, length = items_order.length; i < length; ++i)
+			render_item(items_order[i]);
 	}
+	else for (const key of items_order) render_item(key);
 
 	// context pop
 	current_first = current_first_before;
@@ -1997,8 +2032,13 @@ export const hook_map = (getter, list_data, deps) => {
 	@noinline
 */
 const hook_map_unmount = slot => {
-	for (const key of slot.items_order)
-		hooks_unmount(slot.items_map[key]);
+	const unmount_item = key => hooks_unmount(slot.items_map[key]);
+	if (LEGACY || RJS) {
+		const items = slot.items_order;
+		for (let i = 0, length = items.length; i < length; ++i)
+			unmount_item(items[i]);
+	}
+	else for (const key of slot.items_order) unmount_item(key);
 }
 
 /**
@@ -2195,24 +2235,38 @@ const hook_dom_common = attributes => {
 
 		DEBUG &&
 			assert_hook_equal(!attributes.D, 'dataset presence');
-		if (attributes.D)
-		for (const key of hook_object_changes(attributes.D)) {
-			VERBOSE && log('dom data ' + key + '=' + attributes.D[key]);
-			if (LEGACY || RJS)
-				dom.setAttribute(
-					'data-' + key.replace(regexp_uppercase, '-$&').toLowerCase(),
-					/** @type {string} */ (attributes.D[key])
-				);
-			else
-				dom.dataset[key] = /** @type {string} */ (attributes.D[key]);
+		if (attributes.D) {
+			const set_data = key => {
+				VERBOSE && log('dom data ' + key + '=' + attributes.D[key]);
+				if (LEGACY || RJS)
+					dom.setAttribute(
+						'data-' + key.replace(regexp_uppercase, '-$&').toLowerCase(),
+						/** @type {string} */ (attributes.D[key])
+					);
+				else
+					dom.dataset[key] = /** @type {string} */ (attributes.D[key]);
+			};
+			if (LEGACY || RJS) {
+				const keys = hook_object_changes(attributes.D);
+				for (let i = 0, length = keys.length; i < length; ++i)
+					set_data(keys[i]);
+			}
+			else for (const key of hook_object_changes(attributes.D)) set_data(key);
 		}
 
 		DEBUG &&
 			assert_hook_equal(!attributes.S, 'style presence');
-		if (attributes.S)
-		for (const key of hook_object_changes(attributes.S)) {
-			VERBOSE && log('dom css ' + key + '=' + attributes.S[key]);
-			dom.style[key] = attributes.S[key];
+		if (attributes.S) {
+			const set_style = key => {
+				VERBOSE && log('dom css ' + key + '=' + attributes.S[key]);
+				dom.style[key] = attributes.S[key];
+			};
+			if (LEGACY || RJS) {
+				const keys = hook_object_changes(attributes.S);
+				for (let i = 0, length = keys.length; i < length; ++i)
+					set_style(keys[i]);
+			}
+			else for (const key of hook_object_changes(attributes.S)) set_style(key);
 		}
 	}
 	return dom;
@@ -2393,11 +2447,10 @@ const render = () => {
 		++rerender_count > 10 &&
 			error('rerender loop detected');
 		render_queue = [];
-		for (const group of queue) {
-			if (group)
-			for (current of group) {
+		const render_group = group => group && (() => {
+			const render_current = () => {
 				// already rerendered?
-				if (!current.dirty) continue;
+				if (!current.dirty) return;
 				// simple update?
 				if (current.dom) {
 					instance_render(null_, null_);
@@ -2433,7 +2486,7 @@ const render = () => {
 						while (
 							++index < childs_length &&
 							(
-								childs[index] &&
+								!childs[index] ||
 								!(
 									dom_after = childs[index].dom_first
 								)
@@ -2452,29 +2505,44 @@ const render = () => {
 						dom_after
 					);
 
-					if (instance.dom_first !== dom_first)//TODO it better
-					while (
-						!(
-							instance = instance.iparent
-						).dom
-					) {
-						dom_first = null_;
-						for (const child of instance.childs) {//TODO skip n items if possible
-							if (
-								child &&
-								(
-									dom_first = child.dom_first
-								)
-							)
-								break;
+					if (instance.dom_first !== dom_first)
+					while (!instance.iparent.dom) {
+						const parent = instance.iparent;
+						// A different previous first node belongs to an unaffected earlier sibling.
+						if (dom_first && parent.dom_first !== dom_first) break;
+						const childs = parent.childs;
+						// If the old first nodes match, all preceding siblings are empty.
+						let index = (
+							parent.dom_first === dom_first
+							?	instance.parent_index
+							:	0
+						);
+						dom_first = parent.dom_first;
+						let dom_first_new = null_;
+						for (let length = childs.length; index < length; ++index) {
+							const child = childs[index];
+							if (child && (dom_first_new = child.dom_first)) break;
 						}
-						if (dom_first === instance.dom_first) break;
-						instance.dom_first = dom_first;
+						if (dom_first_new === dom_first) break;
+						parent.dom_first = dom_first_new;
+						instance = parent;
 					}
 				}
 				current_first = false_;
+			};
+			if (LEGACY || RJS) {
+				for (let i = 0, length = group.length; i < length; ++i) {
+					current = group[i];
+					render_current();
+				}
 			}
+			else for (current of group) render_current();
+		})();
+		if (LEGACY || RJS) {
+			for (let i = 0, length = queue.length; i < length; ++i)
+				render_group(queue[i]);
 		}
+		else for (const group of queue) render_group(group);
 	}
 	rerender_deferred = false_;
 

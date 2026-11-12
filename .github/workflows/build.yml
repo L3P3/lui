@@ -13,6 +13,11 @@ on:
     paths:
       - 'package.json'
   workflow_dispatch:
+    inputs:
+      accept_size_increase:
+        description: Accept bundle size increases over 50 bytes
+        type: boolean
+        default: false
 
 jobs:
   build:
@@ -33,9 +38,11 @@ jobs:
 
       - name: Fetch dist branch
         if: github.ref == 'refs/heads/master'
-        run: git fetch origin dist || true
+        run: git fetch origin dist:refs/remotes/origin/dist || true
 
       - name: Build
+        env:
+          LUI_ACCEPT_SIZE_INCREASE: ${{ inputs.accept_size_increase && '1' || '0' }}
         run: bun run ./build.js
 
       - name: Commit artifacts and purge cache
