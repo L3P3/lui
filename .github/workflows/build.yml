@@ -67,3 +67,12 @@ jobs:
           git tag -f "v$LUIVERSION"
           git push -f --tags
           for i in "${changed[@]}"; do curl -s "https://purge.jsdelivr.net/gh/L3P3/lui@$LUIVERSION_MAJOR/$i" > /dev/null; done
+
+      - name: Update l3p3.de mirror
+        if: github.ref == 'refs/heads/master'
+        env:
+          MIRROR_TOKEN: ${{ secrets.L3P3_MIRROR_TOKEN }}
+        run: |
+          test -n "$MIRROR_TOKEN"
+          echo "::add-mask::$MIRROR_TOKEN"
+          curl --fail --show-error --silent --data-urlencode "token=$MIRROR_TOKEN" https://l3p3.de/svr/etc/lui-pull.txt
