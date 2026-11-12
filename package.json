@@ -41,7 +41,7 @@
 	],
 	"license": "Zlib",
 	"devDependencies": {
-		"google-closure-compiler": "v20260223.0.0",
+		"google-closure-compiler": "20261109.0.0",
 		"jsdom": "latest"
 	}
 }

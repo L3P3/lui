@@ -97,8 +97,6 @@ async function build(prod, legacy, rjs, extended, noeval) {
 	);
 	if (checks_only) return;
 
-	const wrap_fn = legacy || rjs;
-
 	let code_js = (
 		await readFile(file, 'ascii')
 	).trim();
@@ -121,14 +119,14 @@ async function build(prod, legacy, rjs, extended, noeval) {
 		.replace('lui.js web framework', 'lui.js web framework ' + version)
 		.replace('*/\n',
 			'*/\n' +
-			(wrap_fn ? '(function()' : '') +
+			'(function()' +
 			'{' +
 			cc_helpers
 		)
 		// remove last ;
 		.slice(0, -1) +
 		'}' +
-		(wrap_fn ? ')()' : '') +
+		')()' +
 		'\n'
 	);
 
