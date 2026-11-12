@@ -46,6 +46,10 @@ jobs:
           mv dist /tmp/lui-dist
           git fetch origin dist
           git checkout -f dist
+          changed=()
+          for i in /tmp/lui-dist/*.js; do
+            git cat-file -e "HEAD:${i##*/}" 2>/dev/null && cmp -s <(git show "HEAD:${i##*/}" | perl -0777 -pe 's/^.*?\*\///s') <(perl -0777 -pe 's/^.*?\*\///s' "$i") || changed+=("${i##*/}")
+          done
           mv /tmp/lui-dist/* ./
           git add lui*.js
           git clean -fd
@@ -55,4 +59,4 @@ jobs:
           git push
           git tag -f "v$LUIVERSION"
           git push -f --tags
-          for i in *.js; do curl -s "https://purge.jsdelivr.net/gh/L3P3/lui@$LUIVERSION_MAJOR/$i" > /dev/null; done
+          for i in "${changed[@]}"; do curl -s "https://purge.jsdelivr.net/gh/L3P3/lui@$LUIVERSION_MAJOR/$i" > /dev/null; done
