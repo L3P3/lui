@@ -399,7 +399,9 @@ const stack_get = () => {
 	@noinline
 */
 const log_raw = (...args) => {
-	LEGACY || RJS ? console.log.apply(console, args) : console.log(...args);
+	LEGACY || RJS
+	?	console.log.apply(console, args)
+	:	console.log(...args);
 }
 
 /**
@@ -409,8 +411,14 @@ const log_raw = (...args) => {
 */
 const log = (message, ...items) => {
 	LEGACY || RJS
-	?	log_raw.apply(null_, ['lui ' + stack_get() + ': ' + message].concat(items))
-	:	log_raw('lui ' + stack_get() + ': ' + message, ...items);
+	?	log_raw.apply(
+			null_,
+			['lui ' + stack_get() + ': ' + message].concat(items)
+		)
+	:	log_raw(
+			'lui ' + stack_get() + ': ' + message,
+			...items
+		);
 }
 
 /**
@@ -443,7 +451,9 @@ const callback_error = stack => {
 */
 const callback_wrap = (fn, args, stack) => {
 	try {
-		return LEGACY || RJS ? fn.apply(null_, args) : fn(...args);
+		return LEGACY || RJS
+		?	fn.apply(null_, args)
+		:	fn(...args);
 	}
 	catch (thrown) {
 		callback_error(stack);
@@ -595,7 +605,7 @@ const object_comp_get = object => {
 const object_comp_eval = (a, b, keys) => {
 	if (a === b) return false;
 	if (LEGACY || RJS) {
-		for (let i = 0, length = keys.length; i < length; ++i)
+		for (let i = 0, keys_length = keys.length; i < keys_length; ++i)
 			if (a[keys[i]] !== b[keys[i]]) return true;
 	}
 	else for (const key of keys) if (a[key] !== b[key]) return true;
@@ -873,7 +883,7 @@ const instance_render = (dom_parent, dom_after) => {
 			if (dom) dom_parent = dom;
 			if (LEGACY || RJS) {
 				const childs = instance.childs;
-				for (let i = 0, length = childs.length; i < length; ++i) {
+				for (let i = 0, childs_length = childs.length; i < childs_length; ++i) {
 					const child = childs[i];
 					child && instance_unmount(child, dom_parent);
 				}
@@ -975,7 +985,7 @@ const instance_render = (dom_parent, dom_after) => {
 			};
 			if (LEGACY || RJS) {
 				const items = state.items_order_prev;
-				for (let i = 0, length = items.length; i < length; ++i) {
+				for (let i = 0, items_length = items.length; i < items_length; ++i) {
 					key = items[i];
 					remove_item();
 				}
@@ -1130,7 +1140,7 @@ const instance_unmount = (instance, dom_parent) => {
 		if (instance.childs) {
 			if (LEGACY || RJS) {
 				const childs = instance.childs;
-				for (let i = 0, length = childs.length; i < length; ++i) {
+				for (let i = 0, childs_length = childs.length; i < childs_length; ++i) {
 					const child = childs[i];
 					child && instance_unmount(child, dom_parent);
 				}
@@ -1247,7 +1257,7 @@ const list_data_index = (list_data, items_map, items_order) => {
 			);
 		};
 		if (LEGACY || RJS) {
-			for (let i = 0; i < list_data.length; ++i) {
+			for (let i = 0, list_data_length = list_data.length; i < list_data_length; ++i) {
 				item = list_data[i];
 				check_item();
 			}
@@ -1271,7 +1281,7 @@ const list_data_index = (list_data, items_map, items_order) => {
 		items_order.push(key);
 	};
 	if (LEGACY || RJS) {
-		for (let i = 0; i < list_data.length; ++i) {
+		for (let i = 0, list_data_length = list_data.length; i < list_data_length; ++i) {
 			item = list_data[i];
 			index_item();
 		}
@@ -1410,7 +1420,9 @@ export const hook_effect = (effect, deps) => {
 					unmount: null_,
 				})
 			).unmount = (
-				LEGACY || RJS ? effect.apply(null_, deps) : effect(...deps)
+				LEGACY || RJS
+				?	effect.apply(null_, deps)
+				:	effect(...deps)
 			) || null_
 		) &&
 			unmountup();
@@ -1510,7 +1522,9 @@ export const hook_async = (getter, deps, fallback) => {
 		const current_ = /** @type {TYPE_INSTANCE} */ (current);
 		const current_slots_ = /** @type {TYPE_SLOTS} */ (current_slots);
 		const promise = (
-			LEGACY || RJS ? getter.apply(null_, slot.deps) : getter(...slot.deps)
+			LEGACY || RJS
+			?	getter.apply(null_, slot.deps)
+			:	getter(...slot.deps)
 		)
 		.then(value => (
 			VERBOSE && log('async end ' + instance_name_get(
@@ -1617,7 +1631,11 @@ export const hook_memo = (getter, deps) => (
 			htype: HOOK.MEMO,
 			deps_comp: deps_comp_get(deps),
 			deps: deps = deps || Array_empty,
-			hvalue: LEGACY || RJS ? getter.apply(null_, deps) : getter(...deps),
+			hvalue: (
+				LEGACY || RJS
+				?	getter.apply(null_, deps)
+				:	getter(...deps)
+			),
 		})
 	).hvalue
 	// rerender?
@@ -1699,9 +1717,18 @@ export const hook_callback = (callback, deps) => {
 		state.callback || (
 			state.callback = (...args) => (
 				DEBUG
-				?	callback_wrap(callback, LEGACY || RJS ? state.deps.concat(args) : [...state.deps, ...args], stack)
+				?	callback_wrap(
+						callback,
+						LEGACY || RJS
+						?	state.deps.concat(args)
+						:	[...state.deps, ...args],
+						stack
+					)
 				:	LEGACY || RJS
-				?	callback.apply(null_, state.deps.concat(args))
+				?	callback.apply(
+						null_,
+						state.deps.concat(args)
+					)
 				:	callback(...state.deps, ...args)
 			)
 		)
@@ -1840,7 +1867,9 @@ export const hook_sub = (getter, deps) => {
 
 	try {
 		slot.hvalue = (
-			LEGACY || RJS ? getter.apply(null_, slot.deps) : getter(...slot.deps)
+			LEGACY || RJS
+			?	getter.apply(null_, slot.deps)
+			:	getter(...slot.deps)
 		);
 	}
 	catch (thrown) {
@@ -1964,23 +1993,18 @@ export const hook_map = (getter, list_data, deps) => {
 		if (slot.list_data !== list_data) {
 			slot.list_data = list_data;
 			// remove items
-			let key;
-			const remove_item = () => {
-				if (
-					LEGACY
-					?	items_data_map[key] !== undefined_
-					:	key in items_data_map
-				) return;
-
-				VERBOSE && log('map item remove: ' + key);
-				hooks_unmount(slot.items_map[key]);
-				delete slot.items_map[key];
-			};
 			if (LEGACY || RJS) {
 				const items = slot.items_order;
-				for (let i = 0, length = items.length; i < length; ++i) {
-					key = items[i];
-					remove_item();
+				for (let i = 0, items_length = items.length; i < items_length; ++i) {
+					const key = items[i];
+					if (
+						LEGACY
+						?	items_data_map[key] !== undefined_
+						:	key in items_data_map
+					) continue;
+					VERBOSE && log('map item remove: ' + key);
+					hooks_unmount(slot.items_map[key]);
+					delete slot.items_map[key];
 				}
 			}
 			else for (const key of slot.items_order) {
@@ -2038,8 +2062,14 @@ export const hook_map = (getter, list_data, deps) => {
 			try {
 				slots[0].hvalue = (
 					LEGACY || RJS
-					?	getter.apply(null_, [slots[0].item_data = items_data_map[key]].concat(slot.deps))
-					:	getter(slots[0].item_data = items_data_map[key], ...slot.deps)
+					?	getter.apply(
+							null_,
+							[slots[0].item_data = items_data_map[key]].concat(slot.deps)
+						)
+					:	getter(
+							slots[0].item_data = items_data_map[key],
+							...slot.deps
+						)
 				);
 			}
 			catch (thrown) {
@@ -2057,7 +2087,7 @@ export const hook_map = (getter, list_data, deps) => {
 		slot.hvalue.push(slots[0].hvalue);
 	};
 	if (LEGACY || RJS) {
-		for (let i = 0, length = items_order.length; i < length; ++i) {
+		for (let i = 0, items_order_length = items_order.length; i < items_order_length; ++i) {
 			key = items_order[i];
 			render_item();
 		}
@@ -2079,16 +2109,13 @@ export const hook_map = (getter, list_data, deps) => {
 	@noinline
 */
 const hook_map_unmount = slot => {
-	let key;
-	const unmount_item = () => hooks_unmount(slot.items_map[key]);
 	if (LEGACY || RJS) {
 		const items = slot.items_order;
-		for (let i = 0, length = items.length; i < length; ++i) {
-			key = items[i];
-			unmount_item();
-		}
+		for (let i = 0, items_length = items.length; i < items_length; ++i)
+			hooks_unmount(slot.items_map[items[i]]);
 	}
-	else for (key of slot.items_order) unmount_item();
+	else for (const key of slot.items_order)
+		hooks_unmount(slot.items_map[key]);
 }
 
 /**
@@ -2187,42 +2214,58 @@ export const hook_model = (mutations, init_arg) => {
 	];
 	DEBUG &&
 		callback_wrap(state_check, [slot[0]], stack + ' -> #init');
-	const mutation_create = key => (
-		(...args) => {
-			VERBOSE && log('model ' + instance_name_get(
-				EXTENDED ? instance_current_get(current_slots_) : current_
-			) + ' -> #' + key, args);
-			const value = (
-				DEBUG
-				?	callback_wrap(mutations[key], LEGACY || RJS ? [slot[0]].concat(args) : [slot[0], ...args], stack + ' -> #' + key)
-				:	LEGACY || RJS
-				?	mutations[key].apply(mutations, [slot[0]].concat(args))
-				:	mutations[key](slot[0], ...args)
-			);
-			if (slot[0] !== value) {
-				DEBUG &&
-					callback_wrap(state_check, [value], stack + ' -> #' + key);
-				slot[0] = value;
-				EXTENDED ? dirtify_slots(current_slots_) : dirtify_instance(current_);
-				if (
-					EXTENDED
-					?	current_slots === current_slots_
-					:	current === current_
-				) throw dom_cache;
-			}
-			return value;
-		}
-	);
 	if (LEGACY || RJS) {
 		const keys = Object_keys(mutations);
-		for (let i = 0; i < keys.length; ++i)
-			slot[1][keys[i]] = mutation_create(keys[i]);
+		for (let i = 0, keys_length = keys.length; i < keys_length; ++i) {
+			const key = keys[i];
+			slot[1][key] = (...args) => {
+				VERBOSE && log(
+					'model ' + instance_name_get(
+						EXTENDED
+						?	instance_current_get(current_slots_)
+						:	current_
+					) + ' -> #' + key,
+					args
+				);
+				const value = (
+					DEBUG
+					?	callback_wrap(
+							mutations[key],
+							[slot[0]].concat(args),
+							stack + ' -> #' + key
+						)
+					:	mutations[key].apply(
+							mutations,
+							[slot[0]].concat(args)
+						)
+				);
+				if (slot[0] !== value) {
+					DEBUG &&
+						callback_wrap(state_check, [value], stack + ' -> #' + key);
+					slot[0] = value;
+					EXTENDED
+					?	dirtify_slots(current_slots_)
+					:	dirtify_instance(current_);
+					if (
+						EXTENDED
+						?	current_slots === current_slots_
+						:	current === current_
+					) throw dom_cache;
+				}
+				return value;
+			};
+		}
 	}
 	else for (const key of Object_keys(mutations)) {
 		slot[1][key] = (...args) => {
-			VERBOSE && log('model ' + instance_name_get(
-				EXTENDED ? instance_current_get(current_slots_) : current_
-			) + ' -> #' + key, args);
+			VERBOSE && log(
+				'model ' + instance_name_get(
+					EXTENDED
+					?	instance_current_get(current_slots_)
+					:	current_
+				) + ' -> #' + key,
+				args
+			);
 			const value = (
 				DEBUG
 				?	callback_wrap(mutations[key], [slot[0], ...args], stack + ' -> #' + key)
@@ -2232,7 +2275,9 @@ export const hook_model = (mutations, init_arg) => {
 				DEBUG &&
 					callback_wrap(state_check, [value], stack + ' -> #' + key);
 				slot[0] = value;
-				EXTENDED ? dirtify_slots(current_slots_) : dirtify_instance(current_);
+				EXTENDED
+				?	dirtify_slots(current_slots_)
+				:	dirtify_instance(current_);
 				if (
 					EXTENDED
 					?	current_slots === current_slots_
@@ -2268,11 +2313,13 @@ const hook_dom_common = attributes => {
 		let key;
 		if (LEGACY || RJS) {
 			const keys = hook_object_changes(attributes);
-			for (let i = 0; i < keys.length; ++i) {
+			for (let i = 0, keys_length = keys.length; i < keys_length; ++i) {
 				key = keys[i];
 				DEBUG &&
 				key.length > 1 &&
-				key.charAt(0).toLowerCase() !== key.charAt(0) &&
+				key.charAt(0)
+					.toLowerCase() !==
+				key.charAt(0) &&
 					error('capital prop: ' + key);
 
 				switch (
@@ -2280,7 +2327,11 @@ const hook_dom_common = attributes => {
 					?	key
 					:	key.charCodeAt(0)
 				) {
-					case (LEGACY ? 'F' : 70):
+					case (
+						LEGACY
+						?	'F'
+						:	70
+					):
 						DEBUG && (
 							typeof attributes.F === 'object' &&
 							attributes.F ||
@@ -2295,16 +2346,35 @@ const hook_dom_common = attributes => {
 							.join(' ')
 						);
 
-						VERBOSE && log('dom flags', dom.className.split(' '));
+						VERBOSE && log(
+							'dom flags',
+							dom.className.split(' ')
+						);
 						break;
-					case (LEGACY ? 'R' : 82):
+					case (
+						LEGACY
+						?	'R'
+						:	82
+					):
 						DEBUG &&
 						typeof attributes.R !== 'function' &&
 							error('invalid ref');
 						(attributes.R)(dom);
-					case (LEGACY ? 'C' : 67):
-					case (LEGACY ? 'D' : 68):
-					case (LEGACY ? 'S' : 83):
+					case (
+						LEGACY
+						?	'C'
+						:	67
+					):
+					case (
+						LEGACY
+						?	'D'
+						:	68
+					):
+					case (
+						LEGACY
+						?	'S'
+						:	83
+					):
 						break;
 					default:
 						DEBUG &&
@@ -2327,10 +2397,17 @@ const hook_dom_common = attributes => {
 						attributes.F ||
 							error('invalid css flags')
 					);
-					dom.className = Object_keys(
-						/** @type {!Object} */ (attributes.F)
-					).filter(key => attributes.F[key]).join(' ');
-					VERBOSE && log('dom flags', dom.className.split(' '));
+					dom.className = (
+						Object_keys(
+							/** @type {!Object} */ (attributes.F)
+						)
+						.filter(key => attributes.F[key])
+						.join(' ')
+					);
+					VERBOSE && log(
+						'dom flags',
+						dom.className.split(' ')
+					);
 					break;
 				case 82:
 					DEBUG &&
@@ -2357,7 +2434,9 @@ const hook_dom_common = attributes => {
 				VERBOSE && log('dom data ' + key + '=' + attributes.D[key]);
 				if (LEGACY || RJS)
 					dom.setAttribute(
-						'data-' + key.replace(regexp_uppercase, '-$&').toLowerCase(),
+						'data-' + key
+							.replace(regexp_uppercase, '-$&')
+							.toLowerCase(),
 						/** @type {string} */ (attributes.D[key])
 					);
 				else
@@ -2365,12 +2444,13 @@ const hook_dom_common = attributes => {
 			};
 			if (LEGACY || RJS) {
 				const keys = hook_object_changes(attributes.D);
-				for (let i = 0, length = keys.length; i < length; ++i) {
+				for (let i = 0, keys_length = keys.length; i < keys_length; ++i) {
 					key = keys[i];
 					set_data();
 				}
 			}
-			else for (key of hook_object_changes(attributes.D)) set_data();
+			else for (key of hook_object_changes(attributes.D))
+				set_data();
 		}
 
 		DEBUG &&
@@ -2382,12 +2462,13 @@ const hook_dom_common = attributes => {
 			};
 			if (LEGACY || RJS) {
 				const keys = hook_object_changes(attributes.S);
-				for (let i = 0, length = keys.length; i < length; ++i) {
+				for (let i = 0, keys_length = keys.length; i < keys_length; ++i) {
 					key = keys[i];
 					set_style();
 				}
 			}
-			else for (key of hook_object_changes(attributes.S)) set_style();
+			else for (key of hook_object_changes(attributes.S))
+				set_style();
 		}
 	}
 	return dom;
@@ -2652,7 +2733,7 @@ const render = () => {
 				current_first = false_;
 			};
 			if (LEGACY || RJS) {
-				for (let i = 0, length = group.length; i < length; ++i) {
+				for (let i = 0, group_length = group.length; i < group_length; ++i) {
 					current = group[i];
 					render_current();
 				}
@@ -2660,7 +2741,7 @@ const render = () => {
 			else for (current of group) render_current();
 		})();
 		if (LEGACY || RJS) {
-			for (let i = 0, length = queue.length; i < length; ++i)
+			for (let i = 0, queue_length = queue.length; i < queue_length; ++i)
 				render_group(queue[i]);
 		}
 		else for (const group of queue) render_group(group);
@@ -2836,13 +2917,16 @@ const dom_get = descriptor => {
 				const attributes = descriptor.substring(
 					index_sqb + 1,
 					descriptor.length - 1
-				).split('][');
-				for (let i = 0; i < attributes.length; ++i) set_attribute(attributes[i]);
+				)
+				.split('][');
+				for (let i = 0, attributes_length = attributes.length; i < attributes_length; ++i)
+					set_attribute(attributes[i]);
 			}
 			else for (const sqbi of descriptor.substring(
 				index_sqb + 1,
 				descriptor.length - 1
-			).split('][')) set_attribute(sqbi);
+			).split(']['))
+				set_attribute(sqbi);
 		}
 	}
 	return dom;

@@ -35,11 +35,17 @@ for (const [filename, baseline, modern] of [
 ]) {
 	test(`${filename}: loops stay compact without iterator helpers`, () => {
 		const code = readFileSync('./dist/' + filename, 'utf8');
-		expect(Buffer.byteLength(code)).toBeLessThanOrEqual(baseline);
-		expect(code).not.toContain('Symbol.iterator');
-		expect(code).not.toMatch(/\.next\(\)/);
-		expect(code).not.toMatch(/\b(\w+)=function\([^)]*\)\{[^{}]*\}[^{}]*?for\([^()]*\)\1\(/);
-		if (modern) expect(code).toMatch(/\bof\b/);
+		expect(
+			Buffer.byteLength(code)
+		).toBeLessThanOrEqual(baseline);
+		expect(code)
+			.not.toContain('Symbol.iterator');
+		expect(code)
+			.not.toMatch(/\.next\(\)/);
+		expect(code)
+			.not.toMatch(/\b(\w+)=function\([^)]*\)\{[^{}]*\}[^{}]*?for\([^()]*\)\1\(/);
+		if (modern) expect(code)
+			.toMatch(/\bof\b/);
 	});
 }
 
@@ -125,7 +131,9 @@ for (const [filename, rjs] of [
 		dom.window.Symbol = undefined;
 		let lui;
 		dom.window.define = value => { lui = value; };
-		dom.window.eval(readFileSync('./dist/' + filename, 'utf8'));
+		dom.window.eval(
+			readFileSync('./dist/' + filename, 'utf8')
+		);
 		if (!rjs) lui = dom.window.lui;
 
 		const root = dom.window.document.createElement('div');
@@ -139,21 +147,35 @@ for (const [filename, rjs] of [
 		lui.init(() => {
 			const [count, setters] = lui.hook_model(model);
 			actions = setters;
-			lui.hook_effect(value => () => cleanups.push(value), dom.window.Array.of(count));
+			lui.hook_effect(
+				value => () => cleanups.push(value),
+				dom.window.Array.of(count)
+			);
 			return [lui.node_dom('button[title=ready]', {
 				D: {item: String(count)},
-				S: {color: count ? 'blue' : 'red'},
+				S: {color: (
+					count
+					?	'blue'
+					:	'red'
+				)},
 				textContent: String(count),
 			})];
 		}, root);
-		expect(root.firstChild.title).toBe('ready');
-		expect(root.textContent).toBe('0');
+		expect(root.firstChild.title)
+			.toBe('ready');
+		expect(root.textContent)
+			.toBe('0');
 		actions.add(3);
 		actions.subtract(1);
-		expect(root.textContent).toBe('2');
-		expect(root.firstChild.getAttribute('data-item')).toBe('2');
-		expect(root.firstChild.style.color).toBe('blue');
-		expect(cleanups).toEqual([0, 3]);
+		expect(root.textContent)
+			.toBe('2');
+		expect(
+			root.firstChild.getAttribute('data-item')
+		).toBe('2');
+		expect(root.firstChild.style.color)
+			.toBe('blue');
+		expect(cleanups)
+			.toEqual([0, 3]);
 		dom.window.close();
 	});
 }
@@ -242,3 +264,50 @@ test('extended rjs noeval bundle preserves mapped hooks and cleanup order', () =
 	expect(cleanups).toEqual(['b', 'c', 'a']);
 	dom.window.close();
 });
+
+for (const [filename, rjs] of [
+	['luix.legacy.js', false],
+	['luix.r.js', true],
+	['luix.r.dev.js', true],
+	['luix.r.noeval.js', true],
+]) {
+	test(`${filename}: unmounts all mapped hooks`, () => {
+		const dom = new JSDOM('<!DOCTYPE html><body></body>', {
+			runScripts: 'outside-only',
+		});
+		let lui;
+		dom.window.define = value => { lui = value; };
+		dom.window.eval(
+			readFileSync('./dist/' + filename, 'utf8')
+		);
+		if (!rjs) lui = dom.window.lui;
+
+		const root = dom.window.document.createElement('div');
+		const cleanups = [];
+		let set_show;
+		const Item = item => {
+			lui.hook_effect(() => () => cleanups.push(item));
+			return item;
+		};
+		const List = () => {
+			const values = lui.hook_map(
+				Item,
+				dom.window.Array.of('a', 'b', 'c')
+			);
+			return [lui.node_dom('p', {textContent: values.join('')})];
+		};
+		lui.init(() => {
+			const [show, set] = lui.hook_state(true);
+			set_show = set;
+			return [show && lui.node(List)];
+		}, root);
+		expect(root.textContent)
+			.toBe('abc');
+		set_show(false);
+		expect(root.textContent)
+			.toBe('');
+		expect(cleanups)
+			.toEqual(['a', 'b', 'c']);
+		dom.window.close();
+	});
+}
