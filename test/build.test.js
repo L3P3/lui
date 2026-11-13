@@ -286,7 +286,9 @@ for (const [filename, rjs] of [
 		const cleanups = [];
 		let set_show;
 		const Item = item => {
-			lui.hook_effect(() => () => cleanups.push(item));
+			lui.hook_effect(
+				() => () => cleanups.push(item)
+			);
 			return item;
 		};
 		const List = () => {
@@ -294,7 +296,9 @@ for (const [filename, rjs] of [
 				Item,
 				dom.window.Array.of('a', 'b', 'c')
 			);
-			return [lui.node_dom('p', {textContent: values.join('')})];
+			return [lui.node_dom('p', {
+				textContent: values.join(''),
+			})];
 		};
 		lui.init(() => {
 			const [show, set] = lui.hook_state(true);
